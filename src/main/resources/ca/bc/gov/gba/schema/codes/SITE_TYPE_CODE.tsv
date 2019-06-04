@@ -1,0 +1,110 @@
+SITE_TYPE_CODE	DESCRIPTION	PL_GROUP	PL_TYPE	BUILDING_TYPE	UNIT_DESCRIPTOR
+AIR_AIR	Air Airport	AERO	AIRPORT		
+AIR_HLI	Air Heliport	AERO	HELIPORT		
+AIR_WTR	Air Waterdrome	AERO	WATERDROME		
+AMB_ARE	Ambulance Airevac	AMBULANCE	AIREVAC		
+AMB_AMB	Ambulance Ambulance	AMBULANCE	AMBULANCE		
+AMB_CRD	Ambulance Coordination	AMBULANCE	COORDINATION		
+AMB_DSP	Ambulance Dispatch	AMBULANCE	DISPATCH		
+AMB_PRV	Ambulance Private	AMBULANCE	PRIVATE		
+AMB_STN	Ambulance Station	AMBULANCE	STATION		
+AMB_XCV	Ambulance Xcover	AMBULANCE	XCOVER		
+CIV_ANA	Civic Arena	CIVIC	ARENA		
+CIV_CHR	Civic Church			CHURCH	CHURCH/RES
+CIV_CMH	Civic Community Hall	CIVIC	COMMUNITYHALL	COMMUNITY	
+CIV_FAC	Civic Facility	CIVIC	FACILITY		
+CIV_GOV	Civic Government	CIVIC	GOVERNMENT	GOVERNMENT	
+CIV_JST	Civic Justice	CIVIC	JUSTICE		
+CIV_LDF	Civic Landfill	CIVIC	LANDFILL		
+CIV_LIB	Civic Library	CIVIC	LIBRARY	LIBRARY	LIBRARY
+CIV_MSQ	Civic Mosque			MOSQUE	
+CIV_MUS	Civic Museum	CIVIC	MUSEUM	MUSEUM	
+CIV_PRV	Civic Provincial	CIVIC	PROVINCIAL		
+CIV_RCY	Civic Recycling			RECYCLING	BOTTLE/REC
+CIV_THR	Civic Theatre				MOVIES/MOC
+CIV_WTR	Civic Water	CIVIC	WATER		
+CST_STN	Coastguard Station 	COASTGUARD	STATION		
+COM_COM	Commercial Commercial			"COMMERCIAL,commercial unit,MIXED USE"	
+COM_IND	Commercial Industrial			INDUSTRIAL	
+COM_RET	Commercial Retail				
+COM_WHS	Commercial Warehouse				
+COR_PRE	Correctional Pretrial	CORRECTIONAL	PRETRIAL		
+COR_PRS	Correctional Prison	CORRECTIONAL	PRISON		
+COR_YTH	Correctional Youth Custody	CORRECTIONAL	YOUTHCUSTODY		
+FRM_BLD	Farm Building			FARM BUILD	
+FRM_STB	Farm Stables			STABLES	
+FIR_HAL	Fire Hall	FIRE	HALL	FIRE	FIREHALL
+GOV_FED	Government Federal				
+GOV_MNI	Government Municipal			MUNICIPAL	
+GOV_PRV	Government Provincial				
+HSP_ADM	Hospital Admin	HOSPITAL	ADMIN		
+HOS_AST	Hospital Assisted Living	HOSPITAL	ASSTL		
+HSP_CRE	Hospital Care	HOSPITAL	CARE	Care Facility	
+HOS_CLN	Hospital Clinic	HOSPITAL	CLINIC		
+HSP_DIG	Hospital Diagnostic	HOSPITAL	DIAGNOSTIC		
+HOS_EXT	Hospital Extended Care	HOSPITAL	EXTENDED CARE		
+HOS_HTH	Hospital Health Centre	HOSPITAL	HEALTH CENTRE		
+HOS_HOS	Hospital Hospital	HOSPITAL	HOSPITAL		MEDICAL CL
+HOS_OTP	Hospital Outpatient	HOSPITAL	OUTPATIENT		
+HOS_OUT	Hospital Outpost	HOSPITAL	OUTPOST		
+HOS_PRV	Hospital Private	HOSPITAL	PRIVATE		
+HOS_RSH	Hospital Rehab	HOSPITAL	REHAB		
+HOS_RSH	Hospital Research	HOSPITAL	RESEARCH		
+PRK_BLD	Park Building			PARK BUILD	
+PRK_FED	Park Federal				
+PRK_MNI	Park Municipal	PARK	MUNICIPAL		
+PRK_PRK	Park Park	PARK	PARK		PARK
+PRK_PRV	Park Private	PARK	PRIVATE		
+PRK_PRV	Park Provincial				
+PRK_REG	Park Regional	PARK	REGIONAL		
+POL_COM	Police Community Station	POLICE	COMMUNITYSTN		
+POL_DET	Police Detachment	POLICE	DETACHMENT		
+POL_FST	Police First Nations	POLICE	FIRSTNATIONS		
+POL_HLI	Police Heliport	POLICE	HELIPORT		
+POL_HWY	Police Highway Patrol	POLICE	HIGHWAYPATROL		
+POL_OCC	Police OCC	POLICE	OCC		
+POL_SNL	Police Seasonal	POLICE	SEASONAL		
+POL_STN	Police Station	POLICE	POLICESTN		
+PST_ACD	PostSec Academy	POST_SEC	ACADEMY		
+PST_COL	PostSec College	POST_SEC	COLLEGE		
+PST_INS	PostSec Institute	POST_SEC	INSTITUTE		
+PST_UNI	PostSec University	POST_SEC	UNIVERSITY		
+REC_CTR	Recreation RecCentre	RECREATION	RECCENTRE	RECREATION	
+REC_CRL	Recreation Curling	RECREATION	CURLING		
+REC_FSH	Recreation Fishing Lodge				FISHING LO
+REC_GLF	Recreation Golf	RECREATION	GOLF	GOLF	GOLF COURS
+REC_LGE	Recreation Lodge	RECREATION	LODGE		
+REC_POL	Recreation Pool	RECREATION	POOL		
+REC_REC	Recreation Recreation	RECREATION	RECREATION		
+REC_SNC	Recreation Scenic	RECREATION	SCENIC		
+REC_S8P	Recreation Skate Park	RECREATION	SKATE PARK		
+REC_SKI	Recreation Ski	RECREATION	SKI	SKI	
+RES_CND	Residential Condo				
+RES_DPX	Residential Duplex			DUPLEX	
+RES_SFH	Residential Single Family 			SINGLE FAM	
+RES_TWR	Residential Tower				
+RES_TNH	Residential Townhome			"MULTI FAMI,residential unit"	
+SCH_ALT	School Alternate	SCHOOLS	ALTERNATE		
+SCH_ALT	School Alternative	SCHOOLS	ALTERNATIVE		
+SCH_CNE	School Con Ed	SCHOOLS	CON_ED		
+SCH_DOF	School District Office	SCHOOLS	DIST_OFFICE		
+SCH_ELY	School Early Learning	SCHOOLS	EARLY LEARNING		
+SCH_IND	School Independent	SCHOOLS	INDEPENDENT		
+SCH_LNC	School Learn Centre	SCHOOLS	LEARN_CTR		
+SCH_MNT	School Maintenance	SCHOOLS	MAINTENANCE		
+SCH_OUT	School Outreach	SCHOOLS	OUTREACH		
+SCH_PRP	School PRP	SCHOOLS	PRP		
+SCH_STD	School Standard	SCHOOLS	STANDARD	SCHOOL	SCHOOL
+SCH_YTH	School Youthcustody	SCHOOLS	YOUTHCUSTODY		
+TRL_PDX	Trail Pedestrian Crossing	TRAIL	PEDESTRIAN CROSSING		
+TRL_TRH	Trail Trailhead	TRAIL	TRAILHEAD		
+TRN_FRY	Transit Ferry	TRANSIT	FERRY		
+TRN_GYH	Transit Greyhound	TRANSIT	GREYHOUND		
+TRN_RAL	Transit Rail	TRANSIT	RAIL		
+TRN_REG	Transit Regional	TRANSIT	REGIONAL TRANSIT		
+TRN_SKY	Transit Skytrain	TRANSIT	SKYTRAIN		
+TRN_TOL	Transit Toll	TRANSIT	TOLL		
+TRN_WHS	Transit Weigh Scale	TRANSIT	WEIGHSCALE		
+VRT_BLF	Virtual Block From				
+VRT_BLS	Virtual Block Split				
+VRT_BLT	Virtual Block To				
