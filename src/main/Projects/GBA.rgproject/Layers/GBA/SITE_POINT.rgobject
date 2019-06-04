@@ -1,0 +1,207 @@
+{
+  "j:type":"gbaSessionRecordStoreLayer",
+  "name":"SITE_POINT",
+  "editable":true,
+  "maximumScale":0,
+  "minimumScale":5000,
+  "style":{
+    "j:type":"multipleStyle",
+    "name":"Styles",
+    "visible":true,
+    "maximumScale":0,
+    "minimumScale":9223372036854775807,
+    "styles":[
+      {
+        "j:type":"filterStyle",
+        "name":"Geometry",
+        "visible":true,
+        "maximumScale":0,
+        "minimumScale":9223372036854775807,
+        "styles":[
+          {
+            "j:type":"geometryStyle",
+            "name":"Block Start",
+            "visible":true,
+            "maximumScale":0,
+            "minimumScale":9223372036854775807,
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"SITE_TYPE_CODE = 'Virtual Block From'"
+            },
+            "markerDx":"0.0 [pnt]",
+            "markerDy":"0.0 [pnt]",
+            "markerFill":"rgb(153,255,255)",
+            "markerHeight":"10.0 [pnt]",
+            "markerLineColor":"rgb(0,204,204)",
+            "markerLineWidth":"1.0 [pnt]",
+            "markerOrientation":180,
+            "markerOrientationType":"auto",
+            "markerType":"solidArrow",
+            "markerWidth":"10.0 [pnt]"
+          },
+          {
+            "j:type":"geometryStyle",
+            "name":"Block End",
+            "visible":true,
+            "maximumScale":0,
+            "minimumScale":9223372036854775807,
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"SITE_TYPE_CODE = 'Virtual Block To'"
+            },
+            "markerDx":"0.0 [pnt]",
+            "markerDy":"0.0 [pnt]",
+            "markerFill":"rgb(51,255,255)",
+            "markerHeight":"10.0 [pnt]",
+            "markerLineColor":"rgb(0,204,204)",
+            "markerLineWidth":"1.0 [pnt]",
+            "markerOrientationType":"auto",
+            "markerType":"solidArrow",
+            "markerWidth":"10.0 [pnt]"
+          },
+          {
+            "j:type":"geometryStyle",
+            "name":"Block Split",
+            "visible":true,
+            "maximumScale":0,
+            "minimumScale":9223372036854775807,
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"SITE_TYPE_CODE = 'Virtual Block Split'"
+            },
+            "markerDx":"0.0 [pnt]",
+            "markerDy":"0.0 [pnt]",
+            "markerFill":"rgb(102,255,255)",
+            "markerHeight":"10.0 [pnt]",
+            "markerLineColor":"rgb(0,204,204)",
+            "markerLineWidth":"1.0 [pnt]",
+            "markerOrientationType":"auto",
+            "markerType":"x",
+            "markerWidth":"10.0 [pnt]"
+          },
+          {
+            "j:type":"geometryStyle",
+            "name":"Site",
+            "visible":true,
+            "maximumScale":0,
+            "minimumScale":9223372036854775807,
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"NOT SITE_TYPE_CODE IN ('Virtual Block From','Virtual Block Split','Virtual Block To')"
+            },
+            "markerDx":"0.0 [pnt]",
+            "markerDy":"0.0 [pnt]",
+            "markerFill":"Gold",
+            "markerFillOpacity":127,
+            "markerHeight":"15.0 [pnt]",
+            "markerLineColor":"Gold",
+            "markerLineWidth":"1.0 [pnt]",
+            "markerOrientationType":"auto",
+            "markerType":"star",
+            "markerWidth":"15.0 [pnt]"
+          }
+        ]
+      },
+      {
+        "j:type":"textStyle",
+        "name":"Unit Descriptor",
+        "visible":true,
+        "maximumScale":0,
+        "minimumScale":5000,
+        "textBoxColor":"RoyalBlue",
+        "textBoxOpacity":128,
+        "textDx":"-2.0 [pnt]",
+        "textDy":"3.0 [pnt]",
+        "textHorizontalAlignment":"right",
+        "textName":"[UNIT_DESCRIPTOR]",
+        "textSize":"12.0 [pnt]"
+      },
+      {
+        "j:type":"textStyle",
+        "name":"Civic Number & Suffix",
+        "visible":true,
+        "maximumScale":0,
+        "minimumScale":5000,
+        "textBoxColor":"LawnGreen",
+        "textBoxOpacity":128,
+        "textDx":"2.0 [pnt]",
+        "textDy":"3.0 [pnt]",
+        "textHorizontalAlignment":"left",
+        "textName":"[CIVIC_NUMBER] [CIVIC_NUMBER_SUFFIX]",
+        "textSize":"12.0 [pnt]"
+      },
+      {
+        "j:type":"textStyle",
+        "name":"Street Name",
+        "visible":false,
+        "maximumScale":0,
+        "minimumScale":5000,
+        "textDx":"2.0 [pnt]",
+        "textDy":"-3.0 [pnt]",
+        "textFill":"rgb(102,0,102)",
+        "textHorizontalAlignment":"left",
+        "textName":"[STRUCTURED_NAME_1_ID.FULL_NAME]",
+        "textSize":"12.0 [pnt]",
+        "textVerticalAlignment":"top"
+      },
+      {
+        "j:type":"textStyle",
+        "name":"Site Name",
+        "visible":false,
+        "maximumScale":0,
+        "minimumScale":5000,
+        "textBoxColor":"BlanchedAlmond",
+        "textDx":"-2.0 [pnt]",
+        "textDy":"-3.0 [pnt]",
+        "textFill":"rgb(102,0,102)",
+        "textHorizontalAlignment":"right",
+        "textName":"[SITE_NAME_1]",
+        "textSize":"12.0 [pnt]",
+        "textVerticalAlignment":"top"
+      }
+    ]
+  },
+  "connection":{
+    "name":"GBA"
+  },
+  "formFactoryExpression":"new ca.bc.gov.gba.ui.form.SitePointForm(#this, #object)",
+  "typePath":"\/GBA\/SITE_POINT",
+  "canAddRecords":true,
+  "canDeleteRecords":true,
+  "canEditRecords":true,
+  "snapToAllLayers":true,
+  "fieldNamesSets":{
+    "All":[
+      "OBJECTID",
+      "PARENT_OBJECT_ID",
+      "SITE_ID",
+      "PARENT_SITE_ID",
+      "FULL_ADDRESS",
+      "UNIT_DESCRIPTOR",
+      "CIVIC_NUMBER",
+      "CIVIC_NUMBER_SUFFIX",
+      "STRUCTURED_NAME_1_ID",
+      "STRUCTURED_NAME_2_ID",
+      "LOCALITY_ID",
+      "COMMUNITY_ID",
+      "REGIONAL_DISTRICT_ID",
+      "SITE_NAME_1",
+      "USE_SITE_NAME_IN_ADDRESS_IND",
+      "SITE_NAME_2",
+      "SITE_NAME_3",
+      "SITE_TYPE_CODE",
+      "SITE_LOCATION_CODE"
+    ]
+  },
+  "userReadOnlyFieldNames":[
+    "OBJECTID",
+    "FULL_ADDRESS"
+  ],
+  "useFieldTitles":false,
+  "searchField":"FULL_ADDRESS",
+  "fieldFactories": {
+    "PARENT_SITE_ID": "com.revolsys.swing.map.layer.record.component.RecordLayerQueryTextField.factory(object, fieldName, 'FULL_ADDRESS')",
+    "STRUCTURED_NAME_1_ID": "com.revolsys.swing.field.RecordStoreQueryField.factory(fieldName, object.getRecordStore(), '/GBA/STRUCTURED_NAME', 'FULL_NAME')",
+    "STRUCTURED_NAME_2_ID": "com.revolsys.swing.field.RecordStoreQueryField.factory(fieldName, object.getRecordStore(), '/GBA/STRUCTURED_NAME', 'FULL_NAME')"
+  }
+}

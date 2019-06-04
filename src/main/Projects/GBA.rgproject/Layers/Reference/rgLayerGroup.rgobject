@@ -1,0 +1,12 @@
+{
+  "j:type":"layerGroup",
+  "name":"Reference",
+  "layers":[
+    "Grids",
+    "ParcelMap BC Parcel Fabric.rgobject",
+    "Integrated Cadastral Fabric.rgobject",
+    "Civic Address _Address BC_.rgobject",
+    "Supplemental Addresses.rgobject",
+    "Forest Tenure Roads.rgobject"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "j:type":"recordStoreLayer",
+  "name":"STRUCTURED_NAME",
+  "visible":false,
+  "editable":true,
+  "selectSupported":false,
+  "canAddRecords":true,
+  "canDeleteRecords":false,
+  "canEditRecords":false,
+  "canPasteRecords":false,
+  "connection":{
+    "name":"gba"
+  },
+  "formFactoryExpression":"new ca.bc.gov.gba.ui.form.StructuredNameForm(#this, #object)",
+  "searchField":"FULL_NAME",
+  "typePath":"\/GBA\/STRUCTURED_NAME"
+}

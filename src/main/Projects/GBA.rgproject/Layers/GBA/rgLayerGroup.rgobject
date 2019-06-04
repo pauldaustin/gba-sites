@@ -1,0 +1,13 @@
+{
+  "j:type":"layerGroup",
+  "name":"GBA",
+  "layers":[
+    "TRANSPORT_LINE_NODE_POINT.rgobject",
+    "TRANSPORT_LINE.rgobject",
+    "LOCALITY_POLY.rgobject",
+    "REGIONAL_DISTRICT_POLY.rgobject",
+    "INTEGRATION_SESSION_POLY.rgobject",
+    "STRUCTURED_NAME.rgobject",
+    "PARTNER_ORGANIZATION.rgobject"
+  ]
+}

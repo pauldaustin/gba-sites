@@ -1,0 +1,111 @@
+{
+  "j:type":"gbaSessionRecordStoreLayer",
+  "name":"TRANSPORT_LINE_NODE_POINT",
+  "editable":true,
+  "minimumScale":10000,
+  "visible": true,
+  "style":{
+    "j:type":"multipleStyle",
+    "name":"Multiple Style",
+    "styles":[
+      {
+        "j:type":"mergedErrors",
+        "name":"Errors",
+        "visible": true,
+        "lineColor":"Red",
+        "lineWidth":"11 [pnt]",
+        "markerHorizontalAlignment":"center",
+        "markerVerticalAlignment":"middle",
+        "markerLineWidth":"0 [pnt]",
+        "markerFill":"Red",
+        "markerWidth":"15 [pnt]",
+        "markerHeight":"15 [pnt]"
+      },
+      {
+        "j:type":"filterStyle",
+        "name":"Changes",
+        "filter":{
+          "j:type":"sqlFilter",
+          "query":"OBJECTID IS NOT NULL"
+        },
+        "styles":[
+          {
+            "j:type":"markerStyle",
+            "name":"Insert",
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"INTEGRATION_ACTION_CODE = 'I'"
+            },
+            "markerHorizontalAlignment":"center",
+            "markerVerticalAlignment":"middle",
+            "markerLineWidth":"0 [pnt]",
+            "markerWidth":"15 [pnt]",
+            "markerHeight":"15 [pnt]",
+            "markerFill":"rgb(0,204,0)"
+          },
+          {
+            "j:type":"markerStyle",
+            "name":"Attribute & Geometry Update",
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"INTEGRATION_ACTION_CODE = 'B'"
+            },
+            "markerHorizontalAlignment":"center",
+            "markerVerticalAlignment":"middle",
+            "markerLineWidth":"0 [pnt]",
+            "markerWidth":"15 [pnt]",
+            "markerHeight":"15 [pnt]",
+            "markerFill":"rgb(255,153,0)"
+          },
+          {
+            "j:type":"markerStyle",
+            "name":"Attribute Update",
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"INTEGRATION_ACTION_CODE = 'U'"
+            },
+            "markerHorizontalAlignment":"center",
+            "markerVerticalAlignment":"middle",
+            "markerLineWidth":"0 [pnt]",
+            "markerWidth":"15 [pnt]",
+            "markerHeight":"15 [pnt]",
+            "markerFill":"DeepSkyBlue"
+          },
+          {
+            "j:type":"markerStyle",
+            "name":"Geometry Update",
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"INTEGRATION_ACTION_CODE = 'G'"
+            },
+            "markerHorizontalAlignment":"center",
+            "markerVerticalAlignment":"middle",
+            "markerLineWidth":"0 [pnt]",
+            "markerWidth":"15 [pnt]",
+            "markerHeight":"15 [pnt]",
+            "markerFill":"rgb(255,153,0)"
+          }
+        ]
+      },
+      {
+        "j:type":"markerStyle",
+        "name":"Intersection",
+        "filter":{
+          "j:type":"sqlFilter",
+          "query":"INTEGRATION_ACTION_CODE IN ('O', 'I', 'U', 'G', 'B', 'M')"
+        },
+        "markerHorizontalAlignment":"center",
+        "markerVerticalAlignment":"middle",
+        "markerWidth":"11 [pnt]",
+        "markerHeight":"11 [pnt]",
+        "markerLineWidth":"0 [pnt]",
+        "markerFill":"Blue"
+      }
+    ]
+  },
+  "formFactoryExpression":"new ca.bc.gov.gba.ui.form.SessionRecordForm(#this, #object)",
+  "snapLayers":[
+    "/GBA/TRANSPORT_LINE"
+  ],
+  "typePath":"\/GBA\/TRANSPORT_LINE_NODE_POINT"
+}

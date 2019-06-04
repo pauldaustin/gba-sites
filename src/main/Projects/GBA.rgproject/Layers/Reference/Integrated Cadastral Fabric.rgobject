@@ -1,0 +1,69 @@
+{
+  "name": "Integrated Cadastral Fabric",
+  "j:type": "recordStoreLayer",
+  "connection": {
+    "name": "BCGW"
+  },
+  "recordDefinitionProperties": {
+    "idFieldName": "CBM_OBJECTID"
+  },
+  "typePath": "/WHSE_CADASTRE/CBM_INTGD_CADASTRAL_FABRIC_SVW",
+  "minimumScale": 500000,
+  "visible": false,
+  "selectable": false,
+  "style" : {
+    "j:type": "multipleStyle",
+    "styles": [
+      {
+        "j:type": "geometryStyle",
+        "name": "Outline",
+        "lineWidth": "2 [pnt]",
+        "lineColor": "rgb(192, 192, 192)",
+        "polygonFill": "rgba(0,0,0,0)"
+      },
+      {
+        "j:type": "filterStyle",
+        "name": "Ownership",
+        "styles": [
+          {
+            "name": "Private Ownership",
+            "j:type": "geometryStyle",
+            "lineColor": "rgb(0, 0, 0)",
+            "lineWidth": "1 [pnt]",
+            "polygonFill": "rgba(255, 255, 190, 0.5 )",
+            "filter": {
+              "j:type": "sqlFilter",
+              "query": "OWNERSHIP_CLASS = 'PRIVATE'"
+            }
+          },{
+            "name": "Crown Ownership",
+            "j:type": "geometryStyle",
+            "lineColor": "rgb(0, 0, 0)",
+            "lineWidth": "1 [pnt]",
+            "polygonFill": "rgba(255, 190, 232, 0.5)",
+            "filter": {
+              "j:type": "sqlFilter",
+              "query": "OWNERSHIP_CLASS LIKE 'CROWN%'"
+            }
+          },{
+            "name": "First Nations Ownership",
+            "j:type": "geometryStyle",
+            "lineColor": "rgb(0, 0, 0)",
+            "lineWidth": "1 [pnt]",
+            "polygonFill": "rgba(205, 205, 102, 0.5)",
+            "filter": {
+              "j:type": "sqlFilter",
+              "query": "OWNERSHIP_CLASS LIKE 'FIRST NATION%'"
+            }
+          },{
+            "name": "Unknown Ownership",
+            "j:type": "geometryStyle",
+            "lineColor": "rgb(0, 0, 0)",
+            "lineWidth": "1 [pnt]",
+            "polygonFill": "rgba(201, 230, 242, 0.5)"
+          }
+        ]
+      }
+    ]
+  }
+}

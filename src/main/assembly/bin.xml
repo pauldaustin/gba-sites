@@ -1,0 +1,56 @@
+<assembly
+  xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="
+    http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.1
+    http://maven.apache.org/xsd/assembly-1.1.1.xsd
+  ">
+  <id>bin</id>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  
+  <fileSets>
+    <fileSet>
+      <directory>src/main/bin</directory>
+      <outputDirectory>bin</outputDirectory>
+      <includes>
+        <include>*.exe</include>
+        <include>*.dll</include>
+        <include>*.ini</include>
+        <include>GbaSplash.gif</include>
+      </includes>
+    </fileSet>
+    
+    <fileSet>
+      <directory>src/main/ini</directory>
+      <outputDirectory>ini</outputDirectory>
+      <includes>
+        <include>*.ini</include>
+      </includes>
+      <filtered>true</filtered>
+    </fileSet>
+   
+    <fileSet>
+      <directory>docs</directory>
+      <outputDirectory>docs</outputDirectory>
+    </fileSet>
+  
+    <fileSet>
+      <directory>src/main</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>Projects/**</include>
+        <include>data/**</include>
+        <include>sql/**</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+  
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>lib</outputDirectory>
+    </dependencySet>
+  </dependencySets>
+</assembly>

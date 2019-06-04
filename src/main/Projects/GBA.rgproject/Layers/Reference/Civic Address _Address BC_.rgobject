@@ -1,0 +1,32 @@
+{
+  "j:type":"recordStoreLayer",
+  "name":"Civic Address (Address BC)",
+  "visible":false,
+  "minimumScale":10000,
+  "readOnly": true,
+  "selectable": false,
+  "style":{
+    "j:type":"multipleStyle",
+    "name":"Multiple Style",
+    "styles":[
+      {
+        "j:type":"geometryStyle",
+        "name":"Point"
+      },
+      {
+        "j:type":"textStyle",
+        "name":"Street Number",
+        "textName":"[STREET_NUMBER] [STREET_NUMBER_SUFFIX]",
+        "textFill":"Black",
+        "textSize":10,
+        "textHorizontalAlignment":"center",
+        "textVerticalAlignment":"bottom",
+        "textDy":"6.0 [pnt]"
+      }
+    ]
+  },
+  "connection":{
+    "url":"folderconnection:\/\/GBA%20Data\/ancillary\/AddressBC\/AddressBC.gdb"
+  },
+  "typePath":"\/CIVIC_ADDRESS"
+}

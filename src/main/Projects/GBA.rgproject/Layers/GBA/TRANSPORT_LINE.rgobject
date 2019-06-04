@@ -1,0 +1,447 @@
+{
+  "j:type":"gbaSessionRecordStoreLayer",
+  "name":"TRANSPORT_LINE",
+  "visible":true,
+  "querySupported":true,
+  "queryable":true,
+  "readOnly":false,
+  "editable":true,
+  "selectable":true,
+  "selectSupported":true,
+  "maximumScale":0,
+  "minimumScale":125000,
+  "style":{
+    "j:type":"multipleStyle",
+    "name":"Multiple Style",
+    "visible":true,
+    "styles":[
+      {
+        "j:type":"mergedErrors",
+        "name":"Errors",
+        "visible":true,
+        "lineColor":"Red",
+        "lineWidth":"11 [pnt]",
+        "markerHorizontalAlignment":"center",
+        "markerVerticalAlignment":"middle",
+        "markerLineWidth":"0 [pnt]",
+        "markerFill":"Red",
+        "markerWidth":"15 [pnt]",
+        "markerHeight":"15 [pnt]"
+      },
+      {
+        "j:type":"filterStyle",
+        "name":"Changes",
+        "visible":true,
+        "filter":{
+          "j:type":"sqlFilter",
+          "query":"OBJECTID IS NOT NULL"
+        },
+        "styles":[
+          {
+            "j:type":"geometryStyle",
+            "name":"Insert",
+            "visible":true,
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"INTEGRATION_ACTION_CODE = 'I'"
+            },
+            "lineColor":"rgb(0,204,0)",
+            "lineWidth":"5.0 [pnt]"
+          },
+          {
+            "j:type":"geometryStyle",
+            "name":"Attribute & Geometry Update",
+            "visible":true,
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"INTEGRATION_ACTION_CODE = 'B'"
+            },
+            "lineColor":"rgb(255,153,0)",
+            "lineWidth":"5.0 [pnt]"
+          },
+          {
+            "j:type":"geometryStyle",
+            "name":"Attribute Update",
+            "visible":true,
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"INTEGRATION_ACTION_CODE = 'U'"
+            },
+            "lineColor":"DeepSkyBlue",
+            "lineWidth":"5 [pnt]"
+          },
+          {
+            "j:type":"geometryStyle",
+            "name":"Geometry Update",
+            "visible":true,
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"INTEGRATION_ACTION_CODE = 'G'"
+            },
+            "lineColor":"rgb(255,153,0)",
+            "lineWidth":"5.0 [pnt]"
+          }
+        ]
+      },
+                           {
+        "j:type":"filterStyle",
+        "name":"Road geometry",
+        "visible":true,
+        "filter":{
+          "j:type":"sqlFilter",
+          "query":"INTEGRATION_ACTION_CODE IN ('O', 'I', 'U', 'G', 'B', 'M')"
+        },
+        "styles":[
+          {
+            "j:type":"geometryStyle",
+            "name":"Non-demographic",
+            "visible":true,
+            "filter":{
+              "j:type":"sqlFilter",
+              "query":"DEMOGRAPHIC_IND = 'N'"
+            },
+            "lineColor":"rgb(0,102,102)",
+            "lineDashArray":[
+              "10 [pnt]"
+            ],
+            "lineWidth":"1.0 [pnt]"
+          },
+          {
+            "j:type":"geometryStyle",
+            "name":"Demographic",
+            "visible":true,
+            "lineColor":"rgb(153,0,153)",
+            "lineWidth":"1.0 [pnt]"
+          }
+        ]
+      },
+      {
+        "j:type":"multipleStyle",
+        "name":"Demographic annotation",
+        "visible":true,
+        "filter":{
+          "j:type":"sqlFilter",
+          "query":"INTEGRATION_ACTION_CODE IN ('O', 'I', 'U', 'G', 'B', 'M') AND DEMOGRAPHIC_IND = 'Y'"
+        },
+        "styles":[
+          {
+            "j:type":"markerStyle",
+            "name":"End Arrow",
+            "visible":true,
+            "maximumScale":0,
+            "minimumScale":50000,
+            "markerDx":"0.0 [pnt]",
+            "markerFill":"rgb(102,0,102)",
+            "markerHeight":"4.0 [pnt]",
+            "markerHorizontalAlignment":"right",
+            "markerLineColor":"rgb(102,0,153)",
+            "markerLineWidth":"1.0 [pnt]",
+            "markerOrientationType":"auto",
+            "markerPlacementType":"vertex(n)",
+            "markerType":"solidArrow",
+            "markerVerticalAlignment":"middle",
+            "markerWidth":"8.0 [pnt]"
+          },
+          {
+            "j:type":"textStyle",
+            "name":"Name",
+            "visible":true,
+            "maximumScale":0,
+            "minimumScale":10000,
+            "textDx":"0.0 [pnt]",
+            "textDy":"-10.0 [pnt]",
+            "textFill":"rgb(102,0,102)",
+            "textHorizontalAlignment":"center",
+            "textName":"[STRUCTURED_NAME_1_ID.FULL_NAME]",
+            "textPlacementType":"center",
+            "textSize":"12.0 [pnt]",
+            "textVerticalAlignment":"top"
+          },
+          {
+            "j:type":"textStyle",
+            "name":"Number",
+            "visible":true,
+            "maximumScale":0,
+            "minimumScale":50000,
+            "textDx":"0.0 [pnt]",
+            "textFill":"rgb(102,0,102)",
+            "textHorizontalAlignment":"center",
+            "textName":"[TRANSPORT_LINE_ID]",
+            "textPlacementType":"center",
+            "textSize":"11.0 [pnt]",
+            "textVerticalAlignment":"middle"
+          },
+          {
+            "j:type":"multipleStyle",
+            "name":"Address",
+            "visible":false,
+            "maximumScale":0,
+            "minimumScale":5000,
+            "styles":[
+              {
+                "j:type":"textStyle",
+                "name":"Single",
+                "filter":{
+                  "j:type":"sqlFilter",
+                  "query":"SINGLE_HOUSE_NUMBER IS NOT NULL"
+                },
+                "textDy":"10 [pnt]",
+                "textFill":"Black",
+                "textHorizontalAlignment":"center",
+                "textName":"[SINGLE_HOUSE_NUMBER]",
+                "textPlacementType":"center",
+                "textSize":"11 [pnt]",
+                "textVerticalAlignment":"bottom"
+              },
+              {
+                "j:type":"textStyle",
+                "name":"From Left",
+                "visible":true,
+                "filter":{
+                  "j:type":"sqlFilter",
+                  "query":"LEFT_HOUSE_NUM_SCHEME_CODE IS NOT NULL"
+                },
+                "textDx":"20 [pnt]",
+                "textDy":"2 [pnt]",
+                "textName":"[FROM_LEFT_HOUSE_NUMBER] ([LEFT_HOUSE_NUM_SCHEME_CODE])",
+                "textPlacementType":"vertex(0)",
+                "textSize":"12 [pnt]"
+              },
+              {
+                "j:type":"textStyle",
+                "name":"From Right",
+                "visible":true,
+                "filter":{
+                  "j:type":"sqlFilter",
+                  "query":"RIGHT_HOUSE_NUM_SCHEME_CODE IS NOT NULL"
+                },
+                "textDx":"20 [pnt]",
+                "textDy":"-2 [pnt]",
+                "textName":"[FROM_RIGHT_HOUSE_NUMBER] ([RIGHT_HOUSE_NUM_SCHEME_CODE])",
+                "textPlacementType":"vertex(0)",
+                "textSize":"12 [pnt]",
+                "textVerticalAlignment":"top"
+              },
+              {
+                "j:type":"textStyle",
+                "name":"To Left",
+                "visible":true,
+                "filter":{
+                  "j:type":"sqlFilter",
+                  "query":"LEFT_HOUSE_NUM_SCHEME_CODE IS NOT NULL"
+                },
+                "textDx":"-20 [pnt]",
+                "textDy":"2 [pnt]",
+                "textHorizontalAlignment":"right",
+                "textName":"[TO_LEFT_HOUSE_NUMBER] ([LEFT_HOUSE_NUM_SCHEME_CODE])",
+                "textPlacementType":"vertex(n)",
+                "textSize":"12 [pnt]"
+              },
+              {
+                "j:type":"textStyle",
+                "name":"To Right",
+                "visible":true,
+                "filter":{
+                  "j:type":"sqlFilter",
+                  "query":"RIGHT_HOUSE_NUM_SCHEME_CODE IS NOT NULL"
+                },
+                "textDx":"-20 [pnt]",
+                "textDy":"-2 [pnt]",
+                "textHorizontalAlignment":"right",
+                "textName":"[TO_RIGHT_HOUSE_NUMBER] ([RIGHT_HOUSE_NUM_SCHEME_CODE])",
+                "textPlacementType":"vertex(n)",
+                "textSize":"12 [pnt]",
+                "textVerticalAlignment":"top"
+              }
+            ]
+          },
+          {
+            "j:type":"multipleStyle",
+            "name":"Impactors",
+            "visible":false,
+            "maximumScale":0,
+            "minimumScale":50000,
+            "styles":[
+              {
+                "j:type":"textStyle",
+                "name":"From Impactor",
+                "visible":true,
+                "filter":{
+                  "j:type":"sqlFilter",
+                  "query":"FROM_TRAFFIC_IMPACTOR_CODE IS NOT NULL"
+                },
+                "textDx":"2.0 [pnt]",
+                "textDy":"0.0 [pnt]",
+                "textFill":"rgb(102,0,0)",
+                "textHorizontalAlignment":"left",
+                "textName":"[FROM_TRAFFIC_IMPACTOR_CODE]",
+                "textPlacementType":"vertex(0)",
+                "textSize":"10.0 [pnt]",
+                "textVerticalAlignment":"top"
+              },
+              {
+                "j:type":"textStyle",
+                "name":"To Impactor",
+                "visible":true,
+                "filter":{
+                  "j:type":"sqlFilter",
+                  "query":"TO_TRAFFIC_IMPACTOR_CODE IS NOT NULL"
+                },
+                "textDx":"-2.0 [pnt]",
+                "textDy":"0.0 [pnt]",
+                "textFill":"rgb(51,204,0)",
+                "textHorizontalAlignment":"right",
+                "textName":"[TO_TRAFFIC_IMPACTOR_CODE]",
+                "textPlacementType":"vertex(n)",
+                "textSize":"10.0 [pnt]",
+                "textVerticalAlignment":"top"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "j:type":"multipleStyle",
+        "name":"Non-demographic annotation",
+        "visible":true,
+        "filter":{
+          "j:type":"sqlFilter",
+          "query":"INTEGRATION_ACTION_CODE IN ('O', 'I', 'U', 'G', 'B', 'M') AND DEMOGRAPHIC_IND = 'N'"
+        },
+        "styles":[
+          {
+            "j:type":"markerStyle",
+            "name":"Marker Style",
+            "visible":true,
+            "maximumScale":0,
+            "minimumScale":50000,
+            "markerDx":"0.0 [pnt]",
+            "markerFill":"rgb(0,153,153)",
+            "markerHeight":"4.0 [pnt]",
+            "markerHorizontalAlignment":"right",
+            "markerLineColor":"rgb(0,102,102)",
+            "markerLineWidth":"1.0 [pnt]",
+            "markerOrientationType":"auto",
+            "markerPlacementType":"vertex(n)",
+            "markerType":"solidArrow",
+            "markerWidth":"8.0 [pnt]"
+          },
+          {
+            "j:type":"textStyle",
+            "name":"Number",
+            "visible":true,
+            "maximumScale":0,
+            "minimumScale":50000,
+            "textDx":"0.0 [pnt]",
+            "textDy":"0.0 [pnt]",
+            "textFill":"rgb(0,102,0)",
+            "textName":"[TRANSPORT_LINE_ID]",
+            "textPlacementType":"center",
+            "textSize":"10.0 [pnt]"
+          }
+        ]
+      }
+    ]
+  },
+  "formFactoryExpression":"new ca.bc.gov.gba.ui.form.TransportLineForm(#this, #object)",
+  "ignorePasteFields":[
+    "SINGLE_HOUSE_NUMBER",
+    "LEFT_HOUSE_NUM_SCHEME_CODE",
+    "FROM_LEFT_HOUSE_NUMBER",
+    "TO_LEFT_HOUSE_NUMBER",
+    "RIGHT_HOUSE_NUM_SCHEME_CODE",
+    "FROM_RIGHT_HOUSE_NUMBER",
+    "TO_RIGHT_HOUSE_NUMBER",
+    "LEFT_LOCALITY_ID",
+    "RIGHT_LOCALITY_ID",
+    "LEFT_REGIONAL_DISTRICT_ID",
+    "RIGHT_REGIONAL_DISTRICT_ID"
+  ],
+  "snapLayers":[
+    "\/GBA\/LOCALITY_POLY",
+    "\/GBA\/REGIONAL_DISTRICT_POLY",
+    "\/GBA\/TRANSPORT_LINE",
+    "\/GBA\/TRANSPORT_LINE_NODE_POINT"
+  ],
+  "searchField":"TRANSPORT_LINE_ID",
+  "fieldNamesSets": {
+    "All": [
+      "OBJECTID",
+      "TRANSPORT_LINE_ID",
+      "STRUCTURED_NAME_1_ID",
+      "STRUCTURED_NAME_2_ID",
+      "TRANSPORT_LINE_TYPE_CODE",
+      "SINGLE_HOUSE_NUMBER",
+      "LEFT_LOCALITY_ID",
+      "LEFT_HOUSE_NUM_SCHEME_CODE",
+      "FROM_LEFT_HOUSE_NUMBER",
+      "TO_LEFT_HOUSE_NUMBER",
+      "RIGHT_LOCALITY_ID",
+      "RIGHT_HOUSE_NUM_SCHEME_CODE",
+      "FROM_RIGHT_HOUSE_NUMBER",
+      "TO_RIGHT_HOUSE_NUMBER",
+      "FROM_TRAFFIC_IMPACTOR_CODE",
+      "TO_TRAFFIC_IMPACTOR_CODE",
+      "DATA_CAPTURE_METHOD_CODE"
+    ],
+    "Addressing": [
+      "OBJECTID",
+      "TRANSPORT_LINE_ID",
+      "STRUCTURED_NAME_1_ID",
+      "STRUCTURED_NAME_2_ID",
+      "TRANSPORT_LINE_TYPE_CODE",
+      "SINGLE_HOUSE_NUMBER",
+      "LEFT_REGIONAL_DISTRICT_ID",
+      "LEFT_LOCALITY_ID",
+      "LEFT_HOUSE_NUM_SCHEME_CODE",
+      "FROM_LEFT_HOUSE_NUMBER",
+      "TO_LEFT_HOUSE_NUMBER",
+      "RIGHT_REGIONAL_DISTRICT_ID",
+      "RIGHT_LOCALITY_ID",
+      "RIGHT_HOUSE_NUM_SCHEME_CODE",
+      "FROM_RIGHT_HOUSE_NUMBER",
+      "TO_RIGHT_HOUSE_NUMBER"
+    ],
+    "Names": [
+      "OBJECTID",
+      "TRANSPORT_LINE_ID",
+      "LEFT_LOCALITY_ID",
+      "RIGHT_LOCALITY_ID",
+      "STRUCTURED_NAME_1_ID",
+      "STRUCTURED_NAME_2_ID",
+      "STRUCTURED_NAME_3_ID",
+      "STRUCTURED_NAME_4_ID",
+      "STRUCTURED_NAME_5_ID",
+      "STRUCTURED_NAME_6_ID",
+      "STRUCTURED_NAME_7_ID",
+      "HIGHWAY_ROUTE_1",
+      "HIGHWAY_ROUTE_2",
+      "HIGHWAY_ROUTE_3",
+      "HIGHWAY_EXIT_NUMBER",
+      "INDUSTRY_NAME_1",
+      "INDUSTRY_NAME_2",
+      "INDUSTRY_NAME_3"
+    ]
+  },
+  "userReadOnlyFieldNames":[
+    "OBJECTID",
+    "DEMOGRAPHIC_IND",
+    "FROM_TRANSPORT_NODE_POINT_ID",
+    "TO_TRANSPORT_NODE_POINT_ID"
+  ],
+  "typePath":"\/GBA\/TRANSPORT_LINE",
+  "canAddRecords":true,
+  "canDeleteRecords":true,
+  "canEditRecords":true,
+  "snapToAllLayers":false,
+  "useFieldTitles":true,
+  "fieldFactories": {
+    "STRUCTURED_NAME_1_ID": "com.revolsys.swing.field.RecordStoreQueryField.factory(fieldName, object.getRecordStore(), '/GBA/STRUCTURED_NAME', 'FULL_NAME')",
+    "STRUCTURED_NAME_2_ID": "com.revolsys.swing.field.RecordStoreQueryField.factory(fieldName, object.getRecordStore(), '/GBA/STRUCTURED_NAME', 'FULL_NAME')",
+    "STRUCTURED_NAME_3_ID": "com.revolsys.swing.field.RecordStoreQueryField.factory(fieldName, object.getRecordStore(), '/GBA/STRUCTURED_NAME', 'FULL_NAME')",
+    "STRUCTURED_NAME_4_ID": "com.revolsys.swing.field.RecordStoreQueryField.factory(fieldName, object.getRecordStore(), '/GBA/STRUCTURED_NAME', 'FULL_NAME')",
+    "STRUCTURED_NAME_5_ID": "com.revolsys.swing.field.RecordStoreQueryField.factory(fieldName, object.getRecordStore(), '/GBA/STRUCTURED_NAME', 'FULL_NAME')",
+    "STRUCTURED_NAME_6_ID": "com.revolsys.swing.field.RecordStoreQueryField.factory(fieldName, object.getRecordStore(), '/GBA/STRUCTURED_NAME', 'FULL_NAME')",
+    "STRUCTURED_NAME_7_ID": "com.revolsys.swing.field.RecordStoreQueryField.factory(fieldName, object.getRecordStore(), '/GBA/STRUCTURED_NAME', 'FULL_NAME')"
+  }
+}

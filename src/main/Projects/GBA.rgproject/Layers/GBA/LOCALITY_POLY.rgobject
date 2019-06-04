@@ -1,0 +1,30 @@
+{
+  "j:type":"recordStoreLayer",
+  "name":"LOCALITY_POLY",
+  "visible":false,
+  "readOnly":true,
+  "style":{
+    "j:type":"multipleStyle",
+    "name":"Multiple Style",
+    "styles":[
+      {
+        "j:type":"geometryStyle",
+        "name":"Geometry Style",
+        "lineColor":"Black",
+        "polygonFill":"Cyan",
+        "polygonFillOpacity":63
+      },
+      {
+        "j:type":"textStyle",
+        "name":"Text Style",
+        "textHorizontalAlignment":"center",
+        "textName":"[NAME]"
+      }
+    ]
+  },
+  "connection":{
+    "name":"gba"
+  },
+  "searchField":"NAME",
+  "typePath":"\/GBA\/LOCALITY_POLY"
+}

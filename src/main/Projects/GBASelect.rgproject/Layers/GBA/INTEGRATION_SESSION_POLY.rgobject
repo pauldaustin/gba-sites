@@ -1,0 +1,67 @@
+{
+  "j:type":"recordStoreLayer",
+  "name":"INTEGRATION_SESSION_POLY",
+  "readOnly":true,
+  "selectable": true,
+  "visible": true,
+  "style":{
+    "j:type":"filterStyle",
+    "name":"Filter Style",
+    "styles":[
+      {
+        "j:type":"multipleStyle",
+        "name":"Other Active Sessions",
+        "filter":{
+          "j:type":"sqlFilter",
+          "query":"SESSION_COMMIT_DATE IS NULL and WHO_CREATED <> '{gbaUsername}'"
+        },
+        "styles":[
+          {
+            "j:type":"geometryStyle",
+            "name":"Geometry Style",
+            "lineColor":"Salmon",
+            "lineOpacity":168,
+            "polygonFill":"Salmon",
+            "polygonFillOpacity":127
+          },
+          {
+            "j:type":"textStyle",
+            "name":"Text Style",
+            "textHorizontalAlignment":"center",
+            "textName":"[AREA_DESCRIPTION] ([WHO_CREATED])"
+          }
+        ]
+      },
+      {
+        "j:type":"multipleStyle",
+        "name":"My Active Sessions",
+        "filter":{
+          "j:type":"sqlFilter",
+          "query":"SESSION_COMMIT_DATE IS NULL and WHO_CREATED = '{gbaUsername}'"
+        },
+        "styles":[
+          {
+            "j:type":"geometryStyle",
+            "name":"Geometry Style",
+            "lineColor":"GreenYellow",
+            "lineOpacity":168,
+            "polygonFill":"GreenYellow",
+            "polygonFillOpacity":127
+          },
+          {
+            "j:type":"textStyle",
+            "name":"Text Style",
+            "textHorizontalAlignment":"center",
+            "textName":"[AREA_DESCRIPTION] ([WHO_CREATED])"
+          }
+        ]
+      }
+    ]
+  },
+  "connection":{
+    "name":"gba"
+  },
+  "searchField":"AREA_DESCRIPTION",
+  "typePath":"\/GBA\/INTEGRATION_SESSION_POLY",
+  "where":"SESSION_COMMIT_DATE IS NULL"
+}
