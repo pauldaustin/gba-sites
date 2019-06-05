@@ -9,20 +9,19 @@ import com.revolsys.collection.range.Ranges;
 import com.revolsys.io.CloseableResourceProxy;
 import com.revolsys.jdbc.io.JdbcRecordStore;
 import com.revolsys.record.code.SimpleCodeTable;
-import com.revolsys.record.schema.RecordStore;
 import com.revolsys.spring.resource.Resource;
 
 public class GbaSiteDatabase {
 
-  private static CloseableResourceProxy<RecordStore> RECORD_STORE = CloseableResourceProxy
-    .newProxy(GbaSiteDatabase::newRecordStore, RecordStore.class);
+  private static CloseableResourceProxy<JdbcRecordStore> RECORD_STORE = CloseableResourceProxy
+    .newProxy(GbaSiteDatabase::newRecordStore, JdbcRecordStore.class);
 
-  public static RecordStore getRecordStore() {
+  public static JdbcRecordStore getRecordStore() {
     return RECORD_STORE.getResource();
   }
 
-  public static JdbcRecordStore newRecordStore() {
-    final JdbcRecordStore recordStore = (JdbcRecordStore)GbaController.getUserRecordStore();
+  private static JdbcRecordStore newRecordStore() {
+    final JdbcRecordStore recordStore = GbaController.getGbaRecordStore();
     final SimpleCodeTable booleanCodeTable = new SimpleCodeTable(SitePoint.CIVIC_NUMBER_SUFFIX);
     for (final Object letter : Ranges.newRange('A', 'Z')) {
       booleanCodeTable.addValue(letter.toString(), letter.toString());

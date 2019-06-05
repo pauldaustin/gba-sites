@@ -16,6 +16,7 @@ import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.GbaTables;
 import ca.bc.gov.gba.model.type.StructuredName;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
@@ -103,7 +104,7 @@ public class GeocoderCaSite extends DelegatingRecord implements GeocoderCa, Site
         }
       }
     }
-    for (final Record structuredName : GbaController.getGbaRecordStore()
+    for (final Record structuredName : GbaSiteDatabase.getRecordStore()
       .getRecords(GbaTables.STRUCTURED_NAME)) {
       final Identifier id = structuredName.getIdentifier();
       NAME_ID_RECORD_MAP.put(id, structuredName);

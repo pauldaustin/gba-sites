@@ -17,6 +17,7 @@ import ca.bc.gov.gba.model.type.GbaType;
 import ca.bc.gov.gba.model.type.TransportLine;
 import ca.bc.gov.gba.model.type.code.TransportLineType;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 
 import com.revolsys.beans.Classes;
 import com.revolsys.collection.map.LinkedHashMapEx;
@@ -85,7 +86,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
 
   private final Map<Identifier, List<Record>> gbaRecordsByResourceRecordId = new LinkedHashMap<>();
 
-  final RecordStore gbaRecordStore = GbaController.getGbaRecordStore();
+  final RecordStore gbaRecordStore = GbaSiteDatabase.getRecordStore();
 
   public UpdateResourceRoads() {
     super(CLASS_NAME, READ, MISSING, RETIRED, ACTIVE, MATCHED, INSERTED, UPDATED, DELETED, ERROR);

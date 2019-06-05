@@ -16,6 +16,7 @@ import org.jeometry.common.logging.Logs;
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 
 import com.revolsys.geometry.model.Geometry;
 import com.revolsys.geometry.model.GeometryFactory;
@@ -53,7 +54,7 @@ public class FtenRoadLinesImport {
 
   private BatchUpdateDialog dialog;
 
-  private final RecordStore gbaRecordStore = GbaController.getGbaRecordStore();
+  private final RecordStore gbaRecordStore = GbaSiteDatabase.getRecordStore();
 
   protected boolean batchUpdate(final BatchUpdateDialog dialog, final Transaction transaction) {
     this.dialog = dialog;

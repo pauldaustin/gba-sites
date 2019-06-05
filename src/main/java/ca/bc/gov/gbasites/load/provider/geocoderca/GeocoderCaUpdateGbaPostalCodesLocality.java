@@ -9,10 +9,10 @@ import java.util.Set;
 import org.jeometry.common.data.identifier.Identifier;
 
 import ca.bc.gov.gba.controller.ArchiveAndChangeLogController;
-import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.type.code.IntegrationAction;
 import ca.bc.gov.gba.model.type.code.Localities;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 
@@ -108,7 +108,7 @@ public class GeocoderCaUpdateGbaPostalCodesLocality implements SitePoint, Cancel
 
   private void updateGbaSites(
     final Map<String, Map<Integer, Set<String>>> postalCodeByStreetAndNumber) {
-    final RecordStore recordStore = GbaController.getGbaRecordStore();
+    final RecordStore recordStore = GbaSiteDatabase.getRecordStore();
     final Query query = new Query(SiteTables.SITE_POINT) //
       .setWhereCondition(Q.equal(LOCALITY_ID, this.localityId))//
     ;

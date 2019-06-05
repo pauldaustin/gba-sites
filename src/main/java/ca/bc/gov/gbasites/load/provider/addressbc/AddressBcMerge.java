@@ -13,10 +13,10 @@ import org.jeometry.common.data.type.DataType;
 import org.jeometry.common.data.type.DataTypes;
 import org.jeometry.common.logging.Logs;
 
-import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 
@@ -40,7 +40,7 @@ public class AddressBcMerge implements SitePoint, Cancellable {
 
   public static final String GBA_READ = "GBA Read";
 
-  private final JdbcRecordStore recordStore = GbaController.getGbaRecordStore();
+  private final JdbcRecordStore recordStore = GbaSiteDatabase.getRecordStore();
 
   private final AddressBcImportSites importSites;
 

@@ -28,6 +28,7 @@ import ca.bc.gov.gba.model.BoundaryCache;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.common.converter.AbstractSiteConverter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
@@ -138,7 +139,7 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
 
   public static final Path SITE_CONFIG_DIRECTORY = GbaController.getGbaPath().resolve("etc/Sites");
 
-  static final Map<String, ProviderSitePointConverter> siteLoaderByDataProvider = new LinkedHashMap<>();
+  static final Map<String, ProviderSitePointConverter> siteLoaderByDataProvider = new TreeMap<>();
 
   static RecordDefinitionImpl sitePointTsvRecordDefinition;
 
@@ -250,7 +251,16 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
   }
 
   protected static Collection<ProviderSitePointConverter> getLoaders() {
-    return siteLoaderByDataProvider.values();
+    final List<ProviderSitePointConverter> providers = new ArrayList<>();
+    providers.add(null);
+    for (final ProviderSitePointConverter provider : siteLoaderByDataProvider.values()) {
+      if (provider.getDataProvider().equals(INTEGRATED_CADASTRAL_INFORMATION_SOCIETY)) {
+        providers.set(0, provider);
+      } else {
+        providers.add(provider);
+      }
+    }
+    return providers;
   }
 
   public static String getLocalityName() {
@@ -324,7 +334,7 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
 
   public static RecordDefinitionImpl getSitePointTsvRecordDefinition() {
     if (sitePointTsvRecordDefinition == null) {
-      final RecordDefinition sitePointRecordDefinition = GbaController.getGbaRecordStore()
+      final RecordDefinition sitePointRecordDefinition = GbaSiteDatabase.getRecordStore()
         .getRecordDefinition(SiteTables.SITE_POINT);
 
       final RecordDefinitionImpl recordDefinition = new RecordDefinitionImpl(
@@ -390,7 +400,7 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
       new ProviderSitePointConverter(INTEGRATED_CADASTRAL_INFORMATION_SOCIETY,
         ProviderSitePointConverter::loadSitesIntegratedCadastralInformationSociety));
 
-    final Path siteProviderConfigPath = SITE_CONFIG_DIRECTORY.resolve("Provider");
+    final Path siteProviderConfigPath = SITE_CONFIG_DIRECTORY.resolve("Provider/OpenData");
     if (Paths.exists(siteProviderConfigPath)) {
       final RecordDefinition providerConfigRecordDefinition = new RecordDefinitionBuilder("/CONFIG") //
         .addField(DATA_PROVIDER, DataTypes.STRING, 30) //

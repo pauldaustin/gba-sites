@@ -11,6 +11,7 @@ import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.controller.SitePointInit;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
@@ -43,7 +44,7 @@ public class AddressBcImportSites extends BatchUpdateDialog implements SitePoint
     start(AddressBcImportSites.class);
   }
 
-  private final boolean action1Download = true;
+  private final boolean action1Download = false;
 
   private final boolean action2Split = true;
 
@@ -53,12 +54,12 @@ public class AddressBcImportSites extends BatchUpdateDialog implements SitePoint
 
   public boolean action4UpdateDb = true;
 
-  private final JdbcRecordStore recordStore = GbaController.getGbaRecordStore();
+  private final JdbcRecordStore recordStore = GbaSiteDatabase.getRecordStore();
 
   public String dateDirectory = //
       // "2018-09-11" //
       // "2018-10-09"//
-      "2018-10-24"//
+      "2019-06-04"//
   ;
 
   public AddressBcImportSites() {

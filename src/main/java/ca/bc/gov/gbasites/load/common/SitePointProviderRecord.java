@@ -11,6 +11,7 @@ import org.jeometry.common.number.BigDecimals;
 
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 
@@ -71,7 +72,7 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
   }
 
   public static SitePointProviderRecord newSitePoint(final SiteKey siteKey, final Point point) {
-    final JdbcRecordStore recordStore = GbaController.getGbaRecordStore();
+    final JdbcRecordStore recordStore = GbaSiteDatabase.getRecordStore();
     final Record sitePoint = recordStore.newRecord(SiteTables.SITE_POINT);
 
     final String unitDesriptor = siteKey.getUnitDesriptor();
@@ -547,6 +548,24 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
         fullAddress = fullAddress.substring(0, fullAddress.length() - 8);
       }
       return setValue(FULL_ADDRESS, Strings.trim(fullAddress));
+    }
+  }
+
+  public void setPostalCode(String postalCode) {
+    if (Property.hasValue(postalCode)) {
+      boolean valid = false;
+      postalCode = postalCode.toUpperCase().trim();
+      if (postalCode.length() == 6 && postalCode.matches("[A-Z]\\d[A-Z]\\d[A-Z]\\d")) {
+        valid = true;
+        postalCode = postalCode.substring(0, 3) + " " + postalCode.substring(3);
+      } else if (postalCode.length() == 7 && postalCode.matches("[A-Z]\\d[A-Z] \\d[A-Z]\\d")) {
+        valid = true;
+      }
+      if (valid) {
+        setValue(POSTAL_CODE, postalCode);
+      } else {
+        addError("Invalid postal code");
+      }
     }
   }
 

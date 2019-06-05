@@ -20,6 +20,7 @@ import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.type.code.IntegrationAction;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 
@@ -66,7 +67,7 @@ public class AddressBcMergeForProvider implements Cancellable, SitePoint {
 
   private final Path siteFile;
 
-  private final JdbcRecordStore recordStore = GbaController.getGbaRecordStore();
+  private final JdbcRecordStore recordStore = GbaSiteDatabase.getRecordStore();
 
   private final AddressBcImportSites importSites;
 

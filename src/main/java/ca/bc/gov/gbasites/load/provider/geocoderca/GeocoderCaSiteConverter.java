@@ -27,6 +27,7 @@ import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.ImportSites;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
@@ -272,7 +273,7 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
       ));
     final Map<Identifier, List<LineString>> lineByNameId = new HashMap<>();
     try (
-      RecordReader reader = GbaController.getGbaRecordStore().getRecords(query)) {
+      RecordReader reader = GbaSiteDatabase.getRecordStore().getRecords(query)) {
       for (final Record record : cancellable(reader)) {
         final LineString line = record.getGeometry().convertGeometry(Gba.GEOMETRY_FACTORY_2D_1M);
         final Identifier structuredNameId = record

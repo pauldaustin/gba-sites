@@ -8,6 +8,7 @@ import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.GbaTables;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.model.type.code.CommunityPoly;
 
@@ -33,7 +34,7 @@ public class GbaSitesBackup implements GbaTables {
 
   private BatchUpdateDialog dialog;
 
-  private final RecordStore gbaRecordStore = GbaController.getGbaRecordStore();
+  private final RecordStore gbaRecordStore = GbaSiteDatabase.getRecordStore();
 
   private void backupRecords(final PathName... typePaths) {
     final ProcessNetwork processNetwork = new ProcessNetwork();

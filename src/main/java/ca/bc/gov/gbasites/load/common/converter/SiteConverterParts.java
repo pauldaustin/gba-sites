@@ -64,6 +64,8 @@ public class SiteConverterParts extends AbstractSiteConverter {
 
   private String streetDirSuffixFieldName;
 
+  private String postalCodeFieldName;
+
   private boolean addressIncludesUnit;
 
   private boolean useZeroForNull;
@@ -91,11 +93,6 @@ public class SiteConverterParts extends AbstractSiteConverter {
     }
     final SitePointProviderRecord sitePoint = newSitePoint(point);
     String sourceFullAddress = getUpperString(sourceRecord, addressFieldName);
-    if ("West Kelowna".equals(partnerOrganizationShortName)) {
-      if (sourceRecord.hasValue(this.unitFieldName)) {
-        sourceFullAddress = getUpperString(sourceRecord, "Address4");
-      }
-    }
     ProviderSitePointConverter.setFeatureStatusCodeByFullAddress(sitePoint, sourceFullAddress);
     if ("NO CIVIC".equalsIgnoreCase(sourceFullAddress)) {
       throw new IgnoreSiteException(IGNORE_STREET_NAME_NOT_SPECIFIED);
@@ -275,6 +272,13 @@ public class SiteConverterParts extends AbstractSiteConverter {
           }
         }
       }
+      {
+        if (!compareStreetName.equalsIgnoreCase(structuredName)) {
+          if (sitePoint.getFullAddress().endsWith(structuredName)) {
+            compareStreetName = structuredName;
+          }
+        }
+      }
     }
 
     if (sitePoint.validateFullAddress(originalStreetName, compareStreetName, structuredName,
@@ -314,6 +318,8 @@ public class SiteConverterParts extends AbstractSiteConverter {
     }
 
     SitePoint.updateFullAddress(sitePoint);
+    final String postalCode = sourceRecord.getString(this.postalCodeFieldName);
+    sitePoint.setPostalCode(postalCode);
     setCustodianSiteId(sitePoint, sourceRecord);
     return sitePoint;
   }
@@ -328,6 +334,10 @@ public class SiteConverterParts extends AbstractSiteConverter {
 
   public String getCivicNumberSuffixFieldName() {
     return this.civicNumberSuffixFieldName;
+  }
+
+  public String getPostalCodeFieldName() {
+    return this.postalCodeFieldName;
   }
 
   public String getStreetDirPrefixFieldName() {
@@ -381,6 +391,10 @@ public class SiteConverterParts extends AbstractSiteConverter {
 
   public void setCivicNumberSuffixFieldName(final String civicNumberSuffixFieldName) {
     this.civicNumberSuffixFieldName = civicNumberSuffixFieldName;
+  }
+
+  public void setPostalCodeFieldName(final String postalCodeFieldName) {
+    this.postalCodeFieldName = postalCodeFieldName;
   }
 
   @Override
