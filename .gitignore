@@ -10,3 +10,4 @@ target
 *.ldb
 /log/
 /.factorypath
+config
