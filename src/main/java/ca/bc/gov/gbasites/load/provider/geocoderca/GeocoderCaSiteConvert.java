@@ -13,7 +13,7 @@ import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
-import ca.bc.gov.gbasites.load.common.converter.AbstractSiteConverter;
+import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
 
 import com.revolsys.io.file.Paths;
 import com.revolsys.parallel.process.ProcessNetwork;

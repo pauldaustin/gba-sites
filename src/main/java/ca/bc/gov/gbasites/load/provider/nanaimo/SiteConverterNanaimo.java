@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
-import ca.bc.gov.gbasites.load.common.converter.SiteConverterParts;
+import ca.bc.gov.gbasites.load.converter.SiteConverterParts;
 
 import com.revolsys.geometry.model.Point;
 import com.revolsys.record.Record;

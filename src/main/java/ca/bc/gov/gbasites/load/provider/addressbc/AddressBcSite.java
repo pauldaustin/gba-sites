@@ -13,8 +13,7 @@ import org.jeometry.common.number.Integers;
 
 import ca.bc.gov.gba.model.type.StructuredName;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
-import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
-import ca.bc.gov.gbasites.load.common.converter.AbstractSiteConverter;
+import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.list.Lists;
@@ -822,8 +821,7 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
             this.addressParts = this.addressParts.substring(0, spaceIndex);
             if (lastWord.equals(this.civicNumberSuffix)) {
               this.civicNumberSuffix = null;
-              if (ProviderSitePointConverter.getPartnerOrganizationShortName()
-                .equals("PRINCE RUPERT")) {
+              if (this.converter.getPartnerOrganizationShortName().equals("PRINCE RUPERT")) {
                 addWarning("CIVIC_NUMBER_SUFFIX should be in STREET_DIR_SUFFIX");
               } else {
                 addError("CIVIC_NUMBER_SUFFIX should be in STREET_DIR_SUFFIX");

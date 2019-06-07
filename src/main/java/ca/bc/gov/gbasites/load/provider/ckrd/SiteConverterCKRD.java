@@ -8,7 +8,7 @@ import org.jeometry.common.number.BigDecimals;
 
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
-import ca.bc.gov.gbasites.load.common.converter.AbstractSiteConverter;
+import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.map.MapEx;
@@ -220,7 +220,7 @@ public class SiteConverterCKRD extends AbstractSiteConverter {
       return null;
     }
     if (Property.hasValue(streetNumber)) {
-      final SitePointProviderRecord sitePoint = newSitePoint(point);
+      final SitePointProviderRecord sitePoint = newSitePoint(this, point);
       sitePoint.setValue(UNIT_DESCRIPTOR, unitDescriptor);
       sitePoint.setValue(CIVIC_NUMBER, civicNumber);
       sitePoint.setValue(CIVIC_NUMBER_SUFFIX, civicNumberSuffix);

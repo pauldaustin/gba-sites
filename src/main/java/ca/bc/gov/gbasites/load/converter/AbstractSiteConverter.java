@@ -1,4 +1,4 @@
-package ca.bc.gov.gbasites.load.common.converter;
+package ca.bc.gov.gbasites.load.converter;
 
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -130,8 +130,14 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
 
   private String addressFieldName;
 
+  private ProviderSitePointConverter providerConfig;
+
   public void addError(final Record record, final String message) {
-    ProviderSitePointConverter.addError(message);
+    this.providerConfig.addError(message);
+  }
+
+  public void addError(final String message) {
+    this.providerConfig.addError(message);
   }
 
   protected void addStructuredNameError(final String dataProvider, final String message,
@@ -178,7 +184,7 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
   }
 
   public void addWarningCount(final String message) {
-    ProviderSitePointConverter.addWarningCount(message);
+    this.providerConfig.addWarningCount(message);
   }
 
   public abstract SitePointProviderRecord convert(Record sourceRecord, Point sourcePoint);
@@ -471,12 +477,12 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
     }
   }
 
-  protected Identifier getPartnerOrganizationId() {
-    return ProviderSitePointConverter.getPartnerOrganizationIdThread();
+  public Identifier getPartnerOrganizationId() {
+    return this.providerConfig.getPartnerOrganizationId();
   }
 
-  protected String getPartnerOrganizationShortName() {
-    return ProviderSitePointConverter.getPartnerOrganizationShortName();
+  public String getPartnerOrganizationShortName() {
+    return this.providerConfig.getPartnerOrganizationShortName();
   }
 
   public String getStructuredNameFromAlias(final String dataProvider, final String nameAlias) {
@@ -498,10 +504,12 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
     return "";
   }
 
-  public SitePointProviderRecord newSitePoint(final Point point) {
+  public SitePointProviderRecord newSitePoint(final AbstractSiteConverter siteConverter,
+    final Point point) {
     final RecordDefinitionImpl recordDefinition = ProviderSitePointConverter
       .getSitePointTsvRecordDefinition();
-    final SitePointProviderRecord sitePoint = new SitePointProviderRecord(recordDefinition);
+    final SitePointProviderRecord sitePoint = new SitePointProviderRecord(siteConverter,
+      recordDefinition);
     sitePoint.setGeometryValue(point);
 
     final Identifier regionalDistrictId = regionalDistricts.getBoundaryId(point);
@@ -543,6 +551,10 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
 
   public void setIdFieldName(final String idFieldName) {
     this.idFieldName = idFieldName;
+  }
+
+  public void setProviderConfig(final ProviderSitePointConverter providerConfig) {
+    this.providerConfig = providerConfig;
   }
 
   public boolean setStructuredName(final Record sourceRecord, final Record sitePoint,

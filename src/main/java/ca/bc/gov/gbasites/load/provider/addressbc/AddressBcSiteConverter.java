@@ -23,7 +23,7 @@ import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
-import ca.bc.gov.gbasites.load.common.converter.AbstractSiteConverter;
+import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
 import ca.bc.gov.gbasites.load.provider.other.ImportSites;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.code.FeatureStatus;
@@ -41,6 +41,7 @@ import com.revolsys.record.schema.RecordDefinitionImpl;
 import com.revolsys.swing.table.counts.LabelCountMapTableModel;
 import com.revolsys.util.Cancellable;
 import com.revolsys.util.CaseConverter;
+import com.revolsys.util.Counter;
 import com.revolsys.util.Debug;
 import com.revolsys.util.Property;
 import com.revolsys.util.Strings;
@@ -76,7 +77,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
     return value;
   }
 
-  private final AddressBcImportSites importSites;
+  private final StatisticsDialog dialog;
 
   private final LabelCountMapTableModel counts;
 
@@ -100,10 +101,12 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
 
   private final Path directory;
 
+  private final Counter convertCounter;
+
   public AddressBcSiteConverter(final AddressBcConvert convertProcess,
-    final AddressBcImportSites importSites, final Path directory, final Path path,
+    final StatisticsDialog dialog, final Path directory, final Path path,
     final RecordLog allErrorLog, final RecordLog allWarningLog) {
-    this.importSites = importSites;
+    this.dialog = dialog;
     this.directory = directory;
     this.convertProcess = convertProcess;
     this.fixesByProvider.put("Agassiz", this::fixAgassiz);
@@ -126,12 +129,15 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
     this.allErrorLog = allErrorLog;
     this.allWarningLog = allWarningLog;
     this.ignoreNames.clear();
+
+    this.convertCounter = dialog.getCounter("Provider", this.partnerOrganization,
+      "Address BC Convert");
   }
 
   @Override
   public void addError(final Record record, final String message) {
     this.counts.addCount(this.partnerOrganization, BatchUpdateDialog.ERROR);
-    this.importSites.addLabelCount(BatchUpdateDialog.ERROR, message, BatchUpdateDialog.ERROR);
+    this.dialog.addLabelCount(BatchUpdateDialog.ERROR, message, BatchUpdateDialog.ERROR);
     final Point point = record.getGeometry();
 
     this.allErrorLog.error(this.partnerOrganization.getPartnerOrganizationName(), message, record,
@@ -140,7 +146,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
 
   public void addWarning(final Record record, final String message) {
     this.counts.addCount(this.partnerOrganization, ProviderSitePointConverter.WARNING);
-    this.importSites.addLabelCount(ProviderSitePointConverter.WARNING, message,
+    this.dialog.addLabelCount(ProviderSitePointConverter.WARNING, message,
       ProviderSitePointConverter.WARNING);
     final Point point = record.getGeometry();
     this.allWarningLog.error(this.partnerOrganization.getPartnerOrganizationName(), message, record,
@@ -310,16 +316,16 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
 
   @Override
   protected StatisticsDialog getDialog() {
-    return this.importSites;
+    return this.dialog;
   }
 
   @Override
-  protected Identifier getPartnerOrganizationId() {
+  public Identifier getPartnerOrganizationId() {
     return this.partnerOrganization.getPartnerOrganizationId();
   }
 
   @Override
-  protected String getPartnerOrganizationShortName() {
+  public String getPartnerOrganizationShortName() {
     return this.partnerOrganization.getPartnerOrganizationShortName();
   }
 
@@ -409,7 +415,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
 
   public SitePointProviderRecord newSitePoint(final AddressBcSite sourceSite) {
     final Point point = sourceSite.getPoint();
-    final SitePointProviderRecord sitePoint = newSitePoint(point);
+    final SitePointProviderRecord sitePoint = newSitePoint(this, point);
     sitePoint.setValue(SITE_LOCATION_CODE, sourceSite.siteLocationCode);
 
     final String partnerOrganizationShortName = getPartnerOrganizationShortName();
@@ -530,7 +536,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
     final String shortName = getPartnerOrganizationShortName();
     final String baseName = BatchUpdateDialog.toFileName(shortName);
 
-    final Path file = this.directory.resolve("SitePointByProvider") //
+    final Path file = this.directory //
       .resolve(baseName + "_SITE_POINT_ADDRESS_BC.tsv");
     try (
       RecordReader reader = RecordReader.newRecordReader(this.inputFile);
@@ -542,6 +548,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
 
       for (final Record sourceRecord : cancellable(reader)) {
         this.counts.addCount(this.partnerOrganization, "Read");
+        this.convertCounter.add();
         final SitePointProviderRecord siteRecord = convertSite(sourceRecord);
         if (siteRecord != null) {
           final String streetName = siteRecord.getStructuredName();

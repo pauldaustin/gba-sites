@@ -1,4 +1,4 @@
-package ca.bc.gov.gbasites.load.common.converter;
+package ca.bc.gov.gbasites.load.converter;
 
 import java.util.Map;
 import java.util.Set;
@@ -32,7 +32,7 @@ public class SiteConverterAddress extends AbstractSiteConverter {
     final String addressFieldName = getAddressFieldName();
     final String fullAddress = getUpperString(sourceRecord, addressFieldName);
     if (Property.hasValue(fullAddress)) {
-      final SitePointProviderRecord sitePoint = newSitePoint(point);
+      final SitePointProviderRecord sitePoint = newSitePoint(this, point);
       ProviderSitePointConverter.setFeatureStatusCodeByFullAddress(sitePoint, fullAddress);
       String unitDescriptor = "";
       Integer civicNumber = null;

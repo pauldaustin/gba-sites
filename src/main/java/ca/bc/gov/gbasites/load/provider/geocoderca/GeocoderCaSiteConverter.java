@@ -31,7 +31,7 @@ import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
-import ca.bc.gov.gbasites.load.common.converter.AbstractSiteConverter;
+import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
 import ca.bc.gov.gbasites.load.provider.other.ImportSites;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
@@ -249,12 +249,12 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
   }
 
   @Override
-  protected Identifier getPartnerOrganizationId() {
+  public Identifier getPartnerOrganizationId() {
     return this.partnerOrganization.getPartnerOrganizationId();
   }
 
   @Override
-  protected String getPartnerOrganizationShortName() {
+  public String getPartnerOrganizationShortName() {
     return this.partnerOrganization.getPartnerOrganizationShortName();
   }
 
@@ -380,7 +380,7 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
 
   public SitePointProviderRecord newSitePoint(final GeocoderCaSite sourceSite) {
     final Point point = sourceSite.getGeometry();
-    final SitePointProviderRecord sitePoint = newSitePoint(point);
+    final SitePointProviderRecord sitePoint = newSitePoint(this, point);
     final String structuredName = sourceSite.getStructuredName();
     if (structuredName == null) {
       addIgnore(sourceSite, "[STREET_NAME] null");

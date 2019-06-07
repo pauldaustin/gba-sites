@@ -12,6 +12,7 @@ import org.jeometry.common.number.BigDecimals;
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
+import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 
@@ -67,10 +68,6 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
     ' ', '-'
   };
 
-  public static void addWarningCount(final String message) {
-    ProviderSitePointConverter.addWarningCount(message);
-  }
-
   public static SitePointProviderRecord newSitePoint(final SiteKey siteKey, final Point point) {
     final JdbcRecordStore recordStore = GbaSiteDatabase.getRecordStore();
     final Record sitePoint = recordStore.newRecord(SiteTables.SITE_POINT);
@@ -90,16 +87,20 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
     return sitePointProviderRecord;
   }
 
+  private AbstractSiteConverter siteConverter;
+
+  public SitePointProviderRecord(final AbstractSiteConverter siteConverter,
+    final RecordDefinition recordDefinition) {
+    super(new ArrayRecord(recordDefinition));
+    this.siteConverter = siteConverter;
+  }
+
   public SitePointProviderRecord(final Record record) {
     super(record);
   }
 
-  public SitePointProviderRecord(final RecordDefinition recordDefinition) {
-    super(new ArrayRecord(recordDefinition));
-  }
-
   public void addError(final String message) {
-    ProviderSitePointConverter.addError(message);
+    this.siteConverter.addError(message);
   }
 
   public void addUnitDescriptor(final Object unitDescriptor) {
@@ -155,6 +156,10 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
     }
   }
 
+  public void addWarningCount(final String message) {
+    this.siteConverter.addWarningCount(message);
+  }
+
   public void addWarningOrError(final String message, final boolean error) {
     if (error) {
       addError(message);
@@ -204,7 +209,7 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
           addUnitDescriptor(Integer.toString(number2));
           return setCivicNumber(number1);
         } else {
-          if ("CVRD".equals(ProviderSitePointConverter.getPartnerOrganizationShortName())) {
+          if ("CVRD".equals(this.siteConverter.getPartnerOrganizationShortName())) {
             addWarningCount(CIVIC_NUMBER_INCLUDES_UNIT_DESCRIPTOR_SUFFIX);
             addUnitDescriptor(number2);
             return setCivicNumber(number1);

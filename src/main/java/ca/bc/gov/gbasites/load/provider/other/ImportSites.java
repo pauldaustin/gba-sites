@@ -1,12 +1,6 @@
 package ca.bc.gov.gbasites.load.provider.other;
 
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,8 +20,9 @@ import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.common.LoadEmergencyManagementSites;
 import ca.bc.gov.gbasites.load.common.LoadProviderSitesIntoGba;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
-import ca.bc.gov.gbasites.load.common.converter.SiteConverterAddress;
-import ca.bc.gov.gbasites.load.common.converter.SiteConverterParts;
+import ca.bc.gov.gbasites.load.converter.SiteConverterAddress;
+import ca.bc.gov.gbasites.load.converter.SiteConverterParts;
+import ca.bc.gov.gbasites.load.provider.addressbc.AddressBcConvert;
 import ca.bc.gov.gbasites.load.provider.addressbc.AddressBcSplitByProvider;
 import ca.bc.gov.gbasites.load.provider.ckrd.SiteConverterCKRD;
 import ca.bc.gov.gbasites.load.provider.nanaimo.SiteConverterNanaimo;
@@ -39,8 +34,8 @@ import ca.bc.gov.gbasites.load.sourcereader.SourceReaderMapGuide;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 
+import com.revolsys.collection.list.Lists;
 import com.revolsys.io.Reader;
-import com.revolsys.io.file.Paths;
 import com.revolsys.io.map.MapObjectFactoryRegistry;
 import com.revolsys.parallel.process.ProcessNetwork;
 import com.revolsys.record.Record;
@@ -58,6 +53,8 @@ import com.revolsys.transaction.Transaction;
 import com.revolsys.util.Property;
 
 public class ImportSites extends AbstractTaskByLocality implements SitePoint {
+  public static final ThreadLocal<Identifier> custodianPartnerOrgIdForThread = new ThreadLocal<>();
+
   public static StatisticsDialog dialog;
 
   public static final Path LOCALITY_DIRECTORY = GbaController.getDataDirectory("Sites/Locality");
@@ -66,13 +63,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   public static final Path SITES_DIRECTORY = GbaController.getDataDirectory("Sites");
 
-  private static CheckBox downloadCheckbox;
-
   public static final Map<String, String> siteTypeByBuildingType = new LinkedHashMap<>();
-
-  public static final ThreadLocal<Identifier> custodianPartnerOrgIdForThread = new ThreadLocal<>();
-
-  private static CheckBox processAllProviders;
 
   public static void initializeService() {
 
@@ -90,34 +81,31 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     MapObjectFactoryRegistry.newFactory("sourceReaderMapGuide", SourceReaderMapGuide::newFactory);
   }
 
-  @Deprecated
-  public static boolean isDownloadData() {
-    return downloadCheckbox.isSelected();
-  }
-
-  public static boolean isProcessAllProviders() {
-    return processAllProviders.isSelected();
-  }
-
   public static void main(final String[] args) {
     initializeService();
     start(ImportSites.class);
   }
 
-  private CheckBox convertCheckbox;
+  private final CheckBox addressBcConvertCheckbox = new CheckBox("addressBcConvert", true);
 
-  private CheckBox downloadAddressBcCheckbox;
+  private final CheckBox addressBcDownloadCheckbox = new CheckBox("addressBcDownload", true);
 
-  private final Map<String, Identifier> partnerOrganizationIdByShortName = new HashMap<>();
+  private final CheckBox addressBcSplitCheckbox = new CheckBox("addressBcSplit", true);
 
   private final List<ProviderSitePointConverter> dataProvidersToProcess = Collections
     .synchronizedList(new LinkedList<>());
 
-  private final int threadCount = 10;
-
-  private ComboBox<ProviderSitePointConverter> dataProviderComboBox;
-
   private CheckBox loadSitesGdb;
+
+  private final Map<String, Identifier> partnerOrganizationIdByShortName = new HashMap<>();
+
+  private ComboBox<ProviderSitePointConverter> providerComboBox;
+
+  private final CheckBox providerConvertCheckbox = new CheckBox("providerConvertCheckbox", true);
+
+  private final CheckBox providerDownloadCheckbox = new CheckBox("providerDownload", true);
+
+  private final int threadCount = 10;
 
   public ImportSites() {
     super("Import Sites");
@@ -129,61 +117,52 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     ProviderSitePointConverter.init();
   }
 
-  private void action1ProviderDownload() {
-    final boolean downloadAddressBc = this.downloadAddressBcCheckbox.isSelected();
-    if (!this.dataProvidersToProcess.isEmpty() || downloadAddressBc) {
-      setSelectedTab("Download");
-      try {
-        final ProcessNetwork processes = new ProcessNetwork();
+  private void action1Download() {
+    final Consumer<ProviderSitePointConverter> providerAction = converter -> {
+      final boolean downloadData = this.providerDownloadCheckbox.isSelected();
+      converter.downloadData(this, downloadData);
+    };
 
-        ProviderSitePointConverter.preProcess();
-        final boolean downloadData = downloadCheckbox.isSelected();
+    final Runnable addressBcRunnable = () -> {
+      final boolean download = this.addressBcDownloadCheckbox.isSelected();
+      final boolean split = this.addressBcSplitCheckbox.isSelected();
+      AddressBcSplitByProvider.split(dialog, download, split);
+    };
 
-        for (int i = 0; i < this.threadCount; i++) {
-          processes.addProcess("Provider " + i, () -> {
-            while (!isCancelled()) {
-              ProviderSitePointConverter loader;
-              try {
-                loader = this.dataProvidersToProcess.remove(0);
-              } catch (final Throwable e) {
-                return;
-              }
-              loader.downloadData(this, downloadData);
-            }
-          });
-        }
-        if (downloadAddressBc) {
-          processes.addProcess("Address BC",
-            () -> AddressBcSplitByProvider.split(dialog, downloadData));
-        }
-        processes.startAndWait();
-        if (!isCancelled()) {
+    newConverterProcessNetwork(providerAction, "Download and Split Address BC", addressBcRunnable);
+  }
 
-          final Path providerPath = SITES_DIRECTORY.resolve("Provider");
-          final Path addressBcPath = providerPath.resolve("_ADDRESS_BC");
-          if (Paths.exists(addressBcPath)) {
+  private void action2Convert() {
+    final Consumer<ProviderSitePointConverter> providerAction = converter -> {
+      final boolean convert = this.providerConvertCheckbox.isSelected();
+      converter.convertData(this, convert);
+    };
+
+    final Runnable addressBcRunnable = () -> {
+      if (this.addressBcConvertCheckbox.isSelected()) {
+        new AddressBcConvert(this).run();
+      }
+    };
+
+    newConverterProcessNetwork(providerAction, "Convert Address BC", addressBcRunnable);
+  }
+
+  private void addConverterProcesses(final ProcessNetwork processes,
+    final Consumer<ProviderSitePointConverter> action) {
+    if (!this.dataProvidersToProcess.isEmpty()) {
+      final List<ProviderSitePointConverter> converters = Lists.toList(LinkedList::new,
+        this.dataProvidersToProcess);
+      for (int i = 0; i < this.threadCount; i++) {
+        processes.addProcess("Provider " + i, () -> {
+          while (!isCancelled()) {
             try {
-              Files.walkFileTree(addressBcPath, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-                  throws IOException {
-                  final String fileName = Paths.getFileName(file);
-                  if (!fileName.startsWith(".")) {
-                    final Path relativePath = addressBcPath.relativize(file);
-                    final Path providerFilePath = providerPath.resolve(relativePath);
-                    Paths.createParentDirectories(providerFilePath);
-                    Files.move(file, providerFilePath, StandardCopyOption.ATOMIC_MOVE);
-                  }
-                  return FileVisitResult.CONTINUE;
-                }
-              });
-            } catch (final IOException e) {
+              final ProviderSitePointConverter converter = converters.remove(0);
+              action.accept(converter);
+            } catch (final Throwable e) {
+              return;
             }
           }
-          Paths.deleteDirectories(addressBcPath);
-        }
-      } finally {
-        ProviderSitePointConverter.postProcess();
+        });
       }
     }
   }
@@ -193,11 +172,14 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     loadFeatureStatusCodes();
     loadSiteLocationCodes();
     loadSiteTypeCodes();
-    action1ProviderDownload();
+
+    action1Download();
+    action2Convert();
+
     initPartnerOrganizationShortNames();
     if (!isCancelled()) {
       if (isHasLocalitiesToProcess()) {
-        setSelectedTab(ProviderSitePointConverter.LOCALITY);
+        // setSelectedTab(ProviderSitePointConverter.LOCALITY);
         super.batchUpdate(transaction);
         if (isProcessAllLocalities()) {
           LoadProviderSitesIntoGba.writeNoSites();
@@ -310,6 +292,20 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     }
   }
 
+  private void newConverterProcessNetwork(final Consumer<ProviderSitePointConverter> action,
+    final String addressBcProcessName, final Runnable addressBcRunnable) {
+    final ProcessNetwork processes = new ProcessNetwork();
+    addConverterProcesses(processes, action);
+    processes.addProcess(addressBcProcessName, addressBcRunnable);
+    setSelectedTab("Provider");
+    try {
+      ProviderSitePointConverter.preProcess();
+      processes.startAndWait();
+    } finally {
+      ProviderSitePointConverter.postProcess(this.dataProvidersToProcess);
+    }
+  }
+
   @Override
   protected Consumer<Identifier> newLocalityHandler() {
     return new LoadProviderSitesIntoGba(this);
@@ -318,9 +314,25 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
   @Override
   protected BasePanel newPanelOptions() {
     return new BasePanel(//
+      newPanelOptionsAddressBc(), //
       newPanelOptionsProvider(), //
       newPanelOptionsLocalities() //
     );
+  }
+
+  private BasePanel newPanelOptionsAddressBc() {
+
+    final BasePanel downloadPanel = new BasePanel(//
+      SwingUtil.newLabel("Download"), //
+      this.addressBcDownloadCheckbox, //
+      SwingUtil.newLabel("Split"), //
+      this.addressBcSplitCheckbox, //
+      SwingUtil.newLabel("Convert"), //
+      this.addressBcConvertCheckbox //
+    );
+    downloadPanel.setBorder(BorderFactory.createTitledBorder("Address BC"));
+    GroupLayouts.makeColumns(downloadPanel, 6, true);
+    return downloadPanel;
   }
 
   private BasePanel newPanelOptionsLocalities() {
@@ -338,25 +350,17 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     final List<ProviderSitePointConverter> dataProviders = new ArrayList<>();
     dataProviders.add(null);
     dataProviders.addAll(ProviderSitePointConverter.getLoaders());
-    this.dataProviderComboBox = ComboBox.newComboBox("dataProvider", dataProviders);
-    downloadCheckbox = new CheckBox("download", true);
-    this.downloadAddressBcCheckbox = new CheckBox("downloadAddressBc", true);
-    this.convertCheckbox = new CheckBox("convertCheckbox", true);
-    processAllProviders = new CheckBox("processAll", false);
+    this.providerComboBox = ComboBox.newComboBox("dataProvider", dataProviders);
 
     final BasePanel downloadPanel = new BasePanel(//
-      SwingUtil.newLabel("All Providers"), //
-      processAllProviders, //
-      SwingUtil.newLabel("Address BC"), //
-      this.downloadAddressBcCheckbox, //
       SwingUtil.newLabel("Data Provider"), //
-      this.dataProviderComboBox, //
+      this.providerComboBox, //
       SwingUtil.newLabel("Download"), //
-      downloadCheckbox, //
+      this.providerDownloadCheckbox, //
       SwingUtil.newLabel("Convert"), //
-      this.convertCheckbox //
+      this.providerConvertCheckbox //
     );
-    downloadPanel.setBorder(BorderFactory.createTitledBorder("Provider: Download data Convert"));
+    downloadPanel.setBorder(BorderFactory.createTitledBorder("Provider: Download and Convert"));
     GroupLayouts.makeColumns(downloadPanel, 2, true);
     return downloadPanel;
   }
@@ -374,26 +378,24 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
   @Override
   protected void setOptions(final BasePanel optionsPanel) {
     super.setOptions(optionsPanel);
-    final ProviderSitePointConverter dataProviderToProcess = this.dataProviderComboBox
+    final ProviderSitePointConverter dataProviderToProcess = this.providerComboBox
       .getSelectedItem();
 
-    if (isProcessAllProviders()) {
+    if (dataProviderToProcess == null) {
       this.dataProvidersToProcess.addAll(ProviderSitePointConverter.getLoaders());
-    } else if (dataProviderToProcess != null) {
+    } else {
       this.dataProvidersToProcess.add(dataProviderToProcess);
     }
     final boolean hasProviders = !this.dataProvidersToProcess.isEmpty();
-    if (hasProviders || this.downloadAddressBcCheckbox.isSelected()) {
-      if (downloadCheckbox.isSelected()) {
-        newLabelCountTableModel("Download", //
-          ProviderSitePointConverter.DATA_PROVIDER, //
-          "Provider Download", //
-          "Address BC Download" //
-        );
-      }
-    }
+    newLabelCountTableModel("Provider", //
+      ProviderSitePointConverter.DATA_PROVIDER, //
+      "Provider Download", //
+      "Address BC Download", //
+      "Provider Convert", //
+      "Address BC Convert" //
+    );
     if (hasProviders) {
-      if (this.convertCheckbox.isSelected()) {
+      if (this.providerConvertCheckbox.isSelected()) {
         newLabelCountTableModel(ProviderSitePointConverter.DATA_PROVIDER,
           ProviderSitePointConverter.DATA_PROVIDER, //
           READ, //

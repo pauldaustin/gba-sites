@@ -61,21 +61,22 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     }
   }
 
-  public static Path split(final StatisticsDialog dialog, final boolean download) {
+  public static Path split(final StatisticsDialog dialog, final boolean download,
+    final boolean split) {
     final Path inputDirectory = SitePoint.SITES_DIRECTORY //
       .resolve("AddressBc")//
       .resolve("Input") //
     ;
 
     if (!dialog.isCancelled() && (download || !Files.exists(inputDirectory))) {
-      // AddressBcSplitByProvider.downloadAddressBc(inputDirectory);
+      downloadAddressBc(inputDirectory);
     }
     final Path inputByProviderDirectory = SitePoint.SITES_DIRECTORY //
       .resolve("AddressBc")//
       .resolve("InputByProvider") //
     ;
 
-    if (!dialog.isCancelled() && (download || !Paths.exists(inputByProviderDirectory))) {
+    if (!dialog.isCancelled() && (split || !Paths.exists(inputByProviderDirectory))) {
       new AddressBcSplitByProvider(dialog, inputDirectory, inputByProviderDirectory).run();
     }
     return inputByProviderDirectory;
@@ -149,50 +150,48 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
   private void loadConfig() {
     final Path file = ProviderSitePointConverter.SITE_CONFIG_DIRECTORY
       .resolve("ADDRESS_BC_PARTNER_ORGANIZATION.xlsx");
-    if (Paths.exists(file)) {
-      try (
-        RecordReader reader = RecordReader.newRecordReader(file)) {
-        for (final Record record : reader) {
-          final String issuingAgency = record.getString("Issuing Agency");
-          if (Property.hasValue(issuingAgency)) {
-            final String locality = record.getString("Locality");
-            final String regionalDistrict = record.getString("Regional District");
-            final String provider = record.getString("Provider");
-            String providerName = null;
-            if (Property.hasValue(locality)) {
-              if (Property.hasValue(regionalDistrict) || Property.hasValue(provider)) {
-                Logs.error(AddressBcSplitByProvider.class,
-                  "Cannot have Locality, Regional District and Provider\n" + record);
-              } else if (GbaController.getLocalities().getIdentifier(locality) == null) {
-                Logs.error(AddressBcSplitByProvider.class, "Locality not found " + locality);
-              } else {
-                providerName = locality;
-              }
-            } else if (Property.hasValue(regionalDistrict)) {
-              if (Property.hasValue(provider)) {
-                Logs.error(AddressBcSplitByProvider.class,
-                  "Cannot have Regional District and  Provider\n" + record);
-              } else if (GbaController.getRegionalDistricts()
-                .getIdentifier(regionalDistrict) == null) {
-                Logs.error(AddressBcSplitByProvider.class,
-                  "Regional District not found " + regionalDistrict);
-              } else {
-                providerName = regionalDistrict;
-              }
-            } else if (Property.hasValue(provider)) {
-              providerName = provider;
-            } else {
+    try (
+      RecordReader reader = RecordReader.newRecordReader(file)) {
+      for (final Record record : reader) {
+        final String issuingAgency = record.getString("Issuing Agency");
+        if (Property.hasValue(issuingAgency)) {
+          final String locality = record.getString("Locality");
+          final String regionalDistrict = record.getString("Regional District");
+          final String provider = record.getString("Provider");
+          String providerName = null;
+          if (Property.hasValue(locality)) {
+            if (Property.hasValue(regionalDistrict) || Property.hasValue(provider)) {
               Logs.error(AddressBcSplitByProvider.class,
-                "Must have one of Locality, Regional District and Provider\n" + record);
+                "Cannot have Locality, Regional District and Provider\n" + record);
+            } else if (GbaController.getLocalities().getIdentifier(locality) == null) {
+              Logs.error(AddressBcSplitByProvider.class, "Locality not found " + locality);
+            } else {
+              providerName = locality;
             }
-            if (providerName != null) {
-              SplitByProviderWriter writer = this.writerByProvider.get(providerName.toUpperCase());
-              if (writer == null) {
-                writer = newProviderWriter(providerName);
-              }
-              if (!issuingAgency.equalsIgnoreCase(providerName)) {
-                addWriter(issuingAgency, writer);
-              }
+          } else if (Property.hasValue(regionalDistrict)) {
+            if (Property.hasValue(provider)) {
+              Logs.error(AddressBcSplitByProvider.class,
+                "Cannot have Regional District and  Provider\n" + record);
+            } else if (GbaController.getRegionalDistricts()
+              .getIdentifier(regionalDistrict) == null) {
+              Logs.error(AddressBcSplitByProvider.class,
+                "Regional District not found " + regionalDistrict);
+            } else {
+              providerName = regionalDistrict;
+            }
+          } else if (Property.hasValue(provider)) {
+            providerName = provider;
+          } else {
+            Logs.error(AddressBcSplitByProvider.class,
+              "Must have one of Locality, Regional District and Provider\n" + record);
+          }
+          if (providerName != null) {
+            SplitByProviderWriter writer = this.writerByProvider.get(providerName.toUpperCase());
+            if (writer == null) {
+              writer = newProviderWriter(providerName);
+            }
+            if (!issuingAgency.equalsIgnoreCase(providerName)) {
+              addWriter(issuingAgency, writer);
             }
           }
         }
@@ -301,7 +300,6 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
       writeExtraDataWarning("ABC_EXTENDED_ADDRESS.csv", null, AddressBc.BUILDING_TYPE,
         buildingType);
     }
-    System.out.println("Postal Code Count\t" + this.postalCodeById.size());
   }
 
   private void loadSubAddress() {
@@ -409,7 +407,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     SplitByProviderWriter providerWriter;
     final PartnerOrganization partnerOrganization = PartnerOrganizations
       .newPartnerOrganization(dataProvider);
-    final Counter counter = this.dialog.getCounter("Download", STATISTICS_NAME,
+    final Counter counter = this.dialog.getCounter("Provider", STATISTICS_NAME,
       partnerOrganization.getPartnerOrganizationName());
 
     providerWriter = new SplitByProviderWriter(dataProvider, counter, partnerOrganization,
@@ -429,8 +427,6 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     if (this.extraDataWriter != null) {
       this.extraDataWriter.close();
     }
-
-    System.out.println("Unused Postal Code Count\t" + this.postalCodeById.size());
   }
 
   private void setUnitNumber(final Record sourceRecord) {

@@ -70,7 +70,8 @@ public class AddressBcImportSites extends BatchUpdateDialog implements SitePoint
   @Override
   protected boolean batchUpdate(final Transaction transaction) {
     SitePointInit.init(this.recordStore);
-    final Path directory = AddressBcSplitByProvider.split(this, this.action1Download);
+    final Path directory = AddressBcSplitByProvider.split(this, this.action1Download,
+      this.action2Split);
     if (directory != null) {
       if (!isCancelled() && this.action3Convert
         || !Paths.exists(directory.resolve("SitePointByProvider"))) {

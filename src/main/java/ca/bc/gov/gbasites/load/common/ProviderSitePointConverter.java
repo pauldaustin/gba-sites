@@ -16,7 +16,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.data.type.DataType;
@@ -27,11 +26,12 @@ import org.jeometry.common.logging.Logs;
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.BoundaryCache;
 import ca.bc.gov.gba.model.Gba;
+import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
-import ca.bc.gov.gbasites.load.common.converter.AbstractSiteConverter;
+import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
 import ca.bc.gov.gbasites.load.provider.other.ImportSites;
 import ca.bc.gov.gbasites.load.sourcereader.AbstractSourceReader;
 import ca.bc.gov.gbasites.model.type.SitePoint;
@@ -99,8 +99,6 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
 
   public static final String DATA_PROVIDER = "Data Provider";
 
-  static ThreadLocal<Boolean> dataProviderOpenDataThread = new ThreadLocal<>();
-
   private static final Map<String, Map<String, FeatureStatus>> featureStatusByLocalityAndFullAddress = new LinkedHashMap<>();
 
   private final static Set<String> icisIgnoreIssuingAgencies = Sets.newHash();
@@ -121,13 +119,9 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
 
   public static final String NAME_ERRORS = "Name Errors";
 
-  private static final Map<String, Identifier> PARTNER_ORGANIZATION_ID_BY_DATA_PROVIDER = new HashMap<>();
-
   private static final Map<Identifier, String> PARTNER_ORGANIZATION_SHORT_NAMES = new HashMap<>();
 
   private static final Map<String, Identifier> partnerOrganizationIdByIssuingAgency = new HashMap<>();
-
-  static ThreadLocal<Identifier> partnerOrganizationIdThread = new ThreadLocal<>();
 
   public static final String PROVIDER_CONVERT = "Provider Convert";
 
@@ -146,33 +140,6 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
   public static final String WARNING = "Warning";
 
   private static RecordWriter providerConfigWriter;
-
-  public static void addError(final String message) {
-    final Identifier partnerOrganizationId = getPartnerOrganizationIdThread();
-    final String partnerOrganizationName = getPartnerOrganizationNameThread();
-    final Record record = sourceRecordForThread.get();
-    ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
-      BatchUpdateDialog.ERROR);
-    ImportSites.dialog.addLabelCount(BatchUpdateDialog.ERROR, message, BatchUpdateDialog.ERROR);
-
-    RecordLog errorLog = recordLogByPartnerOrganizationId.get(partnerOrganizationId);
-    if (errorLog == null) {
-      final Path dataProviderErrorFile = getDataProviderFile(partnerOrganizationId, "_ERROR.tsv",
-        "_");
-      errorLog = new RecordLog(true);
-      final RecordDefinition logRecordDefinition = errorLog.getLogRecordDefinition(record);
-      final RecordWriter errorWriter = RecordWriter.newRecordWriter(logRecordDefinition,
-        dataProviderErrorFile);
-      errorLog.setWriter(errorWriter);
-      recordLogByPartnerOrganizationId.put(partnerOrganizationId, errorLog);
-    }
-    Geometry geometry = record.getGeometry();
-    if (geometry != null) {
-      geometry = geometry.getPointWithin();
-    }
-    final String localityName = getLocalityName();
-    errorLog.error(localityName, message, record, geometry);
-  }
 
   static void addProviderBoundary(final Identifier partnerOrganizationId,
     final Map<String, List<Geometry>> sourceGeometryByLocality) {
@@ -207,14 +174,6 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
       }
     }
 
-  }
-
-  public static void addWarningCount(final String message) {
-    final String partnerOrganizationName = getPartnerOrganizationNameThread();
-    ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
-      ProviderSitePointConverter.WARNING);
-    ImportSites.dialog.addLabelCount(ProviderSitePointConverter.WARNING, message,
-      ProviderSitePointConverter.WARNING);
   }
 
   public static Path getDataProviderDirectory(final Identifier partnerOrganizationId,
@@ -263,51 +222,8 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
     return localityNameForThread.get();
   }
 
-  public static Identifier getPartnerOrganizationId(String dataProvider) {
-    Identifier partnerOrganizationId = PARTNER_ORGANIZATION_ID_BY_DATA_PROVIDER
-      .get(dataProvider.toUpperCase());
-    if (partnerOrganizationId == null) {
-      String shortName;
-      final Identifier localityId = localities.getIdentifier(dataProvider);
-      if (localityId == null) {
-        final Identifier regionalDistrictId = GbaController.getRegionalDistricts()
-          .getIdentifier(dataProvider);
-        if (regionalDistrictId == null) {
-          shortName = dataProvider;
-          dataProvider = "Provider - " + dataProvider;
-        } else {
-          shortName = regionalDistrictId.getString(0);
-          dataProvider = "Regional District - " + regionalDistrictId;
-        }
-      } else {
-        shortName = localities.getValue(localityId);
-        dataProvider = "Locality - " + shortName;
-      }
-      partnerOrganizationId = PartnerOrganizations.getId(dataProvider);
-      PARTNER_ORGANIZATION_SHORT_NAMES.put(partnerOrganizationId, shortName);
-      PARTNER_ORGANIZATION_ID_BY_DATA_PROVIDER.put(dataProvider.toUpperCase(),
-        partnerOrganizationId);
-    }
-    partnerOrganizationIdThread.set(partnerOrganizationId);
-    return partnerOrganizationId;
-  }
-
-  public static Identifier getPartnerOrganizationIdThread() {
-    return partnerOrganizationIdThread.get();
-  }
-
   static String getPartnerOrganizationName(final Identifier partnerOrganizationId) {
     return GbaController.getPartnerOrganizations().getValue(partnerOrganizationId);
-  }
-
-  public static String getPartnerOrganizationNameThread() {
-    final Identifier partnerOrganizationId = getPartnerOrganizationIdThread();
-    return getPartnerOrganizationName(partnerOrganizationId);
-  }
-
-  public static String getPartnerOrganizationShortName() {
-    final Identifier partnerOrganizationId = getPartnerOrganizationIdThread();
-    return getPartnerOrganizationShortName(partnerOrganizationId);
   }
 
   public static String getPartnerOrganizationShortName(final Identifier partnerOrganizationId) {
@@ -418,7 +334,7 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
                 final String dataProvider = loader.getDataProvider();
                 icisIgnoreIssuingAgencies.add(dataProvider.toUpperCase());
 
-                final Identifier partnerOrganizationId = getPartnerOrganizationId(dataProvider);
+                final Identifier partnerOrganizationId = loader.getPartnerOrganizationId();
                 siteLoaderByDataProvider.put(dataProvider, loader);
 
                 final List<String> issuingAgencies = loader.getIssuingAgencies();
@@ -443,172 +359,8 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
     }
   }
 
-  static SitePointProviderRecord loadSite(final Identifier partnerOrgId,
-    final String partnerOrganizationName, final AbstractSiteConverter sitePointConverter,
-    final Map<Identifier, Map<String, List<Record>>> sitesByLocalityIdAndFullAddress,
-    final Map<String, List<Geometry>> geometriesByLocality, final Record sourceRecord,
-    final GeometryFactory forceGeometryFactory) {
-    SitePointProviderRecord sitePoint = null;
-    sourceRecordForThread.set(sourceRecord);
-    ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
-      BatchUpdateDialog.READ);
-    Geometry sourceGeometry = sourceRecord.getGeometry();
-    if (Property.isEmpty(sourceGeometry)) {
-      ProviderSitePointConverter.addWarningCount("Ignore Record does not contain a point geometry");
-      ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
-        ProviderSitePointConverter.IGNORED);
-    } else {
-      if (forceGeometryFactory != null) {
-        sourceGeometry = sourceGeometry.newUsingGeometryFactory(forceGeometryFactory);
-      }
-      final Geometry convertedSourceGeometry = ProviderSitePointConverter
-        .getValidSourceGeometry(sourceGeometry);
-      boolean addToBoundary = true;
-      String localityName = null;
-
-      try {
-        final Point point = convertedSourceGeometry.getPointWithin();
-
-        final Identifier localityId = localities.getBoundaryId(point);
-        localityName = localities.getValue(localityId);
-        localityNameForThread.set(localityName);
-        if (Property.isEmpty(point) || !point.isValid()) {
-          addToBoundary = false;
-          throw new IgnoreSiteException("Ignore Record does not contain a point geometry");
-        } else {
-          sitePoint = sitePointConverter.convert(sourceRecord, point);
-          if (sitePoint == null) {
-            ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
-              ProviderSitePointConverter.IGNORED);
-          } else {
-            if (dataProviderOpenDataThread.get() == Boolean.TRUE) {
-              sitePoint.setValue(OPEN_DATA_IND, "Y");
-            } else {
-              sitePoint.setValue(OPEN_DATA_IND, "N");
-            }
-            sitePoint.setValue(LOCALITY_ID, localityId);
-
-            sitePoint.updateFullAddress();
-            sitePoint.setValue(CREATE_PARTNER_ORG_ID, partnerOrgId);
-            sitePoint.setValue(MODIFY_PARTNER_ORG_ID, partnerOrgId);
-            sitePoint.setValue(CUSTODIAN_PARTNER_ORG_ID, partnerOrgId);
-
-            if (!sitePoint.hasValue(CUSTODIAN_SITE_ID)) {
-              Debug.noOp();
-            }
-            final String siteKey = sitePoint.getFullAddress();
-            Maps.addToList(Maps.factoryTree(), sitesByLocalityIdAndFullAddress, localityId, siteKey,
-              sitePoint);
-          }
-        }
-      } catch (final IgnoreSiteException e) {
-        final String countName = e.getCountName();
-        if (ProviderSitePointConverter.IGNORE_ADDRESS_BC.equals(countName)) {
-          ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
-            ProviderSitePointConverter.IGNORE_ADDRESS_BC);
-          addToBoundary = false;
-        } else {
-          if (e.isError()) {
-            addError(countName);
-          } else {
-            addWarningCount(countName);
-          }
-
-          ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
-            ProviderSitePointConverter.IGNORED);
-        }
-      } catch (final NullPointerException e) {
-        Logs.error(ImportSites.class, "Null pointer", e);
-        addError("Null Pointer");
-        ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
-          ProviderSitePointConverter.IGNORED);
-      } catch (final Throwable e) {
-        addError(e.getMessage());
-        ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
-          ProviderSitePointConverter.IGNORED);
-      }
-      if (addToBoundary && localityName != null) {
-        ImportSites.dialog.addLabelCount(LOCALITY, localityName, PROVIDER_CONVERT);
-        if (calculateBoundary) {
-          Maps.addToList(geometriesByLocality, localityName, convertedSourceGeometry);
-        }
-      }
-    }
-    return sitePoint;
-  }
-
-  private static int loadSites(final Identifier partnerOrganizationId,
-    final Iterable<Record> sourceSites, final GeometryFactory forceGeometryFactory,
-    final AbstractSiteConverter sitePointConverter, final RecordWriter sourceRecordWriter,
-    final int exepctedRecordCount) {
-    int recordCount = 0;
-    if (!ImportSites.dialog.isCancelled()) {
-      final String partnerOrganizationName = GbaController.getPartnerOrganizations()
-        .getValue(partnerOrganizationId);
-      final Map<String, List<Geometry>> sourceGeometryByLocality = new TreeMap<>();
-      {
-        final Map<Identifier, Map<String, List<Record>>> sitesByLocalityIdAndFullAddress = new HashMap<>();
-        for (final Record sourceRecord : ImportSites.dialog.cancellable(sourceSites)) {
-          recordCount++;
-          loadSite(partnerOrganizationId, partnerOrganizationName, sitePointConverter,
-            sitesByLocalityIdAndFullAddress, sourceGeometryByLocality, sourceRecord,
-            forceGeometryFactory);
-          writeSourceRecord(sourceRecordWriter, sourceRecord);
-        }
-        if (exepctedRecordCount == -1 || exepctedRecordCount == recordCount) {
-          writeSitePoints(partnerOrganizationId, sitesByLocalityIdAndFullAddress);
-        }
-      }
-      addProviderBoundary(partnerOrganizationId, sourceGeometryByLocality);
-    }
-    return recordCount;
-  }
-
-  static void loadSitesIntegratedCadastralInformationSociety() {
-    // TODO load from pre-generated files
-  }
-
-  private static void loadSitesReaderFactory(final ProviderSitePointConverter loader,
-    final Supplier<RecordReader> sourceReaderFactory,
-    final RecordDefinition providerRecordDefinition, final int expectedRecordCount) {
-    final Identifier partnerOrganizationId = loader.getPartnerOrganizationId();
-    final GeometryFactory forceGeometryFactory = loader.getGeometryFactory();
-    final Path newDirectory = getDataProviderDirectory(partnerOrganizationId, "_");
-    try {
-      int recordCount;
-      final Path sourceTempFile = getDataProviderFile(partnerOrganizationId, "_PROVIDER.tsv", "_");
-      try (
-        RecordReader sourceReader = loader.newSourceRecordReader(ImportSites.isDownloadData(),
-          sourceReaderFactory, providerRecordDefinition)) {
-        final RecordDefinition sourceRecordDefinition = sourceReader.getRecordDefinition();
-        final RecordDefinition sourceWriterRecordDefinition = ProviderSitePointConverter
-          .getSourceWriterRecordDefinition(sourceRecordDefinition, forceGeometryFactory);
-        try (
-          RecordWriter sourceRecordWriter = RecordWriter
-            .newRecordWriter(sourceWriterRecordDefinition, sourceTempFile)) {
-          final AbstractSiteConverter sitePointConverter = loader.getConverter();
-
-          recordCount = loadSites(partnerOrganizationId, sourceReader, null, sitePointConverter,
-            sourceRecordWriter, expectedRecordCount);
-        }
-      }
-      if (expectedRecordCount != -1) {
-        if (expectedRecordCount != recordCount) {
-          Logs.error(ProviderSitePointConverter.class, "Expecting site record count="
-            + expectedRecordCount + " not " + recordCount + " for " + loader.getDataProvider());
-          return;
-        }
-      }
-      if (!ImportSites.dialog.isCancelled()) {
-        replaceOldDirectory(partnerOrganizationId);
-      }
-    } finally {
-      Paths.deleteDirectories(newDirectory);
-    }
-  }
-
-  public static void postProcess() {
-    if (ImportSites.isProcessAllProviders() && !ImportSites.dialog.isCancelled()) {
+  public static void postProcess(final List<ProviderSitePointConverter> dataProvidersToProcess) {
+    if (dataProvidersToProcess.size() > 1 && !ImportSites.dialog.isCancelled()) {
       final Path providerCountsPath = ImportSites.SITES_DIRECTORY.resolve("PROVIDER_COUNTS.xlsx");
       final LabelCountMapTableModel providerCounts = ImportSites.dialog
         .getLabelCountTableModel(DATA_PROVIDER);
@@ -726,7 +478,368 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
     }
   }
 
-  static void writeSitePoints(final Identifier partnerOrganizationId,
+  static void writeSourceRecord(final RecordWriter writer, final Record record) {
+    if (writer != null) {
+      final Record writeRecord = writer.newRecord(record);
+      final Geometry geometry = record.getGeometry();
+      if (geometry != null) {
+        final Geometry geometry2d = geometry.newGeometry(2);
+        writeRecord.setGeometryValue(geometry2d);
+      }
+      writer.write(writeRecord);
+    }
+  }
+
+  private Function<MapEx, AbstractSourceReader> sourceReader;
+
+  private AbstractSiteConverter converter;
+
+  private String dataProvider;
+
+  private boolean enabled = true;
+
+  private GeometryFactory geometryFactory;
+
+  private final List<String> issuingAgencies = Collections.emptyList();
+
+  private boolean openData = false;
+
+  private Runnable runnable;
+
+  private PartnerOrganization partnerOrganization;
+
+  public ProviderSitePointConverter(final Map<String, ? extends Object> properties) {
+    setProperties(properties);
+    final Object converterValue = properties.get("converter");
+    if (converterValue instanceof AbstractSiteConverter) {
+      this.converter = (AbstractSiteConverter)converterValue;
+    } else {
+      throw new IllegalArgumentException("Unknown converter:" + converterValue);
+    }
+  }
+
+  public void addError(final String message) {
+    final Identifier partnerOrganizationId = getPartnerOrganizationId();
+    final String partnerOrganizationName = getPartnerOrganizationName();
+    final Record record = sourceRecordForThread.get();
+    ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
+      BatchUpdateDialog.ERROR);
+    ImportSites.dialog.addLabelCount(BatchUpdateDialog.ERROR, message, BatchUpdateDialog.ERROR);
+
+    RecordLog errorLog = recordLogByPartnerOrganizationId.get(partnerOrganizationId);
+    if (errorLog == null) {
+      final Path dataProviderErrorFile = getDataProviderFile(partnerOrganizationId, "_ERROR.tsv",
+        "_");
+      errorLog = new RecordLog(true);
+      final RecordDefinition logRecordDefinition = errorLog.getLogRecordDefinition(record);
+      final RecordWriter errorWriter = RecordWriter.newRecordWriter(logRecordDefinition,
+        dataProviderErrorFile);
+      errorLog.setWriter(errorWriter);
+      recordLogByPartnerOrganizationId.put(partnerOrganizationId, errorLog);
+    }
+    Geometry geometry = record.getGeometry();
+    if (geometry != null) {
+      geometry = geometry.getPointWithin();
+    }
+    final String localityName = getLocalityName();
+    errorLog.error(localityName, message, record, geometry);
+  }
+
+  public void addWarningCount(final String message) {
+    final String partnerOrganizationName = getPartnerOrganizationName();
+    ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
+      ProviderSitePointConverter.WARNING);
+    ImportSites.dialog.addLabelCount(ProviderSitePointConverter.WARNING, message,
+      ProviderSitePointConverter.WARNING);
+  }
+
+  public void convertData(final StatisticsDialog dialog, final boolean convert) {
+    // TODO Auto-generated method stub
+
+  }
+
+  public void downloadData(final StatisticsDialog dialog, final boolean downloadData) {
+    if (this.sourceReader == null) {
+      Logs.error(this, "No source reader for: " + this.partnerOrganization);
+    } else {
+      final Identifier partnerOrganizationId = getPartnerOrganizationId();
+      final Path baseDirectory = ImportSites.SITES_DIRECTORY.resolve("InputByProvider");
+      try (
+        AtomicPathUpdator pathUpdator = ProviderSitePointConverter
+          .getDataProviderPathUpdator(baseDirectory, partnerOrganizationId, "_PROVIDER.tsv")) {
+        if (downloadData || !pathUpdator.isTargetExists()) {
+          final String partnerOrganizationName = getPartnerOrganizationName();
+          final Counter counter = dialog.getCounter("Provider", "Provider Download",
+            partnerOrganizationName);
+          final MapEx properties = new LinkedHashMapEx() //
+            .add("baseDirectory", baseDirectory) //
+            .add("cancellable", dialog) //
+            .add("counter", counter) //
+            .add("dataProvider", partnerOrganizationName) //
+            .add("partnerOrganizationId", partnerOrganizationId) //
+          ;
+          final AbstractSourceReader readerProcess = this.sourceReader.apply(properties);
+          readerProcess.downloadData(pathUpdator);
+        }
+      }
+    }
+  }
+
+  public String getDataProvider() {
+    return this.dataProvider;
+  }
+
+  public List<String> getIssuingAgencies() {
+    return this.issuingAgencies;
+  }
+
+  public Identifier getPartnerOrganizationId() {
+    return this.partnerOrganization.getPartnerOrganizationId();
+  }
+
+  public String getPartnerOrganizationName() {
+    return this.partnerOrganization.getPartnerOrganizationName();
+  }
+
+  public String getPartnerOrganizationShortName() {
+    return this.partnerOrganization.getPartnerOrganizationShortName();
+  }
+
+  public Runnable getRunnable() {
+    return this.runnable;
+  }
+
+  public boolean isEnabled() {
+    return this.enabled;
+  }
+
+  public boolean isOpenData() {
+    return this.openData;
+  }
+
+  private SitePointProviderRecord loadSite(final Identifier partnerOrgId,
+    final String partnerOrganizationName, final AbstractSiteConverter sitePointConverter,
+    final Map<Identifier, Map<String, List<Record>>> sitesByLocalityIdAndFullAddress,
+    final Map<String, List<Geometry>> geometriesByLocality, final Record sourceRecord,
+    final GeometryFactory forceGeometryFactory) {
+    SitePointProviderRecord sitePoint = null;
+    sourceRecordForThread.set(sourceRecord);
+    ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
+      BatchUpdateDialog.READ);
+    Geometry sourceGeometry = sourceRecord.getGeometry();
+    if (Property.isEmpty(sourceGeometry)) {
+      addWarningCount("Ignore Record does not contain a point geometry");
+      ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
+        ProviderSitePointConverter.IGNORED);
+    } else {
+      if (forceGeometryFactory != null) {
+        sourceGeometry = sourceGeometry.newUsingGeometryFactory(forceGeometryFactory);
+      }
+      final Geometry convertedSourceGeometry = ProviderSitePointConverter
+        .getValidSourceGeometry(sourceGeometry);
+      boolean addToBoundary = true;
+      String localityName = null;
+
+      try {
+        final Point point = convertedSourceGeometry.getPointWithin();
+
+        final Identifier localityId = localities.getBoundaryId(point);
+        localityName = localities.getValue(localityId);
+        localityNameForThread.set(localityName);
+        if (Property.isEmpty(point) || !point.isValid()) {
+          addToBoundary = false;
+          throw new IgnoreSiteException("Ignore Record does not contain a point geometry");
+        } else {
+          sitePoint = sitePointConverter.convert(sourceRecord, point);
+          if (sitePoint == null) {
+            ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
+              ProviderSitePointConverter.IGNORED);
+          } else {
+            if (this.openData) {
+              sitePoint.setValue(OPEN_DATA_IND, "Y");
+            } else {
+              sitePoint.setValue(OPEN_DATA_IND, "N");
+            }
+            sitePoint.setValue(LOCALITY_ID, localityId);
+
+            sitePoint.updateFullAddress();
+            sitePoint.setValue(CREATE_PARTNER_ORG_ID, partnerOrgId);
+            sitePoint.setValue(MODIFY_PARTNER_ORG_ID, partnerOrgId);
+            sitePoint.setValue(CUSTODIAN_PARTNER_ORG_ID, partnerOrgId);
+
+            if (!sitePoint.hasValue(CUSTODIAN_SITE_ID)) {
+              Debug.noOp();
+            }
+            final String siteKey = sitePoint.getFullAddress();
+            Maps.addToList(Maps.factoryTree(), sitesByLocalityIdAndFullAddress, localityId, siteKey,
+              sitePoint);
+          }
+        }
+      } catch (final IgnoreSiteException e) {
+        final String countName = e.getCountName();
+        if (ProviderSitePointConverter.IGNORE_ADDRESS_BC.equals(countName)) {
+          ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
+            ProviderSitePointConverter.IGNORE_ADDRESS_BC);
+          addToBoundary = false;
+        } else {
+          if (e.isError()) {
+            addError(countName);
+          } else {
+            addWarningCount(countName);
+          }
+
+          ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
+            ProviderSitePointConverter.IGNORED);
+        }
+      } catch (final NullPointerException e) {
+        Logs.error(ImportSites.class, "Null pointer", e);
+        addError("Null Pointer");
+        ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
+          ProviderSitePointConverter.IGNORED);
+      } catch (final Throwable e) {
+        addError(e.getMessage());
+        ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
+          ProviderSitePointConverter.IGNORED);
+      }
+      if (addToBoundary && localityName != null) {
+        ImportSites.dialog.addLabelCount(LOCALITY, localityName, PROVIDER_CONVERT);
+        if (calculateBoundary) {
+          Maps.addToList(geometriesByLocality, localityName, convertedSourceGeometry);
+        }
+      }
+    }
+    return sitePoint;
+  }
+
+  private int loadSites(final Identifier partnerOrganizationId, final Iterable<Record> sourceSites,
+    final GeometryFactory forceGeometryFactory, final AbstractSiteConverter sitePointConverter,
+    final RecordWriter sourceRecordWriter, final int exepctedRecordCount) {
+    int recordCount = 0;
+    if (!ImportSites.dialog.isCancelled()) {
+      final String partnerOrganizationName = GbaController.getPartnerOrganizations()
+        .getValue(partnerOrganizationId);
+      final Map<String, List<Geometry>> sourceGeometryByLocality = new TreeMap<>();
+      {
+        final Map<Identifier, Map<String, List<Record>>> sitesByLocalityIdAndFullAddress = new HashMap<>();
+        for (final Record sourceRecord : ImportSites.dialog.cancellable(sourceSites)) {
+          recordCount++;
+          loadSite(partnerOrganizationId, partnerOrganizationName, sitePointConverter,
+            sitesByLocalityIdAndFullAddress, sourceGeometryByLocality, sourceRecord,
+            forceGeometryFactory);
+          writeSourceRecord(sourceRecordWriter, sourceRecord);
+        }
+        if (exepctedRecordCount == -1 || exepctedRecordCount == recordCount) {
+          writeSitePoints(partnerOrganizationId, sitesByLocalityIdAndFullAddress);
+        }
+      }
+      addProviderBoundary(partnerOrganizationId, sourceGeometryByLocality);
+    }
+    return recordCount;
+  }
+
+  private void loadSitesReaderFactory(final RecordDefinition providerRecordDefinition) {
+    final Identifier partnerOrganizationId = getPartnerOrganizationId();
+    final Path newDirectory = getDataProviderDirectory(partnerOrganizationId, "_");
+    try {
+      final Path sourceTempFile = getDataProviderFile(partnerOrganizationId, "_PROVIDER.tsv", "_");
+      try (
+        RecordReader sourceReader = newSourceRecordReader(providerRecordDefinition)) {
+        final RecordDefinition sourceRecordDefinition = sourceReader.getRecordDefinition();
+        final RecordDefinition sourceWriterRecordDefinition = ProviderSitePointConverter
+          .getSourceWriterRecordDefinition(sourceRecordDefinition, this.geometryFactory);
+        try (
+          RecordWriter sourceRecordWriter = RecordWriter
+            .newRecordWriter(sourceWriterRecordDefinition, sourceTempFile)) {
+          final AbstractSiteConverter sitePointConverter = this.converter;
+
+          loadSites(partnerOrganizationId, sourceReader, null, sitePointConverter,
+            sourceRecordWriter, -1);
+        }
+      }
+      if (!ImportSites.dialog.isCancelled()) {
+        replaceOldDirectory(partnerOrganizationId);
+      }
+    } finally {
+      Paths.deleteDirectories(newDirectory);
+    }
+  }
+
+  public RecordReader newSourceRecordReader(final RecordDefinition providerRecordDefinition) {
+    final Identifier partnerOrganizationId = getPartnerOrganizationId();
+    final Path sourceFile = ProviderSitePointConverter.getDataProviderFile(partnerOrganizationId,
+      "_PROVIDER.tsv", null);
+    RecordReader reader;
+    reader = RecordReader.newRecordReader(sourceFile);
+    if (reader != null && providerRecordDefinition != null) {
+      final RecordDefinition sitesRecordDefinition = reader.getRecordDefinition();
+      for (final FieldDefinition field : sitesRecordDefinition.getFields()) {
+        final String name = field.getName();
+        final CodeTable codeTable = providerRecordDefinition.getCodeTableByFieldName(name);
+        if (codeTable != null) {
+          field.setCodeTable(codeTable);
+        }
+      }
+    }
+    return reader;
+  }
+
+  @Override
+  public void run() {
+    try {
+      final String partnerOrganizationName = getPartnerOrganizationName();
+      ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
+        BatchUpdateDialog.READ, 0);
+      this.runnable.run();
+
+    } catch (final Throwable e) {
+      Logs.error(this, "Error loading: " + this.dataProvider, e);
+    }
+  }
+
+  public void setConverter(final AbstractSiteConverter converter) {
+    this.converter = converter;
+    converter.setProviderConfig(this);
+  }
+
+  public void setCoordinateSystemId(final Integer coordinateSystemId) {
+    if (coordinateSystemId == null) {
+      this.geometryFactory = null;
+    } else {
+      this.geometryFactory = GeometryFactory.floating2d(coordinateSystemId);
+    }
+  }
+
+  public void setDataProvider(final String dataProvider) {
+    this.dataProvider = dataProvider;
+    this.partnerOrganization = PartnerOrganizations.newPartnerOrganization(dataProvider);
+  }
+
+  public void setEnabled(final boolean enabled) {
+    this.enabled = enabled;
+  }
+
+  public void setGeometryFactory(final GeometryFactory geometryFactory) {
+    this.geometryFactory = geometryFactory;
+  }
+
+  public void setOpenData(final boolean openData) {
+    this.openData = openData;
+  }
+
+  public void setRunnable(final Runnable runnable) {
+    this.runnable = runnable;
+  }
+
+  public void setSourceReader(final Function<MapEx, AbstractSourceReader> readerFactory) {
+    this.sourceReader = readerFactory;
+  }
+
+  @Override
+  public String toString() {
+    return this.dataProvider;
+  }
+
+  private void writeSitePoints(final Identifier partnerOrganizationId,
     final Map<Identifier, Map<String, List<Record>>> sitesByLocalityIdAndFullAddress) {
     final String partnerOrganizationName = GbaController.getPartnerOrganizations()
       .getValue(partnerOrganizationId);
@@ -830,214 +943,5 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
         }
       }
     }
-  }
-
-  static void writeSourceRecord(final RecordWriter writer, final Record record) {
-    if (writer != null) {
-      final Record writeRecord = writer.newRecord(record);
-      final Geometry geometry = record.getGeometry();
-      if (geometry != null) {
-        final Geometry geometry2d = geometry.newGeometry(2);
-        writeRecord.setGeometryValue(geometry2d);
-      }
-      writer.write(writeRecord);
-    }
-  }
-
-  private Function<MapEx, AbstractSourceReader> sourceReader;
-
-  private AbstractSiteConverter converter;
-
-  private String dataProvider;
-
-  private boolean enabled = true;
-
-  private GeometryFactory geometryFactory;
-
-  private List<String> issuingAgencies = Collections.emptyList();
-
-  private boolean openData = false;
-
-  private Runnable runnable;
-
-  public ProviderSitePointConverter(final Map<String, ? extends Object> properties) {
-    setProperties(properties);
-    final Object converterValue = properties.get("converter");
-    if (converterValue instanceof AbstractSiteConverter) {
-      this.converter = (AbstractSiteConverter)converterValue;
-    } else {
-      throw new IllegalArgumentException("Unknown converter:" + converterValue);
-    }
-  }
-
-  public void downloadData(final StatisticsDialog dialog, final boolean downloadData) {
-    if (this.sourceReader == null) {
-      Logs.error(this, "No source reader for: " + getPartnerOrganizationName());
-    } else {
-      final Identifier partnerOrganizationId = getPartnerOrganizationId();
-      final Path baseDirectory = ImportSites.SITES_DIRECTORY.resolve("InputByProvider");
-      try (
-        AtomicPathUpdator pathUpdator = ProviderSitePointConverter
-          .getDataProviderPathUpdator(baseDirectory, partnerOrganizationId, "_PROVIDER.tsv")) {
-        if (downloadData || !pathUpdator.isTargetExists()) {
-          final String partnerOrganizationName = getPartnerOrganizationName();
-          final Counter counter = dialog.getCounter("Download", "Provider Download",
-            partnerOrganizationName);
-          final MapEx properties = new LinkedHashMapEx() //
-            .add("baseDirectory", baseDirectory) //
-            .add("cancellable", dialog) //
-            .add("counter", counter) //
-            .add("dataProvider", partnerOrganizationName) //
-            .add("partnerOrganizationId", partnerOrganizationId) //
-          ;
-          final AbstractSourceReader readerProcess = this.sourceReader.apply(properties);
-          readerProcess.downloadData(pathUpdator);
-        }
-      }
-    }
-  }
-
-  public AbstractSiteConverter getConverter() {
-    return this.converter;
-  }
-
-  public Integer getCoordinateSystemId() {
-    if (this.geometryFactory == null) {
-      return null;
-    } else {
-      return this.geometryFactory.getHorizontalCoordinateSystemId();
-    }
-  }
-
-  public String getDataProvider() {
-    return this.dataProvider;
-  }
-
-  public GeometryFactory getGeometryFactory() {
-    return this.geometryFactory;
-  }
-
-  public List<String> getIssuingAgencies() {
-    return this.issuingAgencies;
-  }
-
-  public Identifier getPartnerOrganizationId() {
-    return ProviderSitePointConverter.getPartnerOrganizationId(this.dataProvider);
-  }
-
-  public String getPartnerOrganizationName() {
-    if (this.dataProvider == ProviderSitePointConverter.INTEGRATED_CADASTRAL_INFORMATION_SOCIETY) {
-      return this.dataProvider;
-    } else {
-      final Identifier partnerOrganizationId = getPartnerOrganizationId(this.dataProvider);
-      return getPartnerOrganizationName(partnerOrganizationId);
-    }
-  }
-
-  public Function<MapEx, AbstractSourceReader> getReaderFactory() {
-    return this.sourceReader;
-  }
-
-  public Runnable getRunnable() {
-    return this.runnable;
-  }
-
-  public boolean isEnabled() {
-    return this.enabled;
-  }
-
-  public boolean isOpenData() {
-    return this.openData;
-  }
-
-  public RecordReader newSourceRecordReader(final boolean downloadData,
-    final Supplier<RecordReader> sourceReaderFactory,
-    final RecordDefinition providerRecordDefinition) {
-    final Identifier partnerOrganizationId = getPartnerOrganizationId();
-    final Path sourceFile = ProviderSitePointConverter.getDataProviderFile(partnerOrganizationId,
-      "_PROVIDER.tsv", null);
-    final boolean download = downloadData || !Files.exists(sourceFile);
-    RecordReader reader;
-    if (download && sourceReaderFactory != null) {
-      reader = sourceReaderFactory.get();
-    } else {
-      reader = RecordReader.newRecordReader(sourceFile);
-      if (reader != null && providerRecordDefinition != null) {
-        final RecordDefinition sitesRecordDefinition = reader.getRecordDefinition();
-        for (final FieldDefinition field : sitesRecordDefinition.getFields()) {
-          final String name = field.getName();
-          final CodeTable codeTable = providerRecordDefinition.getCodeTableByFieldName(name);
-          if (codeTable != null) {
-            field.setCodeTable(codeTable);
-          }
-        }
-      }
-    }
-    return reader;
-  }
-
-  @Override
-  public void run() {
-    try {
-      if (this.dataProvider == ProviderSitePointConverter.INTEGRATED_CADASTRAL_INFORMATION_SOCIETY) {
-        dataProviderOpenDataThread.set(false);
-      } else {
-        final Identifier partnerOrganizationId = getPartnerOrganizationId();
-        final String partnerOrganizationName = ProviderSitePointConverter
-          .getPartnerOrganizationName(partnerOrganizationId);
-        ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
-          BatchUpdateDialog.READ, 0);
-        dataProviderOpenDataThread.set(isOpenData());
-      }
-      this.runnable.run();
-
-    } catch (final Throwable e) {
-      Logs.error(this, "Error loading: " + this.dataProvider, e);
-    }
-  }
-
-  public void setConverter(final AbstractSiteConverter converter) {
-    this.converter = converter;
-  }
-
-  public void setCoordinateSystemId(final Integer coordinateSystemId) {
-    if (coordinateSystemId == null) {
-      this.geometryFactory = null;
-    } else {
-      this.geometryFactory = GeometryFactory.floating2d(coordinateSystemId);
-    }
-  }
-
-  public void setDataProvider(final String dataProvider) {
-    this.dataProvider = dataProvider;
-  }
-
-  public void setEnabled(final boolean enabled) {
-    this.enabled = enabled;
-  }
-
-  public void setGeometryFactory(final GeometryFactory geometryFactory) {
-    this.geometryFactory = geometryFactory;
-  }
-
-  public void setIssuingAgencies(final List<String> issuingAgencies) {
-    this.issuingAgencies = issuingAgencies;
-  }
-
-  public void setOpenData(final boolean openData) {
-    this.openData = openData;
-  }
-
-  public void setRunnable(final Runnable runnable) {
-    this.runnable = runnable;
-  }
-
-  public void setSourceReader(final Function<MapEx, AbstractSourceReader> readerFactory) {
-    this.sourceReader = readerFactory;
-  }
-
-  @Override
-  public String toString() {
-    return this.dataProvider;
   }
 }

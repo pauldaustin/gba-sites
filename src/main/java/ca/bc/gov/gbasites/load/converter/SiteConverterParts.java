@@ -1,4 +1,4 @@
-package ca.bc.gov.gbasites.load.common.converter;
+package ca.bc.gov.gbasites.load.converter;
 
 import java.util.Map;
 import java.util.Set;
@@ -85,13 +85,12 @@ public class SiteConverterParts extends AbstractSiteConverter {
 
   @Override
   public SitePointProviderRecord convert(final Record sourceRecord, final Point point) {
-    final String partnerOrganizationShortName = ProviderSitePointConverter
-      .getPartnerOrganizationShortName();
+    final String partnerOrganizationShortName = getPartnerOrganizationShortName();
     final String addressFieldName = getAddressFieldName();
     if (!this.activeTest.test(sourceRecord)) {
       throw new IgnoreSiteException("Ignore inactive record");
     }
-    final SitePointProviderRecord sitePoint = newSitePoint(point);
+    final SitePointProviderRecord sitePoint = newSitePoint(this, point);
     String sourceFullAddress = getUpperString(sourceRecord, addressFieldName);
     ProviderSitePointConverter.setFeatureStatusCodeByFullAddress(sitePoint, sourceFullAddress);
     if ("NO CIVIC".equalsIgnoreCase(sourceFullAddress)) {

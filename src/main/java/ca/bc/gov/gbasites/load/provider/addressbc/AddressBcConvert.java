@@ -9,7 +9,9 @@ import javax.swing.SwingUtilities;
 
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
-import ca.bc.gov.gbasites.load.common.converter.AbstractSiteConverter;
+import ca.bc.gov.gba.ui.StatisticsDialog;
+import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
+import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.io.file.Paths;
 import com.revolsys.parallel.process.ProcessNetwork;
@@ -19,9 +21,9 @@ import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.swing.table.counts.LabelCountMapTableModel;
 import com.revolsys.util.Cancellable;
 
-public class AddressBcConvert implements Cancellable {
+public class AddressBcConvert implements Cancellable, Runnable {
 
-  private final AddressBcImportSites importSites;
+  private final StatisticsDialog dialog;
 
   private final Path inputByProviderDirectory;
 
@@ -33,8 +35,25 @@ public class AddressBcConvert implements Cancellable {
 
   private final Path directory;
 
-  public AddressBcConvert(final AddressBcImportSites importSites, final Path directory) {
-    this.importSites = importSites;
+  public AddressBcConvert(final StatisticsDialog dialog) {
+    this.dialog = dialog;
+
+    this.inputByProviderDirectory = SitePoint.SITES_DIRECTORY //
+      .resolve("AddressBc")//
+      .resolve("InputByProvider") //
+    ;
+    this.sitePointByProviderDirectory = SitePoint.SITES_DIRECTORY //
+      .resolve("AddressBc")//
+      .resolve("SitePointByProvider") //
+    ;
+
+    this.directory = this.sitePointByProviderDirectory.getParent();
+    Paths.deleteDirectories(this.sitePointByProviderDirectory);
+    Paths.createDirectories(this.sitePointByProviderDirectory);
+  }
+
+  public AddressBcConvert(final StatisticsDialog dialog, final Path directory) {
+    this.dialog = dialog;
     this.directory = directory;
     this.inputByProviderDirectory = directory.resolve("InputByProvider");
     this.sitePointByProviderDirectory = directory.resolve("SitePointByProvider");
@@ -61,7 +80,7 @@ public class AddressBcConvert implements Cancellable {
 
   @Override
   public boolean isCancelled() {
-    return this.importSites.isCancelled();
+    return this.dialog.isCancelled();
   }
 
   public RecordLog newAllRecordLog(final List<Path> providerFiles, final String suffix) {
@@ -74,14 +93,14 @@ public class AddressBcConvert implements Cancellable {
     return new RecordLog(allErrorFile, this.recordDefinition, true);
   }
 
+  @Override
   public void run() {
-    this.counts = this.importSites.newLabelCountTableModel("Convert", "Provider", "Read", "Error",
+    this.counts = this.dialog.newLabelCountTableModel("Convert", "Provider", "Read", "Error",
       "Ignored", "Warning", "Write", "Merged UD", "Duplicate");
     SwingUtilities.invokeLater(() -> {
 
       this.counts.getTable().setSortOrder(0, SortOrder.ASCENDING);
 
-      this.importSites.setSelectedTab("Convert");
     });
 
     final List<Path> providerFiles = Paths.listFiles(this.inputByProviderDirectory,
@@ -105,8 +124,8 @@ public class AddressBcConvert implements Cancellable {
                 }
                 path = providerFiles.remove(0);
               }
-              new AddressBcSiteConverter(this, this.importSites, this.directory, path, allErrorLog,
-                allWarningLog).run();
+              new AddressBcSiteConverter(this, this.dialog, this.sitePointByProviderDirectory, path,
+                allErrorLog, allWarningLog).run();
             }
           });
         }
