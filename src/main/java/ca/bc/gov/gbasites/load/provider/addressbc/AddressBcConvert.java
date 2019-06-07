@@ -31,18 +31,20 @@ public class AddressBcConvert implements Cancellable {
 
   private final Path sitePointByProviderDirectory;
 
-  public AddressBcConvert(final AddressBcImportSites importSites) {
+  private final Path directory;
+
+  public AddressBcConvert(final AddressBcImportSites importSites, final Path directory) {
     this.importSites = importSites;
-    this.inputByProviderDirectory = importSites.getInputByProviderDirectory();
-    this.sitePointByProviderDirectory = importSites.getSitePointByProviderDirectory();
+    this.directory = directory;
+    this.inputByProviderDirectory = directory.resolve("InputByProvider");
+    this.sitePointByProviderDirectory = directory.resolve("SitePointByProvider");
     Paths.deleteDirectories(this.sitePointByProviderDirectory);
     Paths.createDirectories(this.sitePointByProviderDirectory);
   }
 
   private void destroy() {
     if (!isCancelled()) {
-      final Path providerCountsPath = this.importSites.getDirectory()
-        .resolve("ADDRESS_BC_PROVIDER_COUNTS.xlsx");
+      final Path providerCountsPath = this.directory.resolve("ADDRESS_BC_PROVIDER_COUNTS.xlsx");
       this.counts.writeCounts(providerCountsPath);
     }
     Paths.deleteFiles(this.sitePointByProviderDirectory, "*.prj");
@@ -63,8 +65,7 @@ public class AddressBcConvert implements Cancellable {
   }
 
   public RecordLog newAllRecordLog(final List<Path> providerFiles, final String suffix) {
-    final Path allErrorFile = this.importSites.getDirectory()
-      .resolve("ADDRESS_BC_CONVERT_" + suffix + ".tsv");
+    final Path allErrorFile = this.directory.resolve("ADDRESS_BC_CONVERT_" + suffix + ".tsv");
 
     try (
       RecordReader reader = RecordReader.newRecordReader(providerFiles.get(0))) {
@@ -104,8 +105,8 @@ public class AddressBcConvert implements Cancellable {
                 }
                 path = providerFiles.remove(0);
               }
-              new AddressBcSiteConverter(this, this.importSites, path, allErrorLog, allWarningLog)
-                .run();
+              new AddressBcSiteConverter(this, this.importSites, this.directory, path, allErrorLog,
+                allWarningLog).run();
             }
           });
         }

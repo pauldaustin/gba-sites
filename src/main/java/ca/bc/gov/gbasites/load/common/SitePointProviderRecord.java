@@ -793,6 +793,10 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
         unitDescriptor + "-" + civicNumberString, "-" + civicNumberSuffix, compareStreetName))) {
         // [UNIT]-[CIVIC_NUMBER] -[CIVIC_NUMBER_SUFFIX] [STREET_NAME]
         return true;
+      } else if (fullAddress.equalsIgnoreCase(
+        Strings.toString(" ", unitDescriptor + ", " + civicNumberString, compareStreetName))) {
+        // [UNIT], [CIVIC_NUMBER] [STREET_NAME]
+        return true;
       } else if (fullAddress.equalsIgnoreCase(Strings.toString(" ", unitDescriptor,
         civicNumberString + "-" + civicNumberSuffix, compareStreetName))) {
         return true;

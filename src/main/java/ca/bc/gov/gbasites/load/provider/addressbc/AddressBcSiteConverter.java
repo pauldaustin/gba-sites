@@ -21,10 +21,10 @@ import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
-import ca.bc.gov.gbasites.load.common.ImportSites;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
 import ca.bc.gov.gbasites.load.common.converter.AbstractSiteConverter;
+import ca.bc.gov.gbasites.load.provider.other.ImportSites;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.code.FeatureStatus;
 
@@ -98,10 +98,13 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
 
   private final RecordLog allWarningLog;
 
+  private final Path directory;
+
   public AddressBcSiteConverter(final AddressBcConvert convertProcess,
-    final AddressBcImportSites importSites, final Path path, final RecordLog allErrorLog,
-    final RecordLog allWarningLog) {
+    final AddressBcImportSites importSites, final Path directory, final Path path,
+    final RecordLog allErrorLog, final RecordLog allWarningLog) {
     this.importSites = importSites;
+    this.directory = directory;
     this.convertProcess = convertProcess;
     this.fixesByProvider.put("Agassiz", this::fixAgassiz);
     this.fixesByProvider.put("Cranbrook", this::fixCranbrook);
@@ -527,7 +530,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
     final String shortName = getPartnerOrganizationShortName();
     final String baseName = BatchUpdateDialog.toFileName(shortName);
 
-    final Path file = this.importSites.getSitePointByProviderDirectory() //
+    final Path file = this.directory.resolve("SitePointByProvider") //
       .resolve(baseName + "_SITE_POINT_ADDRESS_BC.tsv");
     try (
       RecordReader reader = RecordReader.newRecordReader(this.inputFile);

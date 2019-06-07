@@ -377,7 +377,7 @@ public class AddressBcMergeForProvider implements Cancellable, SitePoint {
 
       }
     } catch (final Exception e) {
-      Logs.error(this, "Error merging sites for: " + e);
+      Logs.error(this, "Error merging sites for: " + e.getMessage(), e);
     }
 
   }
@@ -404,9 +404,11 @@ public class AddressBcMergeForProvider implements Cancellable, SitePoint {
 
       final Map<Integer, Map<String, List<Record>>> sitesByCivicNumber = Maps.get(sitesByStreet,
         streeName, Maps.factoryTree());
-      final Map<String, List<Record>> sitesBySuffix = Maps.get(sitesByCivicNumber, civicNumber,
-        Maps.factoryTree());
-      Maps.addToList(sitesBySuffix, civicNumberSuffix, site);
+      if (civicNumber != null) {
+        final Map<String, List<Record>> sitesBySuffix = Maps.get(sitesByCivicNumber, civicNumber,
+          Maps.factoryTree());
+        Maps.addToList(sitesBySuffix, civicNumberSuffix, site);
+      }
     }
     return sitesByStreet;
   }

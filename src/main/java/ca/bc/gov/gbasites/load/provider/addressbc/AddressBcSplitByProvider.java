@@ -1,6 +1,5 @@
 package ca.bc.gov.gbasites.load.provider.addressbc;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,109 +12,74 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.swing.SortOrder;
-import javax.swing.SwingUtilities;
-
 import org.jeometry.common.data.type.DataTypes;
+import org.jeometry.common.exception.Exceptions;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.ui.StatisticsDialog;
+import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
+import ca.bc.gov.gbasites.load.common.SplitByProviderWriter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.map.LinkedHashMapEx;
 import com.revolsys.collection.map.MapEx;
-import com.revolsys.collection.map.Maps;
 import com.revolsys.collection.range.RangeSet;
 import com.revolsys.collection.set.Sets;
 import com.revolsys.io.Reader;
+import com.revolsys.io.ZipUtil;
 import com.revolsys.io.file.Paths;
 import com.revolsys.record.Record;
 import com.revolsys.record.io.RecordReader;
-import com.revolsys.record.io.RecordWriter;
-import com.revolsys.record.io.format.json.Json;
 import com.revolsys.record.io.format.tsv.Tsv;
 import com.revolsys.record.io.format.tsv.TsvWriter;
 import com.revolsys.record.schema.RecordDefinitionImpl;
-import com.revolsys.record.schema.RecordDefinitionProxy;
+import com.revolsys.spring.resource.UrlResource;
 import com.revolsys.util.Cancellable;
 import com.revolsys.util.CaseConverter;
+import com.revolsys.util.Counter;
 import com.revolsys.util.Property;
 
 public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
-  private class ProviderWriter {
+  private static final String STATISTICS_NAME = "Address BC Download";
 
-    private final PartnerOrganization partnerOrganization;
+  public static void downloadAddressBc(final Path inputDirectory) {
+    final String url = "ftp://geoshare.icisociety.ca/Addresses/ABC.csv.zip";
+    try {
+      final String user = GbaController.getProperty("addressBcFtpUser");
+      final String password = GbaController.getProperty("addressBcFtpPassword");
+      final UrlResource resource = new UrlResource(url, user, password);
 
-    private final RecordWriter recordWriter;
-
-    private int writeCount = 0;
-
-    private final Path targetPath;
-
-    public ProviderWriter(final PartnerOrganization partnerOrganization,
-      final RecordDefinitionProxy recordDefinition) {
-      this.partnerOrganization = partnerOrganization;
-      final String shortName = partnerOrganization.getPartnerOrganizationShortName();
-      final String baseName = BatchUpdateDialog.toFileName(shortName) + "_ADDRESS_BC";
-      final String fileName = baseName + ".tsv";
-      this.targetPath = AddressBcSplitByProvider.this.inputByProviderDirectory.resolve(fileName);
-      this.recordWriter = RecordWriter.newRecordWriter(recordDefinition, this.targetPath);
-      this.recordWriter.setProperty("useQuotes", false);
-      Paths.deleteDirectories(
-        AddressBcSplitByProvider.this.inputByProviderDirectory.resolve("_" + baseName + ".prj"));
-    }
-
-    void close() {
-      this.recordWriter.close();
-      if (this.writeCount == 0) {
-        try {
-          Files.deleteIfExists(this.targetPath);
-        } catch (final IOException e) {
-          Logs.error(this, "Unable to delete: " + this.targetPath, e);
-        }
-      }
-    }
-
-    public void writeRecord(final Record record) {
-      AddressBcSplitByProvider.this.importSites.addLabelCount(SPLIT, this.partnerOrganization,
-        BatchUpdateDialog.WRITE);
-      this.recordWriter.write(record);
-      this.writeCount++;
+      Paths.createDirectories(inputDirectory);
+      ZipUtil.unzipFile(resource, inputDirectory);
+    } catch (final Exception e) {
+      throw Exceptions.wrap("Error downloading: " + url, e);
     }
   }
 
-  private static final String SPLIT = "Split";
+  public static Path split(final StatisticsDialog dialog, final boolean download) {
+    final Path inputDirectory = SitePoint.SITES_DIRECTORY //
+      .resolve("AddressBc")//
+      .resolve("Input") //
+    ;
 
-  private static final Map<String, String> ADDRESS_BC_PROVIDER_ALIAS = Maps
-    .<String, String> buildHash() //
-    .add("CENTRAL COAST REGIONAL DISTRICT", "CCRD") //
-    .add("CENTRAL COAST", "CCRD") //
-    .add("COWICHAN VALLEY", "CVRD") //
-    .add("GREATER VANCOUVER REGIONAL DISTRICT", "MVRD") //
-    .add("GVRD", "MVRD") //
-    .add("CITY OF KIMBERLEY", "Kimberley") //
-    .add("MOUNT WADDINGTON REGIONAL DISTRICT", "MWRD") //
-    .add("MOUNT WADDINGTON", "MWRD") //
-    .add("NORTHERN ROCKIES REGIONAL MUNICIPALITY", "NRRM")//
-    .add("NORTHERN ROCKIES", "NRRM")//
-    .add("NORTH OKANAGAN REGIONAL DISTRICT", "NORD")
-    .add("NORTH OKANAGAN", "NORD")
-    .add("NORTH COWICHAN", "CVRD")
-    .add("TOWN OF VIEW ROYAL", "View Royal") //
-    .add("POWELL RIVER CITY", "Powell River") //
-    .add("SQUAMISH LILLOOET RD RURAL", "SLRD") //
-    .add("TOWN OF LADYSMITH", "Ladysmith") //
-    .add("STSAILES", "Chehalis") //
-    .add("VILLAGE OF FRUITVALE", "Fruitvale") //
-    .add("VILLAGE OF MIDWAY", "Midway") //
-    .add("VILLAGE OF WARFIELD", "Warfield") //
-    .add("NORTHERN ROCKIES", "NRRM") //
-    .getMap();
+    if (!dialog.isCancelled() && (download || !Files.exists(inputDirectory))) {
+      // AddressBcSplitByProvider.downloadAddressBc(inputDirectory);
+    }
+    final Path inputByProviderDirectory = SitePoint.SITES_DIRECTORY //
+      .resolve("AddressBc")//
+      .resolve("InputByProvider") //
+    ;
+
+    if (!dialog.isCancelled() && (download || !Paths.exists(inputByProviderDirectory))) {
+      new AddressBcSplitByProvider(dialog, inputDirectory, inputByProviderDirectory).run();
+    }
+    return inputByProviderDirectory;
+  }
 
   private final Path inputDirectory;
 
@@ -129,72 +93,111 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
   private final Map<String, String> postalCodeById = new HashMap<>();
 
-  private final AddressBcImportSites importSites;
+  private final StatisticsDialog dialog;
 
-  private final Map<String, ProviderWriter> writerByProvider = new HashMap<>();
+  private final Map<String, SplitByProviderWriter> writerByProvider = new HashMap<>();
 
-  private final List<ProviderWriter> writers = new ArrayList<>();
+  private final List<SplitByProviderWriter> writers = new ArrayList<>();
 
   private TsvWriter extraDataWriter;
 
   private RecordDefinitionImpl recordDefinition;
 
-  public AddressBcSplitByProvider(final AddressBcImportSites importSites) {
-    this.importSites = importSites;
-    this.inputDirectory = importSites.getInputDirectory();
-    this.inputByProviderDirectory = importSites.getInputByProviderDirectory();
+  private final Path directory;
+
+  public AddressBcSplitByProvider(final StatisticsDialog dialog, final Path inputDirectory,
+    final Path inputByProviderDirectory) {
+    this.dialog = dialog;
+    this.directory = inputByProviderDirectory;
+    this.inputDirectory = inputDirectory;
+    this.inputByProviderDirectory = inputByProviderDirectory;
     Paths.deleteDirectories(this.inputByProviderDirectory);
     Paths.createDirectories(this.inputByProviderDirectory);
   }
 
+  private void addWriter(final String dataProvider, final SplitByProviderWriter providerWriter) {
+    this.writerByProvider.put(dataProvider, providerWriter);
+    this.writerByProvider.put(dataProvider.toUpperCase(), providerWriter);
+  }
+
+  private SplitByProviderWriter getWriter(final Record record, final String issuingAgency) {
+    SplitByProviderWriter writer = this.writerByProvider.get(issuingAgency);
+    if (writer == null) {
+      writer = this.writerByProvider.get(issuingAgency.toUpperCase());
+      if (writer == null) {
+        final String dataProviderWords = CaseConverter.toCapitalizedWords(issuingAgency);
+        final PartnerOrganization partnerOrganization = PartnerOrganizations
+          .newPartnerOrganization(dataProviderWords);
+        final String partnerOrganizationName = partnerOrganization.getPartnerOrganizationName();
+
+        final String dataProviderName = partnerOrganizationName
+          .substring(partnerOrganizationName.indexOf('-') + 2);
+        writer = newProviderWriter(dataProviderName);
+        addWriter(issuingAgency, writer);
+      } else {
+        this.writerByProvider.put(issuingAgency.toUpperCase(), writer);
+      }
+    }
+    return writer;
+  }
+
   @Override
   public boolean isCancelled() {
-    return this.importSites.isCancelled();
+    return this.dialog.isCancelled();
   }
 
   private void loadConfig() {
-    final Path SITE_CONFIG_DIRECTORY = GbaController.getGbaPath().resolve("etc/Sites");
-
-    final Path siteProviderConfigPath = SITE_CONFIG_DIRECTORY.resolve("Provider");
-    if (Paths.exists(siteProviderConfigPath)) {
-      try {
-        Files.list(siteProviderConfigPath).forEach(path -> {
-          try {
-            final String fileNameExtension = Paths.getFileNameExtension(path);
-            if ("json".equals(fileNameExtension)) {
-              final MapEx providerConfig = Json.toMap(path);
-              final String dataProvider = providerConfig.getString("dataProvider");
-              final String dataProviderUpper = dataProvider.toUpperCase();
-              ProviderWriter providerWriter = this.writerByProvider.get(dataProviderUpper);
-              if (providerWriter == null) {
-                final PartnerOrganization partnerOrganization = PartnerOrganizations
-                  .newPartnerOrganization(dataProvider);
-                providerWriter = new ProviderWriter(partnerOrganization, this.recordDefinition);
-                this.writers.add(providerWriter);
-                this.writerByProvider.put(dataProvider, providerWriter);
-                this.writerByProvider.put(dataProviderUpper, providerWriter);
+    final Path file = ProviderSitePointConverter.SITE_CONFIG_DIRECTORY
+      .resolve("ADDRESS_BC_PARTNER_ORGANIZATION.xlsx");
+    if (Paths.exists(file)) {
+      try (
+        RecordReader reader = RecordReader.newRecordReader(file)) {
+        for (final Record record : reader) {
+          final String issuingAgency = record.getString("Issuing Agency");
+          if (Property.hasValue(issuingAgency)) {
+            final String locality = record.getString("Locality");
+            final String regionalDistrict = record.getString("Regional District");
+            final String provider = record.getString("Provider");
+            String providerName = null;
+            if (Property.hasValue(locality)) {
+              if (Property.hasValue(regionalDistrict) || Property.hasValue(provider)) {
+                Logs.error(AddressBcSplitByProvider.class,
+                  "Cannot have Locality, Regional District and Provider\n" + record);
+              } else if (GbaController.getLocalities().getIdentifier(locality) == null) {
+                Logs.error(AddressBcSplitByProvider.class, "Locality not found " + locality);
+              } else {
+                providerName = locality;
               }
-
-              final List<String> issuingAgencies = providerConfig.getValue("issuingAgencies");
-              if (issuingAgencies != null) {
-                for (final String issuingAgency : issuingAgencies) {
-                  this.writerByProvider.put(issuingAgency, providerWriter);
-                  ADDRESS_BC_PROVIDER_ALIAS.put(issuingAgency, dataProvider);
-                  final String issuingAgencyUpper = issuingAgency.toUpperCase();
-                  this.writerByProvider.put(issuingAgencyUpper, providerWriter);
-                  ADDRESS_BC_PROVIDER_ALIAS.put(issuingAgencyUpper, dataProvider);
-                }
+            } else if (Property.hasValue(regionalDistrict)) {
+              if (Property.hasValue(provider)) {
+                Logs.error(AddressBcSplitByProvider.class,
+                  "Cannot have Regional District and  Provider\n" + record);
+              } else if (GbaController.getRegionalDistricts()
+                .getIdentifier(regionalDistrict) == null) {
+                Logs.error(AddressBcSplitByProvider.class,
+                  "Regional District not found " + regionalDistrict);
+              } else {
+                providerName = regionalDistrict;
+              }
+            } else if (Property.hasValue(provider)) {
+              providerName = provider;
+            } else {
+              Logs.error(AddressBcSplitByProvider.class,
+                "Must have one of Locality, Regional District and Provider\n" + record);
+            }
+            if (providerName != null) {
+              SplitByProviderWriter writer = this.writerByProvider.get(providerName.toUpperCase());
+              if (writer == null) {
+                writer = newProviderWriter(providerName);
+              }
+              if (!issuingAgency.equalsIgnoreCase(providerName)) {
+                addWriter(issuingAgency, writer);
               }
             }
-          } catch (final Throwable e) {
-            Logs.error(this, "Unable to load config:" + path, e);
           }
-        });
-      } catch (final Throwable e) {
-        Logs.error(this, "Unable to load config:" + siteProviderConfigPath, e);
+        }
       }
     }
-
   }
 
   private void loadExtendedAddress() {
@@ -402,16 +405,22 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     }
   }
 
+  private SplitByProviderWriter newProviderWriter(final String dataProvider) {
+    SplitByProviderWriter providerWriter;
+    final PartnerOrganization partnerOrganization = PartnerOrganizations
+      .newPartnerOrganization(dataProvider);
+    final Counter counter = this.dialog.getCounter("Download", STATISTICS_NAME,
+      partnerOrganization.getPartnerOrganizationName());
+
+    providerWriter = new SplitByProviderWriter(dataProvider, counter, partnerOrganization,
+      this.recordDefinition, this.inputByProviderDirectory, "_ADDRESS_BC");
+    this.writers.add(providerWriter);
+    addWriter(dataProvider, providerWriter);
+    return providerWriter;
+  }
+
   public void run() {
     AddressBcImportSites.deleteTempFiles(this.inputByProviderDirectory);
-    this.importSites.addLabelCountNameColumns(SPLIT, "Write");
-    SwingUtilities.invokeLater(() -> {
-      this.importSites.getLabelCountTableModel(SPLIT)
-        .getTable()
-        .setSortOrder(0, SortOrder.ASCENDING);
-
-      this.importSites.setSelectedTab(SPLIT);
-    });
     loadExtendedAddress();
     loadSubAddress();
 
@@ -422,7 +431,6 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     }
 
     System.out.println("Unused Postal Code Count\t" + this.postalCodeById.size());
-
   }
 
   private void setUnitNumber(final Record sourceRecord) {
@@ -478,7 +486,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     } catch (final Throwable e) {
       Logs.error(this, e);
     } finally {
-      for (final ProviderWriter writer : this.writers) {
+      for (final SplitByProviderWriter writer : this.writers) {
         writer.close();
       }
       Paths.deleteFiles(this.inputByProviderDirectory, "*.prj");
@@ -488,8 +496,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
   private synchronized void writeExtraDataWarning(final String fileName, final String civicId,
     final String fieldName, final String fieldValue) {
     if (this.extraDataWriter == null) {
-      this.extraDataWriter = Tsv
-        .plainWriter(this.importSites.getDirectory().resolve("EXTENDED_FIELD_WARNING.tsv"));
+      this.extraDataWriter = Tsv.plainWriter(this.directory.resolve("EXTENDED_FIELD_WARNING.tsv"));
       this.extraDataWriter.write("FILE_NAME", AddressBc.CIVIC_ID, "FIELD_NAME", "FIELD_VALUE");
     }
     this.extraDataWriter.write(fileName, civicId, fieldName, fieldValue);
@@ -497,29 +504,15 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
   private void writeRecord(final Record record) {
     String issuingAgency = record.getString(AddressBc.ISSUING_AGENCY);
-    if (issuingAgency == null) {
+    if (issuingAgency == null
+      || "FRASER-FORT GEORGE REGIONAL DISTRICT".equalsIgnoreCase(issuingAgency)
+      || "CENTRAL OKANAGAN REGIONAL DISTRICT".equalsIgnoreCase(issuingAgency)) {
       issuingAgency = record.getString(AddressBc.LOCALITY);
       if (issuingAgency == null) {
         issuingAgency = "Unknown";
       }
     }
-    issuingAgency = ADDRESS_BC_PROVIDER_ALIAS.getOrDefault(issuingAgency, issuingAgency);
-    ProviderWriter writer = this.writerByProvider.get(issuingAgency);
-    if (writer == null) {
-      final String issuingAgencyUpperCase = issuingAgency.toUpperCase();
-      writer = this.writerByProvider.get(issuingAgencyUpperCase);
-      if (writer == null) {
-        final String dataProviderWords = CaseConverter.toCapitalizedWords(issuingAgency);
-        final PartnerOrganization partnerOrganization = PartnerOrganizations
-          .newPartnerOrganization(dataProviderWords);
-        writer = new ProviderWriter(partnerOrganization, record);
-        this.writerByProvider.put(issuingAgency, writer);
-        this.writerByProvider.put(issuingAgencyUpperCase, writer);
-        this.writers.add(writer);
-      } else {
-        this.writerByProvider.put(issuingAgency, writer);
-      }
-    }
+    final SplitByProviderWriter writer = getWriter(record, issuingAgency);
     writer.writeRecord(record);
 
   }

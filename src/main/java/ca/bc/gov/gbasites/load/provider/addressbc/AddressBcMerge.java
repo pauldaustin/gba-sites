@@ -48,9 +48,12 @@ public class AddressBcMerge implements SitePoint, Cancellable {
 
   RecordWriter changedRecordWriter;
 
-  public AddressBcMerge(final AddressBcImportSites importSites) {
+  private final Path directory;
+
+  public AddressBcMerge(final AddressBcImportSites importSites, final Path directory) {
     this.importSites = importSites;
-    this.sitePointByProviderDirectory = importSites.getSitePointByProviderDirectory();
+    this.directory = directory;
+    this.sitePointByProviderDirectory = directory.resolve("SitePointByProvider");
   }
 
   public void deleteTempFiles(final Path directory) {
@@ -126,8 +129,7 @@ public class AddressBcMerge implements SitePoint, Cancellable {
         changeRecordDefinition.addField(fieldName, fieldType);
       }
     }
-    final Path changeRecordFile = this.importSites.getDirectory()
-      .resolve("ADDRESS_BC_SITE_POINT_CHANGES.tsv");
+    final Path changeRecordFile = this.directory.resolve("ADDRESS_BC_SITE_POINT_CHANGES.tsv");
     this.changedRecordWriter = RecordWriter.newRecordWriter(changeRecordDefinition,
       changeRecordFile);
     return this.changedRecordWriter;

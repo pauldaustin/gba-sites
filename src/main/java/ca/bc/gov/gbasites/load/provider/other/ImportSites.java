@@ -1,4 +1,4 @@
-package ca.bc.gov.gbasites.load.common;
+package ca.bc.gov.gbasites.load.provider.other;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -23,10 +23,19 @@ import org.jeometry.common.data.identifier.Identifier;
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.process.AbstractTaskByLocality;
 import ca.bc.gov.gba.ui.StatisticsDialog;
+import ca.bc.gov.gbasites.load.common.LoadEmergencyManagementSites;
+import ca.bc.gov.gbasites.load.common.LoadProviderSitesIntoGba;
+import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.common.converter.SiteConverterAddress;
 import ca.bc.gov.gbasites.load.common.converter.SiteConverterParts;
+import ca.bc.gov.gbasites.load.provider.addressbc.AddressBcSplitByProvider;
 import ca.bc.gov.gbasites.load.provider.ckrd.SiteConverterCKRD;
 import ca.bc.gov.gbasites.load.provider.nanaimo.SiteConverterNanaimo;
+import ca.bc.gov.gbasites.load.sourcereader.SourceReaderArcGis;
+import ca.bc.gov.gbasites.load.sourcereader.SourceReaderFile;
+import ca.bc.gov.gbasites.load.sourcereader.SourceReaderFileGdb;
+import ca.bc.gov.gbasites.load.sourcereader.SourceReaderJoin;
+import ca.bc.gov.gbasites.load.sourcereader.SourceReaderMapGuide;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 
@@ -57,7 +66,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   public static final Path SITES_DIRECTORY = GbaController.getDataDirectory("Sites");
 
-  private static CheckBox useCachedFiles;
+  private static CheckBox downloadCheckbox;
 
   public static final Map<String, String> siteTypeByBuildingType = new LinkedHashMap<>();
 
@@ -67,29 +76,23 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   public static void initializeService() {
 
-    MapObjectFactoryRegistry.newFactory("gbaSiteConverterAddress", "gbaSiteConverterAddress",
-      SiteConverterAddress::new);
-    MapObjectFactoryRegistry.newFactory("gbaSiteConverterCKRD", "gbaSiteConverterSiteConverterCKRD",
-      SiteConverterCKRD::new);
-    MapObjectFactoryRegistry.newFactory("gbaSiteConverterNanaimo",
-      "gbaSiteConverterSiteConverterNanaimo", SiteConverterNanaimo::new);
-    MapObjectFactoryRegistry.newFactory("gbaSiteConverterParts", "gbaSiteConverterParts",
-      SiteConverterParts::new);
+    MapObjectFactoryRegistry.newFactory("gbaSiteConverterAddress", SiteConverterAddress::new);
+    MapObjectFactoryRegistry.newFactory("gbaSiteConverterCKRD", SiteConverterCKRD::new);
+    MapObjectFactoryRegistry.newFactory("gbaSiteConverterNanaimo", SiteConverterNanaimo::new);
+    MapObjectFactoryRegistry.newFactory("gbaSiteConverterParts", SiteConverterParts::new);
 
-    MapObjectFactoryRegistry.newFactory("gbaSiteLoaderArcGis", "gbaSiteLoaderArcGis",
-      ProviderSitePointConverter::newProviderSitePointConverterArcGis);
-    MapObjectFactoryRegistry.newFactory("gbaSiteLoaderMapGuide", "gbaSiteLoaderMapGuide",
-      ProviderSitePointConverter::newProviderSitePointConverterMapGuide);
-    MapObjectFactoryRegistry.newFactory("gbaSiteLoaderFile", "gbaSiteLoaderFile",
-      ProviderSitePointConverter::newProviderSitePointConverterFile);
-    MapObjectFactoryRegistry.newFactory("gbaSiteLoaderFileGdb", "gbaSiteLoaderFileGdb",
-      ProviderSitePointConverter::newProviderSitePointConverterFileGdb);
-    MapObjectFactoryRegistry.newFactory("gbaSiteLoaderJoin", "gbaSiteLoaderJoin",
-      ProviderSitePointConverter::newProviderSitePointConverterJoin);
+    MapObjectFactoryRegistry.newFactory("gbaSiteLoader", ProviderSitePointConverter::new);
+
+    MapObjectFactoryRegistry.newFactory("sourceReaderArcGis", SourceReaderArcGis::newFactory);
+    MapObjectFactoryRegistry.newFactory("sourceReaderFile", SourceReaderFile::newFactory);
+    MapObjectFactoryRegistry.newFactory("sourceReaderFileGdb", SourceReaderFileGdb::newFactory);
+    MapObjectFactoryRegistry.newFactory("sourceReaderJoin", SourceReaderJoin::newFactory);
+    MapObjectFactoryRegistry.newFactory("sourceReaderMapGuide", SourceReaderMapGuide::newFactory);
   }
 
+  @Deprecated
   public static boolean isDownloadData() {
-    return !useCachedFiles.isSelected();
+    return downloadCheckbox.isSelected();
   }
 
   public static boolean isProcessAllProviders() {
@@ -100,6 +103,10 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     initializeService();
     start(ImportSites.class);
   }
+
+  private CheckBox convertCheckbox;
+
+  private CheckBox downloadAddressBcCheckbox;
 
   private final Map<String, Identifier> partnerOrganizationIdByShortName = new HashMap<>();
 
@@ -122,12 +129,71 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     ProviderSitePointConverter.init();
   }
 
+  private void action1ProviderDownload() {
+    final boolean downloadAddressBc = this.downloadAddressBcCheckbox.isSelected();
+    if (!this.dataProvidersToProcess.isEmpty() || downloadAddressBc) {
+      setSelectedTab("Download");
+      try {
+        final ProcessNetwork processes = new ProcessNetwork();
+
+        ProviderSitePointConverter.preProcess();
+        final boolean downloadData = downloadCheckbox.isSelected();
+
+        for (int i = 0; i < this.threadCount; i++) {
+          processes.addProcess("Provider " + i, () -> {
+            while (!isCancelled()) {
+              ProviderSitePointConverter loader;
+              try {
+                loader = this.dataProvidersToProcess.remove(0);
+              } catch (final Throwable e) {
+                return;
+              }
+              loader.downloadData(this, downloadData);
+            }
+          });
+        }
+        if (downloadAddressBc) {
+          processes.addProcess("Address BC",
+            () -> AddressBcSplitByProvider.split(dialog, downloadData));
+        }
+        processes.startAndWait();
+        if (!isCancelled()) {
+
+          final Path providerPath = SITES_DIRECTORY.resolve("Provider");
+          final Path addressBcPath = providerPath.resolve("_ADDRESS_BC");
+          if (Paths.exists(addressBcPath)) {
+            try {
+              Files.walkFileTree(addressBcPath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
+                  throws IOException {
+                  final String fileName = Paths.getFileName(file);
+                  if (!fileName.startsWith(".")) {
+                    final Path relativePath = addressBcPath.relativize(file);
+                    final Path providerFilePath = providerPath.resolve(relativePath);
+                    Paths.createParentDirectories(providerFilePath);
+                    Files.move(file, providerFilePath, StandardCopyOption.ATOMIC_MOVE);
+                  }
+                  return FileVisitResult.CONTINUE;
+                }
+              });
+            } catch (final IOException e) {
+            }
+          }
+          Paths.deleteDirectories(addressBcPath);
+        }
+      } finally {
+        ProviderSitePointConverter.postProcess();
+      }
+    }
+  }
+
   @Override
   protected boolean batchUpdate(final Transaction transaction) {
     loadFeatureStatusCodes();
     loadSiteLocationCodes();
     loadSiteTypeCodes();
-    processDataProviderDownload();
+    action1ProviderDownload();
     initPartnerOrganizationShortNames();
     if (!isCancelled()) {
       if (isHasLocalitiesToProcess()) {
@@ -249,28 +315,15 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     return new LoadProviderSitesIntoGba(this);
   }
 
-  private BasePanel newPanelDownload() {
-    final List<ProviderSitePointConverter> dataProviders = new ArrayList<>();
-    dataProviders.add(null);
-    dataProviders.addAll(ProviderSitePointConverter.getLoaders());
-    this.dataProviderComboBox = ComboBox.newComboBox("dataProvider", dataProviders);
-    useCachedFiles = new CheckBox("useCachedFiles", false);
-    processAllProviders = new CheckBox("processAll", false);
-
-    final BasePanel downloadPanel = new BasePanel(//
-      SwingUtil.newLabel("All Providers"), //
-      processAllProviders, //
-      SwingUtil.newLabel("Data Provider"), //
-      this.dataProviderComboBox, //
-      SwingUtil.newLabel("Use Cached Files"), //
-      useCachedFiles //
+  @Override
+  protected BasePanel newPanelOptions() {
+    return new BasePanel(//
+      newPanelOptionsProvider(), //
+      newPanelOptionsLocalities() //
     );
-    downloadPanel.setBorder(BorderFactory.createTitledBorder("Download data From Providers"));
-    GroupLayouts.makeColumns(downloadPanel, 2, true);
-    return downloadPanel;
   }
 
-  private BasePanel newPanelLocalities() {
+  private BasePanel newPanelOptionsLocalities() {
     this.loadSitesGdb = new CheckBox("loadSitesGdb", false);
 
     final BasePanel optionsPanel = super.newPanelOptions();
@@ -281,12 +334,31 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     return optionsPanel;
   }
 
-  @Override
-  protected BasePanel newPanelOptions() {
-    return new BasePanel(//
-      newPanelDownload(), //
-      newPanelLocalities() //
+  private BasePanel newPanelOptionsProvider() {
+    final List<ProviderSitePointConverter> dataProviders = new ArrayList<>();
+    dataProviders.add(null);
+    dataProviders.addAll(ProviderSitePointConverter.getLoaders());
+    this.dataProviderComboBox = ComboBox.newComboBox("dataProvider", dataProviders);
+    downloadCheckbox = new CheckBox("download", true);
+    this.downloadAddressBcCheckbox = new CheckBox("downloadAddressBc", true);
+    this.convertCheckbox = new CheckBox("convertCheckbox", true);
+    processAllProviders = new CheckBox("processAll", false);
+
+    final BasePanel downloadPanel = new BasePanel(//
+      SwingUtil.newLabel("All Providers"), //
+      processAllProviders, //
+      SwingUtil.newLabel("Address BC"), //
+      this.downloadAddressBcCheckbox, //
+      SwingUtil.newLabel("Data Provider"), //
+      this.dataProviderComboBox, //
+      SwingUtil.newLabel("Download"), //
+      downloadCheckbox, //
+      SwingUtil.newLabel("Convert"), //
+      this.convertCheckbox //
     );
+    downloadPanel.setBorder(BorderFactory.createTitledBorder("Provider: Download data Convert"));
+    GroupLayouts.makeColumns(downloadPanel, 2, true);
+    return downloadPanel;
   }
 
   @Override
@@ -295,59 +367,6 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     if (custodianPartnerOrgId != null) {
       if (record.equalValue(CUSTODIAN_PARTNER_ORG_ID, custodianPartnerOrgId)) {
         record.setValue(CUSTODIAN_SESSION_ID, getIntegrationSessionId());
-      }
-    }
-  }
-
-  private void processDataProviderDownload() {
-    if (!this.dataProvidersToProcess.isEmpty()) {
-      setSelectedTab(ProviderSitePointConverter.DATA_PROVIDER);
-      try {
-        final ProcessNetwork processes = new ProcessNetwork();
-
-        ProviderSitePointConverter.preProcess();
-
-        for (int i = 0; i < this.threadCount; i++) {
-          processes.addProcess("Provider " + i, () -> {
-            while (!isCancelled()) {
-              ProviderSitePointConverter loader;
-              try {
-                loader = this.dataProvidersToProcess.remove(0);
-              } catch (final Throwable e) {
-                return;
-              }
-              loader.run();
-            }
-          });
-        }
-        processes.startAndWait();
-        if (!isCancelled()) {
-
-          final Path providerPath = SITES_DIRECTORY.resolve("Provider");
-          final Path addressBcPath = providerPath.resolve("_ADDRESS_BC");
-          if (Paths.exists(addressBcPath)) {
-            try {
-              Files.walkFileTree(addressBcPath, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-                  throws IOException {
-                  final String fileName = Paths.getFileName(file);
-                  if (!fileName.startsWith(".")) {
-                    final Path relativePath = addressBcPath.relativize(file);
-                    final Path providerFilePath = providerPath.resolve(relativePath);
-                    Paths.createParentDirectories(providerFilePath);
-                    Files.move(file, providerFilePath, StandardCopyOption.ATOMIC_MOVE);
-                  }
-                  return FileVisitResult.CONTINUE;
-                }
-              });
-            } catch (final IOException e) {
-            }
-          }
-          Paths.deleteDirectories(addressBcPath);
-        }
-      } finally {
-        ProviderSitePointConverter.postProcess();
       }
     }
   }
@@ -364,18 +383,29 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
       this.dataProvidersToProcess.add(dataProviderToProcess);
     }
     final boolean hasProviders = !this.dataProvidersToProcess.isEmpty();
+    if (hasProviders || this.downloadAddressBcCheckbox.isSelected()) {
+      if (downloadCheckbox.isSelected()) {
+        newLabelCountTableModel("Download", //
+          ProviderSitePointConverter.DATA_PROVIDER, //
+          "Provider Download", //
+          "Address BC Download" //
+        );
+      }
+    }
     if (hasProviders) {
-      newLabelCountTableModel(ProviderSitePointConverter.DATA_PROVIDER,
-        ProviderSitePointConverter.DATA_PROVIDER, //
-        READ, //
-        WRITE, //
-        ERROR, //
-        ProviderSitePointConverter.WARNING, //
-        ProviderSitePointConverter.SECONDARY, //
-        ProviderSitePointConverter.IGNORED, //
-        ProviderSitePointConverter.READ_ADDRESS_BC, //
-        ProviderSitePointConverter.IGNORE_ADDRESS_BC//
-      );
+      if (this.convertCheckbox.isSelected()) {
+        newLabelCountTableModel(ProviderSitePointConverter.DATA_PROVIDER,
+          ProviderSitePointConverter.DATA_PROVIDER, //
+          READ, //
+          WRITE, //
+          ERROR, //
+          ProviderSitePointConverter.WARNING, //
+          ProviderSitePointConverter.SECONDARY, //
+          ProviderSitePointConverter.IGNORED, //
+          ProviderSitePointConverter.READ_ADDRESS_BC, //
+          ProviderSitePointConverter.IGNORE_ADDRESS_BC//
+        );
+      }
     }
     if (hasProviders) {
       if (isHasLocalitiesToProcess()) {

@@ -17,6 +17,7 @@ import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.BoundaryCache;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gbasites.load.provider.other.ImportSites;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.model.type.code.CommunityPoly;
@@ -46,7 +47,7 @@ public class LoadEmergencyManagementSites implements SitePoint {
 
   public static final String IGNORE_XCOVER = "Ignore XCOVER";
 
-  static final String EM_SITES = "Em Sites";
+  public static final String EM_SITES = "Em Sites";
 
   private final BoundaryCache communityCache = CommunityPoly.getCommunities();
 

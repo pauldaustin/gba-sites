@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.jeometry.common.data.identifier.Identifier;
@@ -28,51 +29,48 @@ import ca.bc.gov.gba.model.BoundaryCache;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.common.converter.AbstractSiteConverter;
+import ca.bc.gov.gbasites.load.provider.other.ImportSites;
+import ca.bc.gov.gbasites.load.sourcereader.AbstractSourceReader;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.model.type.code.FeatureStatus;
 
+import com.revolsys.collection.map.LinkedHashMapEx;
 import com.revolsys.collection.map.MapEx;
 import com.revolsys.collection.map.Maps;
 import com.revolsys.collection.set.Sets;
 import com.revolsys.geometry.index.PointRecordMap;
 import com.revolsys.geometry.model.Geometry;
-import com.revolsys.geometry.model.GeometryDataTypes;
 import com.revolsys.geometry.model.GeometryFactory;
 import com.revolsys.geometry.model.Point;
 import com.revolsys.geometry.model.Polygonal;
 import com.revolsys.geometry.operation.union.UnaryUnionOp;
-import com.revolsys.gis.esri.gdb.file.FileGdbRecordStore;
-import com.revolsys.gis.esri.gdb.file.FileGdbRecordStoreFactory;
 import com.revolsys.io.Writer;
+import com.revolsys.io.file.AtomicPathUpdator;
 import com.revolsys.io.file.Paths;
 import com.revolsys.io.map.MapObjectFactory;
-import com.revolsys.io.map.MapSerializer;
 import com.revolsys.properties.BaseObjectWithProperties;
-import com.revolsys.record.ArrayRecord;
 import com.revolsys.record.Record;
 import com.revolsys.record.RecordLog;
 import com.revolsys.record.Records;
 import com.revolsys.record.code.CodeTable;
-import com.revolsys.record.io.ListRecordReader;
 import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.io.RecordWriter;
-import com.revolsys.record.io.format.esri.rest.map.FeatureLayer;
 import com.revolsys.record.io.format.tsv.Tsv;
 import com.revolsys.record.io.format.tsv.TsvWriter;
-import com.revolsys.record.query.Query;
 import com.revolsys.record.schema.FieldDefinition;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.record.schema.RecordDefinitionBuilder;
 import com.revolsys.record.schema.RecordDefinitionImpl;
 import com.revolsys.swing.table.counts.LabelCountMapTableModel;
+import com.revolsys.util.Counter;
 import com.revolsys.util.Debug;
 import com.revolsys.util.Property;
 import com.revolsys.util.ServiceInitializer;
 import com.revolsys.util.Strings;
-import com.revolsys.webservice.WebServiceFeatureLayer;
 
 public class ProviderSitePointConverter extends BaseObjectWithProperties
   implements SitePoint, Runnable {
@@ -245,22 +243,20 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
     return dataProviderErrorFile;
   }
 
+  public static AtomicPathUpdator getDataProviderPathUpdator(final Path targetDirectory,
+    final Identifier partnerOrganizationId, final String suffix) {
+    final String baseName = getFileName(partnerOrganizationId);
+    final String fileName = baseName + suffix;
+    return new AtomicPathUpdator(targetDirectory, fileName);
+  }
+
   static String getFileName(final Identifier partnerOrganizationId) {
     final String shortName = getPartnerOrganizationShortName(partnerOrganizationId);
     return BatchUpdateDialog.toFileName(shortName);
   }
 
-  protected static Collection<ProviderSitePointConverter> getLoaders() {
-    final List<ProviderSitePointConverter> providers = new ArrayList<>();
-    providers.add(null);
-    for (final ProviderSitePointConverter provider : siteLoaderByDataProvider.values()) {
-      if (provider.getDataProvider().equals(INTEGRATED_CADASTRAL_INFORMATION_SOCIETY)) {
-        providers.set(0, provider);
-      } else {
-        providers.add(provider);
-      }
-    }
-    return providers;
+  public static Collection<ProviderSitePointConverter> getLoaders() {
+    return siteLoaderByDataProvider.values();
   }
 
   public static String getLocalityName() {
@@ -357,8 +353,8 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
     return sitePointTsvRecordDefinition;
   }
 
-  static RecordDefinition getSourceWriterRecordDefinition(final RecordDefinition recordDefinition,
-    final GeometryFactory forceGeometryFactory) {
+  public static RecordDefinition getSourceWriterRecordDefinition(
+    final RecordDefinition recordDefinition, final GeometryFactory forceGeometryFactory) {
     final RecordDefinitionImpl sourceWriterRecordDefinition = new RecordDefinitionImpl(
       recordDefinition.getPathName());
     final String geometryFieldName = recordDefinition.getGeometryFieldName();
@@ -394,11 +390,8 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
     }
   }
 
-  protected static void init() {
+  public static void init() {
     ServiceInitializer.initializeServices();
-    siteLoaderByDataProvider.put(INTEGRATED_CADASTRAL_INFORMATION_SOCIETY,
-      new ProviderSitePointConverter(INTEGRATED_CADASTRAL_INFORMATION_SOCIETY,
-        ProviderSitePointConverter::loadSitesIntegratedCadastralInformationSociety));
 
     final Path siteProviderConfigPath = SITE_CONFIG_DIRECTORY.resolve("Provider/OpenData");
     if (Paths.exists(siteProviderConfigPath)) {
@@ -614,253 +607,7 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
     }
   }
 
-  static ProviderSitePointConverter newProviderSitePointConverterArcGis(
-    final Map<String, ? extends Object> properties) {
-    final ProviderSitePointConverter loader = new ProviderSitePointConverter(properties);
-    final String dataProvider = loader.getDataProvider();
-
-    final String serverUrl = (String)properties.get("serverUrl");
-    final String path = (String)properties.get("path");
-    providerConfigWriter.write(dataProvider, loader.isOpenData(), "ArcGIS REST", serverUrl, path);
-
-    final Runnable runnable = () -> {
-      final boolean loadByObjectId = Maps.getBool(properties, "loadByObjectId");
-      RecordDefinition layerRecordDefinition = null;
-      Supplier<RecordReader> readerFactory = null;
-      int expectedRecordCount = -1;
-      try {
-        final FeatureLayer layer = FeatureLayer.getRecordLayerDescription(serverUrl, path);
-        if (layer == null) {
-          Logs.error(ProviderSitePointConverter.class,
-            dataProvider + ": using cached files. Cannot find layer: " + path + " on " + serverUrl);
-        } else {
-          expectedRecordCount = layer.getRecordCount((Query)null);
-          layerRecordDefinition = layer.getRecordDefinition();
-          readerFactory = () -> {
-            if (loadByObjectId || !layer.isSupportsPagination()
-              || layer.getCurrentVersion() < 10.3) {
-              return layer.newRecordReader((Query)null, true);
-            } else {
-              return layer.newRecordReader(ArrayRecord.FACTORY, (Query)null);
-            }
-          };
-        }
-      } catch (final Throwable e) {
-        Logs.error(ProviderSitePointConverter.class,
-          dataProvider + ": using cached files. Cannot connect to server: " + serverUrl, e);
-      }
-      loadSitesReaderFactory(loader, readerFactory, layerRecordDefinition, expectedRecordCount);
-    };
-    loader.setRunnable(runnable);
-    return loader;
-  }
-
-  @SuppressWarnings("unchecked")
-  static ProviderSitePointConverter newProviderSitePointConverterFile(
-    final Map<String, ? extends Object> properties) {
-    final ProviderSitePointConverter loader = new ProviderSitePointConverter(properties);
-    final String dataProvider = loader.getDataProvider();
-
-    Supplier<RecordReader> sourceReaderFactory;
-    String fileName = (String)properties.get("fileName");
-    if (Property.hasValue(fileName)) {
-      final Object source = ImportSites.SITES_DIRECTORY.resolve("Input")
-        .resolve(dataProvider)
-        .resolve(fileName);
-      providerConfigWriter.write(dataProvider, loader.isOpenData(), "File",
-        "Input/" + dataProvider + "/" + fileName);
-      sourceReaderFactory = () -> {
-        final RecordReader reader = RecordReader.newRecordReader(source);
-        final Map<String, Object> readerProperties = (Map<String, Object>)properties
-          .get("readerProperties");
-        reader.setProperties(readerProperties);
-        return reader;
-      };
-    } else {
-      sourceReaderFactory = (Supplier<RecordReader>)properties.get("fileReaderFactory");
-      if (sourceReaderFactory == null) {
-        throw new IllegalArgumentException(
-          "Config must have fileName, fileUrl, of fileReaderFactory:" + properties);
-      } else if (sourceReaderFactory instanceof MapSerializer) {
-        final MapSerializer serializer = (MapSerializer)sourceReaderFactory;
-        final MapEx config = serializer.toMap();
-        fileName = config.getString("fileName");
-        final String fileUrl = config.getString("fileUrl");
-        final String baseName = config.getString("baseName");
-        final String baseFileExtension = config.getString("baseFileExtension");
-        final String filePath;
-        if (Property.hasValue(baseName)) {
-          filePath = Strings.toString(".", baseName, baseFileExtension);
-        } else {
-          filePath = null;
-        }
-        if (Property.hasValue(fileName)) {
-          providerConfigWriter.write(dataProvider, loader.isOpenData(), "File", fileName, filePath);
-        } else if (Property.hasValue(fileUrl)) {
-          providerConfigWriter.write(dataProvider, loader.isOpenData(), "File", fileUrl, filePath);
-        }
-      }
-    }
-
-    final Runnable runnable = () -> {
-      loadSitesReaderFactory(loader, sourceReaderFactory, null, -1);
-    };
-    loader.setRunnable(runnable);
-    return loader;
-  }
-
-  static ProviderSitePointConverter newProviderSitePointConverterFileGdb(
-    final Map<String, ? extends Object> properties) {
-    final ProviderSitePointConverter loader = new ProviderSitePointConverter(properties);
-    final String dataProvider = loader.getDataProvider();
-    final String gdbFileName = (String)properties.get("gdbFileName");
-    final String typePath = (String)properties.get("typePath");
-    providerConfigWriter.write(dataProvider, loader.isOpenData(), "FGDB",
-      "Input/" + dataProvider + "/" + gdbFileName, typePath);
-    final Runnable runnable = () -> {
-      final Path sourceFile = ImportSites.SITES_DIRECTORY.resolve("Input")
-        .resolve(dataProvider)
-        .resolve(gdbFileName);
-
-      try (
-        FileGdbRecordStore recordStore = FileGdbRecordStoreFactory.newRecordStore(sourceFile)) {
-        recordStore.setCreateMissingRecordStore(false);
-        recordStore.setCreateMissingTables(false);
-        recordStore.initialize();
-        final Supplier<RecordReader> sourceReaderFactory = () -> {
-          return recordStore.getRecords(PathName.newPathName(typePath));
-        };
-        loadSitesReaderFactory(loader, sourceReaderFactory, null, -1);
-      }
-    };
-    loader.setRunnable(runnable);
-    return loader;
-  }
-
-  @SuppressWarnings("unchecked")
-  static ProviderSitePointConverter newProviderSitePointConverterJoin(
-    final Map<String, ? extends Object> properties) {
-    final ProviderSitePointConverter loader = new ProviderSitePointConverter(properties);
-    final String dataProvider = loader.getDataProvider();
-    final Supplier<RecordReader> fieldReaderFactory = (Supplier<RecordReader>)properties
-      .get("fieldReaderFactory");
-    String sourceUrl;
-    String sourcePath;
-    if (fieldReaderFactory instanceof MapSerializer) {
-      final MapEx config = ((MapSerializer)fieldReaderFactory).toMap();
-      final String fileUrl = config.getString("fileUrl");
-      if (Property.hasValue(fileUrl)) {
-        sourceUrl = fileUrl;
-      } else {
-        sourceUrl = config.getString("serverUrl");
-      }
-      sourcePath = config.getString("layerPath");
-    } else {
-      sourceUrl = null;
-      sourcePath = null;
-    }
-    final Supplier<RecordReader> geometryReaderFactory = (Supplier<RecordReader>)properties
-      .get("geometryReaderFactory");
-    String geometryUrl;
-    String geometryPath;
-    if (fieldReaderFactory instanceof MapSerializer) {
-      final MapEx config = ((MapSerializer)geometryReaderFactory).toMap();
-      final String fileUrl = config.getString("fileUrl");
-      if (Property.hasValue(fileUrl)) {
-        geometryUrl = fileUrl;
-      } else {
-        geometryUrl = config.getString("serverUrl");
-      }
-      geometryPath = config.getString("layerPath");
-    } else {
-      geometryUrl = null;
-      geometryPath = null;
-    }
-    providerConfigWriter.write(dataProvider, loader.isOpenData(), "Join", sourceUrl, sourcePath,
-      geometryUrl, geometryPath);
-
-    final Runnable runnable = () -> {
-      final Supplier<RecordReader> readerFactory = () -> {
-        final String geometryRecordFieldName = (String)properties.get("geometryRecordFieldName");
-
-        final String fieldRecordFieldName = (String)properties.get("fieldRecordFieldName");
-
-        GeometryFactory geometryFactory;
-        final Map<String, Geometry> geometryById = new HashMap<>();
-        try (
-          RecordReader geometryReader = geometryReaderFactory.get()) {
-          geometryFactory = geometryReader.getGeometryFactory();
-          for (final Record geometryRecord : geometryReader) {
-            final String id = geometryRecord.getString(geometryRecordFieldName);
-            final Geometry geometry = geometryRecord.getGeometry();
-            final Geometry geometry2d = geometry.newGeometry(2);
-            geometryById.put(id, geometry2d);
-          }
-        }
-        final List<Record> sourceSites = new ArrayList<>();
-        final RecordDefinitionImpl recordDefinition;
-        try (
-          RecordReader fieldReader = fieldReaderFactory.get()) {
-          recordDefinition = (RecordDefinitionImpl)fieldReader.getRecordDefinition();
-          recordDefinition.addField("geometry", GeometryDataTypes.GEOMETRY);
-          recordDefinition.setGeometryFactory(geometryFactory);
-
-          for (final Record fieldRecord : fieldReader) {
-            final String id = fieldRecord.getString(fieldRecordFieldName);
-            final Geometry geometry = geometryById.get(id);
-            if (geometry == null) {
-              final String partnerOrganizationName = getPartnerOrganizationNameThread();
-              ImportSites.dialog.addLabelCount(DATA_PROVIDER, partnerOrganizationName,
-                ProviderSitePointConverter.IGNORED);
-              ImportSites.dialog.addLabelCount(ProviderSitePointConverter.WARNING,
-                "Ignore No matching geometry record", ProviderSitePointConverter.WARNING);
-            } else {
-              fieldRecord.setGeometryValue(geometry);
-              sourceSites.add(fieldRecord);
-            }
-          }
-        }
-        return new ListRecordReader(recordDefinition, sourceSites);
-      };
-      loadSitesReaderFactory(loader, readerFactory, null, -1);
-    };
-    loader.setRunnable(runnable);
-    return loader;
-  }
-
-  static ProviderSitePointConverter newProviderSitePointConverterMapGuide(
-    final Map<String, ? extends Object> properties) {
-    final ProviderSitePointConverter loader = new ProviderSitePointConverter(properties);
-    final String dataProvider = loader.getDataProvider();
-
-    final String serverUrl = (String)properties.get("serverUrl");
-    final String path = (String)properties.get("path");
-    providerConfigWriter.write(dataProvider, loader.isOpenData(), "MapGuide", serverUrl, path);
-
-    final Runnable runnable = () -> {
-      final GeometryFactory forceGeometryFactory = loader.getGeometryFactory();
-
-      final WebServiceFeatureLayer layer = com.revolsys.record.io.format.mapguide.FeatureLayer
-        .getFeatureLayer(serverUrl, path);
-      if (layer == null) {
-        Logs.error(ImportSites.class, "Cannot find layer: " + path + " on " + serverUrl);
-      } else {
-        final RecordDefinition layerRecordDefinition = layer.getRecordDefinition();
-        if (forceGeometryFactory != null) {
-          layerRecordDefinition.setGeometryFactory(forceGeometryFactory);
-        }
-
-        final Supplier<RecordReader> readerFactory = () -> {
-          return layer.newRecordReader(ArrayRecord.FACTORY, (Query)null);
-        };
-        loadSitesReaderFactory(loader, readerFactory, layerRecordDefinition, -1);
-      }
-    };
-    loader.setRunnable(runnable);
-    return loader;
-  }
-
-  protected static void postProcess() {
+  public static void postProcess() {
     if (ImportSites.isProcessAllProviders() && !ImportSites.dialog.isCancelled()) {
       final Path providerCountsPath = ImportSites.SITES_DIRECTORY.resolve("PROVIDER_COUNTS.xlsx");
       final LabelCountMapTableModel providerCounts = ImportSites.dialog
@@ -942,7 +689,7 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
     }
   }
 
-  static void replaceOldDirectory(final Identifier partnerOrganizationId) {
+  public static void replaceOldDirectory(final Identifier partnerOrganizationId) {
     final Path newDirectory = getDataProviderDirectory(partnerOrganizationId, "_");
     final Path originalDirectory = getDataProviderDirectory(partnerOrganizationId, null);
     final Path originalTempDirectory = getDataProviderDirectory(partnerOrganizationId, "__");
@@ -1097,6 +844,8 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
     }
   }
 
+  private Function<MapEx, AbstractSourceReader> sourceReader;
+
   private AbstractSiteConverter converter;
 
   private String dataProvider;
@@ -1121,15 +870,31 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
     }
   }
 
-  public ProviderSitePointConverter(final Map<String, ? extends Object> properties,
-    final Runnable runnable) {
-    this(properties);
-    this.runnable = runnable;
-  }
-
-  public ProviderSitePointConverter(final String dataProvider, final Runnable runnable) {
-    setDataProvider(dataProvider);
-    this.runnable = runnable;
+  public void downloadData(final StatisticsDialog dialog, final boolean downloadData) {
+    if (this.sourceReader == null) {
+      Logs.error(this, "No source reader for: " + getPartnerOrganizationName());
+    } else {
+      final Identifier partnerOrganizationId = getPartnerOrganizationId();
+      final Path baseDirectory = ImportSites.SITES_DIRECTORY.resolve("InputByProvider");
+      try (
+        AtomicPathUpdator pathUpdator = ProviderSitePointConverter
+          .getDataProviderPathUpdator(baseDirectory, partnerOrganizationId, "_PROVIDER.tsv")) {
+        if (downloadData || !pathUpdator.isTargetExists()) {
+          final String partnerOrganizationName = getPartnerOrganizationName();
+          final Counter counter = dialog.getCounter("Download", "Provider Download",
+            partnerOrganizationName);
+          final MapEx properties = new LinkedHashMapEx() //
+            .add("baseDirectory", baseDirectory) //
+            .add("cancellable", dialog) //
+            .add("counter", counter) //
+            .add("dataProvider", partnerOrganizationName) //
+            .add("partnerOrganizationId", partnerOrganizationId) //
+          ;
+          final AbstractSourceReader readerProcess = this.sourceReader.apply(properties);
+          readerProcess.downloadData(pathUpdator);
+        }
+      }
+    }
   }
 
   public AbstractSiteConverter getConverter() {
@@ -1167,6 +932,10 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
       final Identifier partnerOrganizationId = getPartnerOrganizationId(this.dataProvider);
       return getPartnerOrganizationName(partnerOrganizationId);
     }
+  }
+
+  public Function<MapEx, AbstractSourceReader> getReaderFactory() {
+    return this.sourceReader;
   }
 
   public Runnable getRunnable() {
@@ -1261,6 +1030,10 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
 
   public void setRunnable(final Runnable runnable) {
     this.runnable = runnable;
+  }
+
+  public void setSourceReader(final Function<MapEx, AbstractSourceReader> readerFactory) {
+    this.sourceReader = readerFactory;
   }
 
   @Override
