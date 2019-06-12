@@ -13,7 +13,7 @@ import org.jeometry.common.number.Integers;
 
 import ca.bc.gov.gba.model.type.StructuredName;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
-import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
+import ca.bc.gov.gbasites.load.convert.AbstractSiteConverter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.list.Lists;

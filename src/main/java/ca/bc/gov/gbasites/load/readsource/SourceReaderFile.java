@@ -1,4 +1,4 @@
-package ca.bc.gov.gbasites.load.sourcereader;
+package ca.bc.gov.gbasites.load.readsource;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -26,9 +26,9 @@ public class SourceReaderFile extends AbstractRecordReaderSourceReader {
   @Override
   protected RecordReader newRecordReader() {
     if (Property.hasValue(this.fileName)) {
-      final Object source = this.baseDirectory.getParent()
-        .resolve("Input")
-        .resolve(this.dataProvider)
+      final Object source = this.baseDirectory//
+        .resolve("Source")
+        .resolve(getPartnerOrganizationShortName())
         .resolve(this.fileName);
       final RecordReader reader = RecordReader.newRecordReader(source);
       final Map<String, Object> readerProperties = getProperty("readerProperties");

@@ -10,9 +10,10 @@ import org.jeometry.common.logging.Logs;
 import org.jeometry.common.number.BigDecimals;
 
 import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
-import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
+import ca.bc.gov.gbasites.load.convert.AbstractSiteConverter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 
@@ -100,7 +101,7 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
   }
 
   public void addError(final String message) {
-    this.siteConverter.addError(message);
+    this.siteConverter.addError(this, message);
   }
 
   public void addUnitDescriptor(final Object unitDescriptor) {
@@ -157,7 +158,7 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
   }
 
   public void addWarningCount(final String message) {
-    this.siteConverter.addWarningCount(message);
+    this.siteConverter.addWarning(message);
   }
 
   public void addWarningOrError(final String message, final boolean error) {
@@ -540,6 +541,22 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
     } else {
       return clearCivicNumberSuffix();
     }
+  }
+
+  public void setCreateModifyOrg(final PartnerOrganization partnerOrganization) {
+    final Identifier partnerOrganizationId = partnerOrganization.getPartnerOrganizationId();
+    final String partnerOrganizationName = partnerOrganization.getPartnerOrganizationName();
+    setValue(CREATE_PARTNER_ORG_ID, partnerOrganizationId);
+    setValue(CREATE_PARTNER_ORG, partnerOrganizationName);
+    setValue(MODIFY_PARTNER_ORG_ID, partnerOrganizationId);
+    setValue(MODIFY_PARTNER_ORG, partnerOrganizationName);
+  }
+
+  public void setCustodianOrg(final PartnerOrganization partnerOrganization) {
+    final Identifier partnerOrganizationId = partnerOrganization.getPartnerOrganizationId();
+    final String partnerOrganizationName = partnerOrganization.getPartnerOrganizationName();
+    setValue(CUSTODIAN_PARTNER_ORG_ID, partnerOrganizationId);
+    setValue(CUSTODIAN_PARTNER_ORG, partnerOrganizationName);
   }
 
   public boolean setFullAddress(String fullAddress) {

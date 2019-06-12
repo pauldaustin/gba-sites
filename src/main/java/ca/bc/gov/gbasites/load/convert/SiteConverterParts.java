@@ -1,14 +1,14 @@
-package ca.bc.gov.gbasites.load.converter;
+package ca.bc.gov.gbasites.load.convert;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import ca.bc.gov.gba.model.type.code.NameDirection;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
-import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
@@ -48,6 +48,11 @@ public class SiteConverterParts extends AbstractSiteConverter {
     .add("TWENTY-FIRST", "21ST") //
     .getMap();
 
+  public static Function<MapEx, SiteConverterParts> newFactory(
+    final Map<String, ? extends Object> config) {
+    return properties -> new SiteConverterParts(properties.addAll(config));
+  }
+
   private String unitFieldName;
 
   private String unitTypeFieldName;
@@ -84,7 +89,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
   }
 
   @Override
-  public SitePointProviderRecord convert(final Record sourceRecord, final Point point) {
+  public SitePointProviderRecord convertRecordSite(final Record sourceRecord, final Point point) {
     final String partnerOrganizationShortName = getPartnerOrganizationShortName();
     final String addressFieldName = getAddressFieldName();
     if (!this.activeTest.test(sourceRecord)) {
@@ -92,7 +97,8 @@ public class SiteConverterParts extends AbstractSiteConverter {
     }
     final SitePointProviderRecord sitePoint = newSitePoint(this, point);
     String sourceFullAddress = getUpperString(sourceRecord, addressFieldName);
-    ProviderSitePointConverter.setFeatureStatusCodeByFullAddress(sitePoint, sourceFullAddress);
+    sitePoint.setValue(CUSTODIAN_FULL_ADDRESS, sourceFullAddress);
+    setFeatureStatusCodeByFullAddress(sitePoint, sourceFullAddress);
     if ("NO CIVIC".equalsIgnoreCase(sourceFullAddress)) {
       throw new IgnoreSiteException(IGNORE_STREET_NAME_NOT_SPECIFIED);
     }
@@ -131,7 +137,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
     if (streetName != null && "NRD".equals(partnerOrganizationShortName)
       && streetName.contains("(")) {
       streetName = streetName.replaceAll(" \\(.+", "");
-      addWarningCount("STREET_NAME ends with (... SUFFIX");
+      addWarning(sourceRecord, "STREET_NAME ends with (... SUFFIX");
     }
     String streetType = getUpperString(sourceRecord, this.streetTypeFieldName);
     if ("N/A".equals(streetType)) {
@@ -150,7 +156,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
     }
     if (Property.hasValuesAll(streetName, streetType)) {
       if (streetName.endsWith(" " + streetType)) {
-        addWarningCount("STREET_NAME ends with STREET_TYPE");
+        addWarning(sourceRecord, "STREET_NAME ends with STREET_TYPE");
         streetType = "";
       }
     }
@@ -158,7 +164,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
     String originalStreetName = Strings.toString(" ", streetDirPrefix, streetName, streetType,
       streetDirSuffix);
     if (Property.isEmpty(originalStreetName) && sitePoint.hasValue(FULL_ADDRESS)) {
-      return this.siteConverterAddress.convert(sourceRecord, point);
+      return this.siteConverterAddress.convertRecordSite(sourceRecord, point);
     }
     if (sitePoint.hasValue(FULL_ADDRESS) && this.streetTypeFieldName != null) {
       final String fullAddress = sitePoint.getFullAddress();
@@ -289,7 +295,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
 
     boolean unitDescriptorWithNoCivicNumber = false;
     if (Property.isEmpty(structuredName)) {
-      addWarningCount(IGNORE_STREET_NAME_NOT_SPECIFIED);
+      addWarning(sourceRecord, IGNORE_STREET_NAME_NOT_SPECIFIED);
       return null;
     } else {
       final Integer civicNumber = sitePoint.getCivicNumber();

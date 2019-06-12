@@ -1,6 +1,6 @@
 package ca.bc.gov.gbasites;
 
-import ca.bc.gov.gbasites.load.provider.other.ImportSites;
+import ca.bc.gov.gbasites.load.ImportSites;
 
 import com.revolsys.util.ServiceInitializer;
 

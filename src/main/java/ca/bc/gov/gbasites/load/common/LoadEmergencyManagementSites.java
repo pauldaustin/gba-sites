@@ -17,7 +17,7 @@ import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.BoundaryCache;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
-import ca.bc.gov.gbasites.load.provider.other.ImportSites;
+import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.model.type.code.CommunityPoly;

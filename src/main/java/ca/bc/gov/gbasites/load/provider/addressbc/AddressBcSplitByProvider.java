@@ -21,6 +21,8 @@ import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
 import ca.bc.gov.gba.ui.StatisticsDialog;
+import ca.bc.gov.gbasites.load.ImportSites;
+import ca.bc.gov.gbasites.load.common.PartnerOrganizationFiles;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.common.SplitByProviderWriter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
@@ -45,17 +47,17 @@ import com.revolsys.util.Property;
 
 public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
-  private static final String STATISTICS_NAME = "Address BC Download";
+  private static final String STATISTICS_NAME = "ABC Source";
 
-  public static void downloadAddressBc(final Path inputDirectory) {
+  public static void downloadAddressBc(final Path sourceDirectory) {
     final String url = "ftp://geoshare.icisociety.ca/Addresses/ABC.csv.zip";
     try {
       final String user = GbaController.getProperty("addressBcFtpUser");
       final String password = GbaController.getProperty("addressBcFtpPassword");
       final UrlResource resource = new UrlResource(url, user, password);
 
-      Paths.createDirectories(inputDirectory);
-      ZipUtil.unzipFile(resource, inputDirectory);
+      Paths.createDirectories(sourceDirectory);
+      ZipUtil.unzipFile(resource, sourceDirectory);
     } catch (final Exception e) {
       throw Exceptions.wrap("Error downloading: " + url, e);
     }
@@ -63,28 +65,27 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
   public static Path split(final StatisticsDialog dialog, final boolean download,
     final boolean split) {
-    final Path inputDirectory = SitePoint.SITES_DIRECTORY //
+    final Path sourceDirectory = SitePoint.SITES_DIRECTORY //
       .resolve("AddressBc")//
-      .resolve("Input") //
+      .resolve("Source") //
     ;
 
-    if (!dialog.isCancelled() && (download || !Files.exists(inputDirectory))) {
-      downloadAddressBc(inputDirectory);
+    if (!dialog.isCancelled() && (download || !Files.exists(sourceDirectory))) {
+      downloadAddressBc(sourceDirectory);
     }
-    final Path inputByProviderDirectory = SitePoint.SITES_DIRECTORY //
-      .resolve("AddressBc")//
-      .resolve("InputByProvider") //
+    final Path sourceByProviderDirectory = ImportSites.SOURCE_BY_PROVIDER
+      .newDirectoryPath(AddressBc.ADDRESS_BC_DIRECTORY) //
     ;
 
-    if (!dialog.isCancelled() && (split || !Paths.exists(inputByProviderDirectory))) {
-      new AddressBcSplitByProvider(dialog, inputDirectory, inputByProviderDirectory).run();
+    if (!dialog.isCancelled() && (split || !Paths.exists(sourceByProviderDirectory))) {
+      new AddressBcSplitByProvider(dialog, sourceDirectory, sourceByProviderDirectory).run();
     }
-    return inputByProviderDirectory;
+    return sourceByProviderDirectory;
   }
 
-  private final Path inputDirectory;
+  private final Path sourceDirectory;
 
-  private final Path inputByProviderDirectory;
+  private final Path sourceByProviderDirectory;
 
   private final Map<String, RangeSet> unitDescriptorsById = new HashMap<>();
 
@@ -106,14 +107,13 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
   private final Path directory;
 
-  public AddressBcSplitByProvider(final StatisticsDialog dialog, final Path inputDirectory,
-    final Path inputByProviderDirectory) {
+  public AddressBcSplitByProvider(final StatisticsDialog dialog, final Path sourceDirectory,
+    final Path sourceByProviderDirectory) {
     this.dialog = dialog;
-    this.directory = inputByProviderDirectory;
-    this.inputDirectory = inputDirectory;
-    this.inputByProviderDirectory = inputByProviderDirectory;
-    Paths.deleteDirectories(this.inputByProviderDirectory);
-    Paths.createDirectories(this.inputByProviderDirectory);
+    this.directory = sourceByProviderDirectory;
+    this.sourceDirectory = sourceDirectory;
+    this.sourceByProviderDirectory = sourceByProviderDirectory;
+    Paths.createDirectories(this.sourceByProviderDirectory);
   }
 
   private void addWriter(final String dataProvider, final SplitByProviderWriter providerWriter) {
@@ -236,7 +236,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
       "CHECK POSTAL CODE - RESIDENTIAL", "CHECK POSTAL CODE - COMMERCIAL", "Bldg plan 127 suites",
       "97 unit rental building", "check pc b/c new units", "CHECK PC - commercial unit");
 
-    final Path file = this.inputDirectory.resolve("ABC_EXTENDED_ADDRESS.csv");
+    final Path file = this.sourceDirectory.resolve("ABC_EXTENDED_ADDRESS.csv");
     try (
       Reader<Record> reader = RecordReader.newRecordReader(file)) {
       for (final Record record : reader) {
@@ -309,7 +309,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
     final Set<String> ignoreUnitDescriptors = Sets.newHash("DOCK");
     final Set<String> ignoreUnitNumberSuffixes = Sets.newHash("MH", "BH");
-    final Path file = this.inputDirectory.resolve("ABC_SUB_ADDRESS.csv");
+    final Path file = this.sourceDirectory.resolve("ABC_SUB_ADDRESS.csv");
     try (
       Reader<Record> reader = RecordReader.newRecordReader(file)) {
       for (final Record record : reader) {
@@ -407,18 +407,19 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     SplitByProviderWriter providerWriter;
     final PartnerOrganization partnerOrganization = PartnerOrganizations
       .newPartnerOrganization(dataProvider);
-    final Counter counter = this.dialog.getCounter("Provider", STATISTICS_NAME,
-      partnerOrganization.getPartnerOrganizationName());
+    final PartnerOrganizationFiles partnerOrganizationFiles = new PartnerOrganizationFiles(
+      this.dialog, partnerOrganization, AddressBc.ADDRESS_BC_DIRECTORY, AddressBc.FILE_SUFFIX);
+    final Counter counter = this.dialog.getCounter("Provider",
+      partnerOrganization.getPartnerOrganizationName(), STATISTICS_NAME);
 
-    providerWriter = new SplitByProviderWriter(dataProvider, counter, partnerOrganization,
-      this.recordDefinition, this.inputByProviderDirectory, "_ADDRESS_BC");
+    providerWriter = new SplitByProviderWriter(this.dialog, dataProvider, counter,
+      partnerOrganizationFiles, this.recordDefinition);
     this.writers.add(providerWriter);
     addWriter(dataProvider, providerWriter);
     return providerWriter;
   }
 
   public void run() {
-    AddressBcImportSites.deleteTempFiles(this.inputByProviderDirectory);
     loadExtendedAddress();
     loadSubAddress();
 
@@ -443,7 +444,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
       readerProperties.put("pointXFieldName", "X_COORD");
       readerProperties.put("pointYFieldName", "Y_COORD");
       readerProperties.put("geometryFactory", Gba.GEOMETRY_FACTORY_2D);
-      final Path sourceFile = this.inputDirectory.resolve("ABC_CIVIC_ADDRESS.csv");
+      final Path sourceFile = this.sourceDirectory.resolve("ABC_CIVIC_ADDRESS.csv");
       try (
         RecordReader sourceReader = RecordReader.newRecordReader(sourceFile)) {
         sourceReader.setProperties(readerProperties);
@@ -485,14 +486,14 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
       for (final SplitByProviderWriter writer : this.writers) {
         writer.close();
       }
-      Paths.deleteFiles(this.inputByProviderDirectory, "*.prj");
     }
   }
 
   private synchronized void writeExtraDataWarning(final String fileName, final String civicId,
     final String fieldName, final String fieldValue) {
     if (this.extraDataWriter == null) {
-      this.extraDataWriter = Tsv.plainWriter(this.directory.resolve("EXTENDED_FIELD_WARNING.tsv"));
+      this.extraDataWriter = Tsv
+        .plainWriter(this.directory.getParent().resolve("EXTENDED_FIELD_WARNING.tsv"));
       this.extraDataWriter.write("FILE_NAME", AddressBc.CIVIC_ID, "FIELD_NAME", "FIELD_VALUE");
     }
     this.extraDataWriter.write(fileName, civicId, fieldName, fieldValue);

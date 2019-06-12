@@ -1,4 +1,4 @@
-package ca.bc.gov.gbasites.load.sourcereader;
+package ca.bc.gov.gbasites.load.readsource;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -39,9 +39,9 @@ public class SourceReaderFileGdb extends AbstractRecordReaderSourceReader {
   protected RecordReader newRecordReader() {
     final String gdbFileName = getProperty("gdbFileName");
     final String typePath = getProperty("typePath");
-    final Path sourceFile = this.baseDirectory.getParent()
-      .resolve("Input")
-      .resolve(this.dataProvider)
+    final Path sourceFile = this.baseDirectory //
+      .resolve("Source")
+      .resolve(getPartnerOrganizationShortName())
       .resolve(gdbFileName);
 
     try (

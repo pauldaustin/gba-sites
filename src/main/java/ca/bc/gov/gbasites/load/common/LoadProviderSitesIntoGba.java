@@ -25,7 +25,7 @@ import ca.bc.gov.gba.model.GbaTables;
 import ca.bc.gov.gba.model.type.TransportLine;
 import ca.bc.gov.gba.process.qa.AbstractTaskByLocalityProcess;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
-import ca.bc.gov.gbasites.load.provider.other.ImportSites;
+import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 

@@ -3,7 +3,6 @@ package ca.bc.gov.gbasites.load.provider.addressbc;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
 import javax.swing.SortOrder;
@@ -16,7 +15,9 @@ import org.jeometry.common.logging.Logs;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
+import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 
@@ -42,18 +43,15 @@ public class AddressBcMerge implements SitePoint, Cancellable {
 
   private final JdbcRecordStore recordStore = GbaSiteDatabase.getRecordStore();
 
-  private final AddressBcImportSites importSites;
-
-  private final Path sitePointByProviderDirectory;
+  private final StatisticsDialog dialog;
 
   RecordWriter changedRecordWriter;
 
   private final Path directory;
 
-  public AddressBcMerge(final AddressBcImportSites importSites, final Path directory) {
-    this.importSites = importSites;
+  public AddressBcMerge(final StatisticsDialog importSites, final Path directory) {
+    this.dialog = importSites;
     this.directory = directory;
-    this.sitePointByProviderDirectory = directory.resolve("SitePointByProvider");
   }
 
   public void deleteTempFiles(final Path directory) {
@@ -73,17 +71,16 @@ public class AddressBcMerge implements SitePoint, Cancellable {
 
   @Override
   public boolean isCancelled() {
-    return this.importSites.isCancelled();
+    return this.dialog.isCancelled();
   }
 
   private void mergeSites() {
     try (
       RecordWriter changedRecordWriter = newChangeLogWriter()) {
 
-      final String suffix = "_SITE_POINT_ADDRESS_BC";
-      final List<Path> providerFiles = Paths.listFiles(this.sitePointByProviderDirectory,
-        "[^_].*" + suffix + ".tsv");
-      Collections.sort(providerFiles);
+      final String suffix = "_SITE_POINT_ABC";
+      final List<Path> providerFiles = ImportSites.SITE_POINT_BY_PROVIDER
+        .listFiles(AddressBc.ADDRESS_BC_DIRECTORY, "_ABC");
 
       if (!providerFiles.isEmpty()) {
         final ProcessNetwork processNetwork = new ProcessNetwork();
@@ -102,7 +99,7 @@ public class AddressBcMerge implements SitePoint, Cancellable {
               final PartnerOrganization partnerOrganization = PartnerOrganizations
                 .newPartnerOrganization(CaseConverter.toCapitalizedWords(providerShortName));
 
-              new AddressBcMergeForProvider(this, this.importSites, partnerOrganization, siteFile)//
+              new AddressBcMergeForProvider(this, this.dialog, partnerOrganization, siteFile)//
                 .run();
             }
           });
@@ -136,14 +133,14 @@ public class AddressBcMerge implements SitePoint, Cancellable {
   }
 
   public void run() {
-    final LabelCountMapTableModel counts = this.importSites.newLabelCountTableModel("Merge",
-      "Provider", PROVIDER_READ, GBA_READ, MATCHED, BatchUpdateDialog.INSERTED,
-      BatchUpdateDialog.UPDATED, MOVED, "Delete");
+    final LabelCountMapTableModel counts = this.dialog.newLabelCountTableModel("Merge", "Provider",
+      PROVIDER_READ, GBA_READ, MATCHED, BatchUpdateDialog.INSERTED, BatchUpdateDialog.UPDATED,
+      MOVED, "Delete");
     SwingUtilities.invokeLater(() -> {
 
       counts.getTable().setSortOrder(0, SortOrder.ASCENDING);
 
-      this.importSites.setSelectedTab("Merge");
+      this.dialog.setSelectedTab("Merge");
     });
 
     mergeSites();

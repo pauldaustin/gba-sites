@@ -1,29 +1,38 @@
-package ca.bc.gov.gbasites.load.converter;
+package ca.bc.gov.gbasites.load.convert;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.jeometry.common.compare.CompareUtil;
 import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.data.type.DataTypes;
+import org.jeometry.common.io.PathName;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.BoundaryCache;
+import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.GbaTables;
 import ca.bc.gov.gba.model.type.code.NameDirection;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gba.ui.StatisticsDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
+import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
 import ca.bc.gov.gbasites.load.common.StructuredNameMapping;
-import ca.bc.gov.gbasites.load.provider.other.ImportSites;
 import ca.bc.gov.gbasites.model.type.SitePoint;
+import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.model.type.code.CommunityPoly;
 import ca.bc.gov.gbasites.model.type.code.FeatureStatus;
 
@@ -31,23 +40,29 @@ import com.revolsys.beans.Classes;
 import com.revolsys.collection.map.MapEx;
 import com.revolsys.collection.map.Maps;
 import com.revolsys.collection.set.Sets;
+import com.revolsys.geometry.model.Geometry;
 import com.revolsys.geometry.model.Point;
+import com.revolsys.geometry.model.Polygonal;
+import com.revolsys.geometry.operation.union.UnaryUnionOp;
+import com.revolsys.io.file.AtomicPathUpdator;
 import com.revolsys.io.file.Paths;
-import com.revolsys.io.map.MapSerializer;
-import com.revolsys.properties.BaseObjectWithProperties;
 import com.revolsys.record.Record;
 import com.revolsys.record.code.CodeTable;
 import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.io.RecordWriter;
+import com.revolsys.record.schema.FieldDefinition;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.record.schema.RecordDefinitionBuilder;
 import com.revolsys.record.schema.RecordDefinitionImpl;
+import com.revolsys.util.Debug;
 import com.revolsys.util.Property;
 import com.revolsys.util.Strings;
 import com.revolsys.util.Uuid;
 
-public abstract class AbstractSiteConverter extends BaseObjectWithProperties
-  implements SitePoint, MapSerializer {
+public abstract class AbstractSiteConverter extends AbstractRecordConverter<SitePointProviderRecord>
+  implements SitePoint {
+
+  private static final String LOCALITY_NAME = "LOCALITY_NAME";
 
   public static final StructuredNames STRUCTURED_NAMES = GbaController.getStructuredNames();
 
@@ -61,10 +76,6 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
     "SUFFIX_NAME_DIRECTION_CODE was full direction not code",
     "PREFIX_NAME_DIRECTION_CODE was full direction not code");
 
-  private final static Map<Identifier, Map<String, Set<String>>> nameDifferentByPartnerOrganizationIdAndLocality = new HashMap<>();
-
-  public final static Map<Identifier, RecordWriter> nameDifferentWriterByPartnerOrganizationId = new HashMap<>();
-
   protected static final Map<String, Map<String, FeatureStatus>> featureStatusByLocalityAndStreetName = new HashMap<>();
 
   private static final Map<String, Map<String, Identifier>> structuredNameIdByCustodianAndAliasName = new HashMap<>();
@@ -76,6 +87,38 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
   public static final String IGNORE_STREET_NAME_NOT_SPECIFIED = "Ignore STREET_NAME not specified";
 
   public static final BoundaryCache regionalDistricts = GbaController.getRegionalDistricts();
+
+  public static RecordDefinitionImpl sitePointTsvRecordDefinition;
+
+  public static RecordDefinitionImpl getSitePointTsvRecordDefinition() {
+    if (sitePointTsvRecordDefinition == null) {
+      final RecordDefinition sitePointRecordDefinition = GbaSiteDatabase.getRecordStore()
+        .getRecordDefinition(SiteTables.SITE_POINT);
+
+      final RecordDefinitionImpl recordDefinition = new RecordDefinitionImpl(
+        PathName.newPathName("SITE_POINT"));
+      recordDefinition.setDefaultValues(sitePointRecordDefinition.getDefaultValues());
+      for (final FieldDefinition sitePointField : sitePointRecordDefinition.getFields()) {
+        final String fieldName = sitePointField.getName();
+        final FieldDefinition tsvField = new FieldDefinition(sitePointField);
+        recordDefinition.addField(tsvField);
+        if (fieldName.startsWith("STREET_NAME") || fieldName.endsWith("_PARTNER_ORG_ID")) {
+          final String newFieldName = fieldName.replace("_ID", "");
+          if (!sitePointRecordDefinition.hasField(newFieldName)) {
+            recordDefinition.addField(newFieldName, DataTypes.STRING);
+          }
+        } else if (fieldName.equals(LOCALITY_ID)) {
+          final String newFieldName = LOCALITY_NAME;
+          if (!sitePointRecordDefinition.hasField(newFieldName)) {
+            recordDefinition.addField(newFieldName, DataTypes.STRING);
+          }
+        }
+      }
+      recordDefinition.setGeometryFactory(Gba.GEOMETRY_FACTORY_2D);
+      sitePointTsvRecordDefinition = recordDefinition;
+    }
+    return sitePointTsvRecordDefinition;
+  }
 
   public static void init() {
     loadStructuredNameIdByCustodianAndAliasName();
@@ -123,6 +166,8 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
     }
   }
 
+  private RecordWriter nameDifferentWriter;
+
   protected Set<String> ignoreNames = Sets.newHash("PARK", "N/A", "LANE ACCESS", "LANE ALLOWANCE",
     "NO NAME AV", "NON-AVENUE", "NON-STREET", "RIGHT-OF-WAY", "PRIVITE RD");
 
@@ -132,62 +177,162 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
 
   private ProviderSitePointConverter providerConfig;
 
-  public void addError(final Record record, final String message) {
-    this.providerConfig.addError(message);
-  }
+  protected AtomicPathUpdator pathUpdator;
 
-  public void addError(final String message) {
-    this.providerConfig.addError(message);
-  }
+  private final BoundaryCache localities = GbaController.getLocalities();
 
-  protected void addStructuredNameError(final String dataProvider, final String message,
-    final String originalName, final String structuredName, final Identifier structuredNameId) {
-    final Identifier partnerOrganizationId = getPartnerOrganizationId();
-    String localityName = ProviderSitePointConverter.getLocalityName();
-    Map<String, Set<String>> nameDifferentByLocality = nameDifferentByPartnerOrganizationIdAndLocality
-      .get(partnerOrganizationId);
-    if (nameDifferentByLocality == null) {
-      nameDifferentByLocality = new TreeMap<>();
-      nameDifferentByPartnerOrganizationIdAndLocality.put(partnerOrganizationId,
-        nameDifferentByLocality);
-    }
-    if (!IGNORE_NAME_ERRORS.contains(message)) {
-      if (localityName == null) {
-        localityName = "Unknown";
-      }
-      if (Maps.addToSet(nameDifferentByLocality, localityName, originalName)) {
-        RecordWriter writer;
-        synchronized (nameDifferentWriterByPartnerOrganizationId) {
-          writer = nameDifferentWriterByPartnerOrganizationId.get(partnerOrganizationId);
-          if (writer == null) {
-            final Path path = ProviderSitePointConverter.getDataProviderFile(partnerOrganizationId,
-              "_NAME_ERROR" + ".xlsx", "_");
-            final RecordDefinition nameErrorRecordDefinition = new RecordDefinitionBuilder(
-              Paths.getBaseName(path))//
-                .addField("DATA_PROVIDER", DataTypes.STRING, dataProvider.length()) //
-                .addField("LOCALITY", DataTypes.STRING, 30) //
-                .addField("STREET_NAME", DataTypes.STRING, 45) //
-                .addField("STRUCTURED_NAME", DataTypes.STRING, 45) //
-                .addField("STRUCTURED_NAME_ID", DataTypes.INT, 10) //
-                .addField("MESSAGE", DataTypes.STRING, 60) //
-                .getRecordDefinition();
-            writer = RecordWriter.newRecordWriter(nameErrorRecordDefinition, path);
-            nameDifferentWriterByPartnerOrganizationId.put(partnerOrganizationId, writer);
+  private AtomicPathUpdator nameDifferentPathUpdator;
+
+  private final Map<String, Set<String>> nameDifferentByLocality = new TreeMap<>();
+
+  private final Map<String, List<Record>> recordsByLocalityName = new TreeMap<>();
+
+  private final Map<String, List<Geometry>> sourceGeometryByLocality = new TreeMap<>();
+
+  private String openDataInd = "N";
+
+  private final RecordDefinitionImpl writeRecordDefinition = getSitePointTsvRecordDefinition();
+
+  public void addProviderBoundary(final Map<String, List<Geometry>> sourceGeometryByLocality) {
+    if (ProviderSitePointConverter.calculateBoundary) {
+      for (final Entry<String, List<Geometry>> entry : sourceGeometryByLocality.entrySet()) {
+        final String localityName = entry.getKey();
+        final List<Geometry> geometries = entry.getValue();
+        // int totalArea = 0;
+        // for (final Geometry geometry : geometries) {
+        // totalArea += geometry.getArea();
+        // }
+        Geometry boundary = UnaryUnionOp.union(geometries);
+        if (boundary == null) {
+          Debug.noOp();
+        } else {
+          if (boundary instanceof Polygonal) {
+            // final double area = boundary.getArea();
+            // if (Math.abs(totalArea - area) > 100) {
+            // Debug.noOp();
+            // }
+            // for (final Geometry geometry : geometries) {
+            // if (!boundary.contains(geometry.getPointWithin())) {
+            // Debug.noOp();
+            // }
+            // }
+          } else {
+            boundary = boundary.convexHull();
           }
+          Maps.addToMap(Maps.factoryTree(),
+            ProviderSitePointConverter.boundaryByProviderAndLocality, getPartnerOrganizationId(),
+            localityName, boundary);
         }
-        writer.write(dataProvider, localityName, originalName, structuredName, structuredNameId,
-          message);
+      }
+    }
+
+  }
+
+  protected void addStructuredNameError(final String message, final String originalName,
+    final String structuredName, final Identifier structuredNameId) {
+    final String dataProvider = getPartnerOrganizationShortName();
+
+    if (!IGNORE_NAME_ERRORS.contains(message)) {
+      if (this.localityName == null) {
+        this.localityName = "Unknown";
+      }
+      if (Maps.addToSet(this.nameDifferentByLocality, this.localityName, originalName)) {
+        if (this.nameDifferentWriter == null) {
+          this.nameDifferentPathUpdator = this.partnerOrganizationFiles
+            .newPathUpdator(ImportSites.NAME_ERROR_BY_PROVIDER);
+          final Path path = this.nameDifferentPathUpdator.getPath();
+          final RecordDefinition nameErrorRecordDefinition = new RecordDefinitionBuilder(
+            Paths.getBaseName(path))//
+              .addField("DATA_PROVIDER", DataTypes.STRING, dataProvider.length()) //
+              .addField("LOCALITY", DataTypes.STRING, 30) //
+              .addField("STREET_NAME", DataTypes.STRING, 45) //
+              .addField("STRUCTURED_NAME", DataTypes.STRING, 45) //
+              .addField("STRUCTURED_NAME_ID", DataTypes.INT, 10) //
+              .addField("MESSAGE", DataTypes.STRING, 60) //
+              .getRecordDefinition();
+          this.nameDifferentWriter = RecordWriter.newRecordWriter(nameErrorRecordDefinition, path);
+        }
+        this.nameDifferentWriter.write(dataProvider, this.localityName, originalName,
+          structuredName, structuredNameId, message);
         getDialog().addLabelCount(ProviderSitePointConverter.NAME_ERRORS, message,
           StatisticsDialog.ERROR);
       }
     }
   }
 
-  public void addWarningCount(final String message) {
-    this.providerConfig.addWarningCount(message);
+  @Override
+  public void close() {
+    super.close();
+    this.nameDifferentByLocality.clear();
+    if (this.errorLog != null) {
+      this.errorLog.close();
+      this.errorPathUpdator.close();
+      this.errorLog = null;
+      this.errorPathUpdator = null;
+    }
+
+    if (this.nameDifferentWriter != null) {
+      this.nameDifferentWriter.close();
+      this.nameDifferentPathUpdator.close();
+      this.nameDifferentWriter = null;
+      this.nameDifferentPathUpdator = null;
+    }
   }
 
-  public abstract SitePointProviderRecord convert(Record sourceRecord, Point sourcePoint);
+  @Override
+  protected SitePointProviderRecord convertRecordDo(final Record sourceRecord) {
+    final Geometry sourceGeometry = sourceRecord.getGeometry();
+    if (Property.isEmpty(sourceGeometry)) {
+      throw new IgnoreSiteException("Ignore Record does not contain a point geometry");
+    } else {
+      final Geometry convertedSourceGeometry = getValidSourceGeometry(sourceGeometry);
+
+      final Point point = convertedSourceGeometry.getPointWithin();
+
+      this.localityId = this.localities.getBoundaryId(point);
+      if (this.localityId == null) {
+        this.localityName = "Unknown";
+      } else {
+        this.localityName = this.localities.getValue(this.localityId);
+      }
+      if (Property.isEmpty(point) || !point.isValid()) {
+        throw new IgnoreSiteException("Ignore Record does not contain a point geometry");
+      } else {
+        if (this.localityId != null) {
+          this.dialog.addLabelCount(ProviderSitePointConverter.LOCALITY, this.localityName,
+            "P Convert");
+          if (ProviderSitePointConverter.isCalculateBoundary()) {
+            Maps.addToList(this.sourceGeometryByLocality, this.localityName,
+              convertedSourceGeometry);
+          }
+        }
+        final SitePointProviderRecord sitePoint = convertRecordSite(sourceRecord, point);
+        if (sitePoint != null) {
+          sitePoint.setValue(OPEN_DATA_IND, this.openDataInd);
+          sitePoint.setValue(LOCALITY_ID, this.localityId);
+          sitePoint.setValue(LOCALITY_NAME, this.localityName);
+          sitePoint.updateFullAddress();
+          sitePoint.setCreateModifyOrg(this.createModifyPartnerOrganization);
+          sitePoint.setCustodianOrg(getPartnerOrganization());
+          return sitePoint;
+        }
+      }
+    }
+    return null;
+  }
+
+  public abstract SitePointProviderRecord convertRecordSite(Record sourceRecord, Point sourcePoint);
+
+  public void convertSourceRecords(final boolean convert) {
+    try (
+      AtomicPathUpdator pathUpdator = this.partnerOrganizationFiles
+        .newPathUpdator(ImportSites.SITE_POINT_BY_PROVIDER)) {
+      setPathUpdator(pathUpdator);
+      if (convert || !pathUpdator.isTargetExists()) {
+        convertSourceRecords();
+      }
+    }
+  }
 
   private void fixStructuredName(final String dataProvider, final Record sourceRecord,
     final String structuredName, final String originalName,
@@ -444,10 +589,6 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
     return this.addressFieldName;
   }
 
-  protected StatisticsDialog getDialog() {
-    return ImportSites.dialog;
-  }
-
   public String getIdFieldName() {
     return this.idFieldName;
   }
@@ -477,14 +618,6 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
     }
   }
 
-  public Identifier getPartnerOrganizationId() {
-    return this.providerConfig.getPartnerOrganizationId();
-  }
-
-  public String getPartnerOrganizationShortName() {
-    return this.providerConfig.getPartnerOrganizationShortName();
-  }
-
   public String getStructuredNameFromAlias(final String dataProvider, final String nameAlias) {
     return Maps.getMap(structuredNameByCustodianAndAliasName, dataProvider, nameAlias);
   }
@@ -504,9 +637,23 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
     return "";
   }
 
+  protected Geometry getValidSourceGeometry(final Geometry sourceGeometry) {
+    if (sourceGeometry.isGeometryCollection()) {
+      final List<Geometry> geometries = new ArrayList<>();
+      for (final Geometry geometry : sourceGeometry.geometries()) {
+        final Geometry convertGeometry = geometry.convertGeometry(Gba.GEOMETRY_FACTORY_2D);
+        geometries.add(convertGeometry);
+      }
+      return UnaryUnionOp.union(geometries);
+    } else {
+      final Geometry geometry = sourceGeometry.convertGeometry(Gba.GEOMETRY_FACTORY_2D);
+      return geometry.newValidGeometry();
+    }
+  }
+
   public SitePointProviderRecord newSitePoint(final AbstractSiteConverter siteConverter,
     final Point point) {
-    final RecordDefinitionImpl recordDefinition = ProviderSitePointConverter
+    final RecordDefinitionImpl recordDefinition = AbstractSiteConverter
       .getSitePointTsvRecordDefinition();
     final SitePointProviderRecord sitePoint = new SitePointProviderRecord(siteConverter,
       recordDefinition);
@@ -519,6 +666,100 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
     sitePoint.setValue(COMMUNITY_ID, communityId);
 
     return sitePoint;
+  }
+
+  protected Comparator<Record> newSitePointComparator() {
+    return (record1, record2) -> {
+      String name1 = record1.getString(STREET_NAME);
+      NameDirection nameDirectionPrefix1 = NameDirection.NONE;
+      try {
+        final int spaceIndex = name1.indexOf(' ');
+        if (spaceIndex > -1) {
+          final String firstPart = name1.substring(0, spaceIndex);
+
+          nameDirectionPrefix1 = NameDirection.valueOf(firstPart);
+          name1 = name1.substring(spaceIndex + 1);
+        }
+      } catch (final Throwable e) {
+      }
+      String name2 = record2.getString(STREET_NAME);
+      NameDirection nameDirectionPrefix2 = NameDirection.NONE;
+      try {
+        final int spaceIndex = name2.indexOf(' ');
+        if (spaceIndex > -1) {
+          final String firstPart = name2.substring(0, spaceIndex);
+
+          nameDirectionPrefix2 = NameDirection.valueOf(firstPart);
+          name2 = name2.substring(spaceIndex + 1);
+        }
+      } catch (final Throwable e) {
+      }
+      int compare = CompareUtil.compare(name1, name2, true);
+      if (compare == 0) {
+        compare = CompareUtil.compare(nameDirectionPrefix1, nameDirectionPrefix2, true);
+        if (compare == 0) {
+          compare = record1.compareValue(record2, CIVIC_NUMBER, true);
+          if (compare == 0) {
+            compare = record1.compareValue(record2, CIVIC_NUMBER_SUFFIX, true);
+            if (compare == 0) {
+              compare = record1.compareValue(record2, UNIT_DESCRIPTOR, true);
+            }
+          }
+        }
+      }
+      return compare;
+    };
+  }
+
+  @Override
+  protected void postConvertRecord(final SitePointProviderRecord sitePoint) {
+    super.postConvertRecord(sitePoint);
+    Maps.addToList(this.recordsByLocalityName, this.localityName, sitePoint);
+    if (this.localityId != null) {
+      this.dialog.addLabelCount(ProviderSitePointConverter.LOCALITY, this.localityName,
+        this.countPrefix + " Convert");
+    }
+  }
+
+  @Override
+  protected void postConvertRecords() {
+    postConvertRecordsWriteSitePoints();
+    addProviderBoundary(this.sourceGeometryByLocality);
+  }
+
+  private void postConvertRecordsWriteLocality(final String localityName,
+    final List<Record> localityRecords) {
+    try (
+      AtomicPathUpdator localityPathUpdator = ImportSites.SITE_POINT_BY_LOCALITY
+        .newPrefixPathUpdator(this.dialog, this.baseDirectory, localityName,
+          this.createModifyPartnerOrganization, this.fileSuffix);
+      RecordWriter localityWriter = RecordWriter.newRecordWriter(this.writeRecordDefinition,
+        localityPathUpdator.getPath())) {
+      localityWriter.writeAll(localityRecords);
+    }
+  }
+
+  private void postConvertRecordsWriteSitePoints() {
+    if (!this.recordsByLocalityName.isEmpty()) {
+      final Comparator<Record> comparator = newSitePointComparator();
+
+      final Path dataProviderPath = this.pathUpdator.getPath();
+      try (
+        RecordWriter dataProviderWriter = RecordWriter.newRecordWriter(this.writeRecordDefinition,
+          dataProviderPath)) {
+        for (final Entry<String, List<Record>> localityEntry : cancellable(
+          this.recordsByLocalityName.entrySet())) {
+          final String localityName = localityEntry.getKey();
+          final List<Record> localityRecords = localityEntry.getValue();
+
+          localityRecords.sort(comparator);
+
+          dataProviderWriter.writeAll(localityRecords);
+
+          postConvertRecordsWriteLocality(localityName, localityRecords);
+        }
+      }
+    }
   }
 
   public void setAddressFieldName(final String addressFieldName) {
@@ -549,12 +790,44 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
     sitePoint.setValue(CUSTODIAN_SITE_ID, custodianSiteId);
   }
 
+  public void setFeatureStatusCodeByFullAddress(final Record sitePoint, String fullAddress) {
+    if (fullAddress != null) {
+      final String localityName = Strings.upperCase(this.localityName);
+      fullAddress = Strings.upperCase(fullAddress);
+      final FeatureStatus featureStatusCode = Maps.getMap(
+        ProviderSitePointConverter.featureStatusByLocalityAndFullAddress, localityName, fullAddress,
+        FeatureStatus.ACTIVE);
+      if (featureStatusCode.isIgnored()) {
+        final String message = "Ignored FULL_ADDRESS in FULL_ADDRESS_FEATURE_STATUS_CODE.xlsx";
+        throw new IgnoreSiteException(message);
+      } else {
+        sitePoint.setValue(FEATURE_STATUS_CODE, featureStatusCode.getCode());
+      }
+    }
+  }
+
   public void setIdFieldName(final String idFieldName) {
     this.idFieldName = idFieldName;
   }
 
+  public void setOpenData(final boolean openData) {
+    if (openData) {
+      this.openDataInd = "Y";
+    } else {
+      this.openDataInd = "N";
+    }
+  }
+
+  public void setPathUpdator(final AtomicPathUpdator pathUpdator) {
+    this.pathUpdator = pathUpdator;
+    this.baseDirectory = pathUpdator.getTargetDirectory() //
+      .getParent();
+  }
+
   public void setProviderConfig(final ProviderSitePointConverter providerConfig) {
     this.providerConfig = providerConfig;
+    final boolean openData = this.providerConfig.isOpenData();
+    setOpenData(openData);
   }
 
   public boolean setStructuredName(final Record sourceRecord, final Record sitePoint,
@@ -570,7 +843,7 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
         partnerOrganizationShortName.toUpperCase(), originalName, FeatureStatus.ACTIVE);
       if (featureStatusCode.isIgnored()) {
         final String message = "Ignored STREET_NAME in STRUCTURED_NAME_ALIAS.xlsx";
-        addStructuredNameError(partnerOrganizationShortName, message, originalName, null, null);
+        addStructuredNameError(message, originalName, null, null);
 
         throw new IgnoreSiteException(message);
       } else if (sitePoint.equalValue(FEATURE_STATUS_CODE, "A")) {
@@ -590,8 +863,7 @@ public abstract class AbstractSiteConverter extends BaseObjectWithProperties
         final String message = structuredNameMapping.getMessage();
         final String structuredName = structuredNameMapping.getMatchedStructuredName();
         final Identifier structuredNameId = structuredNameMapping.getStructuredNameId();
-        addStructuredNameError(partnerOrganizationShortName, message, originalName, structuredName,
-          structuredNameId);
+        addStructuredNameError(message, originalName, structuredName, structuredNameId);
       }
 
       final String idFieldName;

@@ -1,4 +1,4 @@
-package ca.bc.gov.gbasites.load.sourcereader;
+package ca.bc.gov.gbasites.load.readsource;
 
 import java.util.Map;
 import java.util.function.Function;

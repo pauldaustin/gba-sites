@@ -1,13 +1,14 @@
-package ca.bc.gov.gbasites.load.converter;
+package ca.bc.gov.gbasites.load.convert;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
 
+import com.revolsys.collection.map.MapEx;
 import com.revolsys.collection.set.Sets;
 import com.revolsys.geometry.model.Point;
 import com.revolsys.record.Record;
@@ -20,6 +21,11 @@ public class SiteConverterAddress extends AbstractSiteConverter {
   private static final Set<String> IGNORE_UNIT_DESCRIPTORS_WITHOUT_CIVIC_NUMBER = Sets
     .newHash("LANE", "BCH&P", "BC");
 
+  public static Function<MapEx, SiteConverterAddress> newFactory(
+    final Map<String, ? extends Object> config) {
+    return properties -> new SiteConverterAddress(properties.addAll(config));
+  }
+
   public SiteConverterAddress() {
   }
 
@@ -28,12 +34,12 @@ public class SiteConverterAddress extends AbstractSiteConverter {
   }
 
   @Override
-  public SitePointProviderRecord convert(final Record sourceRecord, final Point point) {
+  public SitePointProviderRecord convertRecordSite(final Record sourceRecord, final Point point) {
     final String addressFieldName = getAddressFieldName();
     final String fullAddress = getUpperString(sourceRecord, addressFieldName);
     if (Property.hasValue(fullAddress)) {
       final SitePointProviderRecord sitePoint = newSitePoint(this, point);
-      ProviderSitePointConverter.setFeatureStatusCodeByFullAddress(sitePoint, fullAddress);
+      setFeatureStatusCodeByFullAddress(sitePoint, fullAddress);
       String unitDescriptor = "";
       Integer civicNumber = null;
       final String civicNumberSuffix = "";
@@ -58,14 +64,15 @@ public class SiteConverterAddress extends AbstractSiteConverter {
       String structuredName = originalStretName;
       structuredName = structuredName.replace(" (ACC RTE)", "");
       if (Property.isEmpty(structuredName)) {
-        addWarningCount(AbstractSiteConverter.IGNORE_STREET_NAME_NOT_SPECIFIED);
+        addWarning(sourceRecord, AbstractSiteConverter.IGNORE_STREET_NAME_NOT_SPECIFIED);
         return null;
       } else if ((civicNumber == null || civicNumber == 0) && (!Property.hasValue(unitDescriptor)
         || IGNORE_UNIT_DESCRIPTORS_WITHOUT_CIVIC_NUMBER.contains(unitDescriptor))) {
         final String message = "Ignore CIVIC_NUMBER not specified";
-        addWarningCount(message);
+        addWarning(sourceRecord, message);
         return null;
       }
+      sitePoint.setValue(CUSTODIAN_FULL_ADDRESS, fullAddress);
       sitePoint.setValue(UNIT_DESCRIPTOR, unitDescriptor);
       sitePoint.setValue(CIVIC_NUMBER, civicNumber);
       sitePoint.setValue(CIVIC_NUMBER_SUFFIX, civicNumberSuffix);
@@ -76,7 +83,7 @@ public class SiteConverterAddress extends AbstractSiteConverter {
       setCustodianSiteId(sitePoint, sourceRecord);
       return sitePoint;
     } else {
-      addWarningCount("Ignore FULL_ADDRESS not specified");
+      addWarning(sourceRecord, "Ignore FULL_ADDRESS not specified");
       return null;
     }
   }

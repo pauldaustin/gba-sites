@@ -17,9 +17,9 @@ import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.ArchiveAndChangeLogController;
 import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.type.code.IntegrationAction;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
@@ -69,31 +69,31 @@ public class AddressBcMergeForProvider implements Cancellable, SitePoint {
 
   private final JdbcRecordStore recordStore = GbaSiteDatabase.getRecordStore();
 
-  private final AddressBcImportSites importSites;
+  private final StatisticsDialog dialog;
 
   private final LabelCountMapTableModel counts;
 
-  private final ArchiveAndChangeLogController archiveAndChangeLog;
+  private ArchiveAndChangeLogController archiveAndChangeLog;
 
   private final RecordWriter changedRecordWriter;
 
   private int changeCount = 1000000;
 
   public AddressBcMergeForProvider(final AddressBcMerge addressBcMerge,
-    final AddressBcImportSites importSites, final PartnerOrganization partnerOrganization,
+    final StatisticsDialog dialog, final PartnerOrganization partnerOrganization,
     final Path siteFile) {
-    this.importSites = importSites;
-    this.archiveAndChangeLog = this.importSites.getArchiveAndChangeLog();
+    this.dialog = dialog;
+    // this.archiveAndChangeLog = this.dialog.getArchiveAndChangeLog();
     this.partnerOrganization = partnerOrganization;
     this.siteFile = siteFile;
-    this.counts = importSites.getLabelCountTableModel("Merge");
+    this.counts = dialog.getLabelCountTableModel("Merge");
     this.changedRecordWriter = addressBcMerge.changedRecordWriter;
   }
 
   private synchronized void deleteSite(final Record site, final boolean forceDelete) {
-    if (this.importSites.action4UpdateDb) {
-      // archiveAndChangeLog.deleteRecord(site);
-    }
+    // if (this.dialog.action4UpdateDb) {
+    // // archiveAndChangeLog.deleteRecord(site);
+    // }
     writeChangeRecord(site, "Delete", null);
 
     this.counts.addCount(this.partnerOrganization, "Delete");
@@ -144,9 +144,9 @@ public class AddressBcMergeForProvider implements Cancellable, SitePoint {
     final Record site = this.recordStore.newRecord(SiteTables.SITE_POINT);
     site.setValue(CUSTODIAN_SESSION_ID, this.archiveAndChangeLog.getIntegrationSessionId());
     site.setValuesNotNull(providerSite);
-    if (this.importSites.action4UpdateDb) {
-      this.archiveAndChangeLog.insertRecord(site);
-    }
+    // if (this.dialog.action4UpdateDb) {
+    this.archiveAndChangeLog.insertRecord(site);
+    // }
     if (writeChangeLog) {
       writeChangeRecord(site, BatchUpdateDialog.INSERTED, null);
     }
@@ -181,7 +181,7 @@ public class AddressBcMergeForProvider implements Cancellable, SitePoint {
 
   @Override
   public boolean isCancelled() {
-    return this.importSites.isCancelled();
+    return this.dialog.isCancelled();
   }
 
   private <K> Iterable<K> keys(final Map<K, ?> map) {
@@ -474,12 +474,12 @@ public class AddressBcMergeForProvider implements Cancellable, SitePoint {
           writeChangeRecord(providerSite, action, changedValuesString);
         }
         newValues.put(CUSTODIAN_SESSION_ID, this.archiveAndChangeLog.getIntegrationSessionId());
-        if (this.importSites.action4UpdateDb) {
-          this.archiveAndChangeLog.updateRecord(gbaSite, newValues,
-            IntegrationAction.UPDATE_FIELD_AND_GEOMETRY);
-        } else {
-          gbaSite.setValues(newValues);
-        }
+        // if (this.dialog.action4UpdateDb) {
+        // this.archiveAndChangeLog.updateRecord(gbaSite, newValues,
+        // IntegrationAction.UPDATE_FIELD_AND_GEOMETRY);
+        // } else {
+        // gbaSite.setValues(newValues);
+        // }
       }
       this.counts.addCount(this.partnerOrganization, action);
     }

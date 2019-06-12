@@ -18,7 +18,6 @@ import org.jeometry.common.logging.Logs;
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.BoundaryCache;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
-import ca.bc.gov.gbasites.load.provider.addressbc.AddressBcImportSites;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.geometry.model.Point;
@@ -121,7 +120,6 @@ public class GeocoderCaSplitByLocality implements Cancellable, SitePoint {
   }
 
   public void run() {
-    AddressBcImportSites.deleteTempFiles(this.inputByLocalityDirectory);
     this.counts = this.importSites.newLabelCountTableModel(SPLIT, "Locality",
       BatchUpdateDialog.READ, BatchUpdateDialog.WRITE);
     SwingUtilities.invokeLater(() -> {
@@ -129,7 +127,6 @@ public class GeocoderCaSplitByLocality implements Cancellable, SitePoint {
       this.importSites.setSelectedTab(SPLIT);
     });
 
-    AddressBcImportSites.deleteTempFiles(this.inputByLocalityDirectory);
     splitRecordsByProvider();
   }
 

@@ -1,6 +1,7 @@
-package ca.bc.gov.gbasites.load.provider.ckrd;
+package ca.bc.gov.gbasites.load.convert;
 
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -8,7 +9,6 @@ import org.jeometry.common.number.BigDecimals;
 
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
-import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.map.MapEx;
@@ -24,6 +24,11 @@ public class SiteConverterCKRD extends AbstractSiteConverter {
 
   private static final Pattern UNIT_CIVIC_NUMBER_PATTERN = Pattern.compile("(\\w+|1/2) ?- ?(\\d+)");
 
+  public static Function<MapEx, SiteConverterCKRD> newFactory(
+    final Map<String, ? extends Object> config) {
+    return properties -> new SiteConverterCKRD(properties.addAll(config));
+  }
+
   private String civicNumberFieldName;
 
   private String streetNameFieldName;
@@ -38,9 +43,10 @@ public class SiteConverterCKRD extends AbstractSiteConverter {
   }
 
   @Override
-  public SitePointProviderRecord convert(final Record sourceRecord, final Point point) {
+  public SitePointProviderRecord convertRecordSite(final Record sourceRecord, final Point point) {
     final String addressFieldName = getAddressFieldName();
-    String fullAddress = getUpperString(sourceRecord, addressFieldName);
+    final String custodianFullAddress = getUpperString(sourceRecord, addressFieldName);
+    String fullAddress = custodianFullAddress;
     final String streetName = getUpperString(sourceRecord, this.streetNameFieldName);
     final String originalStreetName = streetName;
 
@@ -137,11 +143,12 @@ public class SiteConverterCKRD extends AbstractSiteConverter {
                 .substring((civicNumber + civicNumberSuffix + " ").length());
               if (nameParts.equals(originalStreetName)) {
                 structuredName = nameParts;
-                addWarningCount("FULL_ADDRESS missing UNIT");
+                addWarning(sourceRecord, "FULL_ADDRESS missing UNIT");
                 matched = true;
               } else if (nameParts.startsWith(originalStreetName + " ")) {
                 structuredName = nameParts;
-                addWarningCount("FULL_ADDRESS missing UNIT, STREET_NAME missing STREET_TYPE");
+                addWarning(sourceRecord,
+                  "FULL_ADDRESS missing UNIT, STREET_NAME missing STREET_TYPE");
                 matched = true;
               } else {
                 final String streetType1 = Strings.lastPart(nameParts, ' ');
@@ -151,7 +158,8 @@ public class SiteConverterCKRD extends AbstractSiteConverter {
                 if (streetName1.equals(streetName2)) {
                   for (final String streetTypeAlias1 : getNameSuffixCodeByAlias(streetType1)) {
                     if (streetType2.equalsIgnoreCase(streetTypeAlias1)) {
-                      addWarningCount("FULL_ADDRESS and STREET_NAME have STREET_TYPE alias");
+                      addWarning(sourceRecord,
+                        "FULL_ADDRESS and STREET_NAME have STREET_TYPE alias");
                       matched = true;
                     }
                   }
@@ -182,7 +190,7 @@ public class SiteConverterCKRD extends AbstractSiteConverter {
                 .substring((civicNumber + civicNumberSuffix + " ").length());
               if (nameParts.startsWith(originalStreetName + " ")) {
                 structuredName = nameParts;
-                addWarningCount("STREET_NAME missing STREET_TYPE");
+                addWarning(sourceRecord, "STREET_NAME missing STREET_TYPE");
                 matched = true;
               } else {
                 final String streetType1 = Strings.lastPart(nameParts, ' ');
@@ -192,7 +200,8 @@ public class SiteConverterCKRD extends AbstractSiteConverter {
                 if (streetName1.equals(streetName2)) {
                   for (final String streetTypeAlias1 : getNameSuffixCodeByAlias(streetType1)) {
                     if (streetType2.equalsIgnoreCase(streetTypeAlias1)) {
-                      addWarningCount("FULL_ADDRESS and STREET_NAME have STREET_TYPE alias");
+                      addWarning(sourceRecord,
+                        "FULL_ADDRESS and STREET_NAME have STREET_TYPE alias");
                       matched = true;
                     }
                   }
@@ -216,11 +225,12 @@ public class SiteConverterCKRD extends AbstractSiteConverter {
       }
     }
     if (Property.isEmpty(structuredName)) {
-      addWarningCount("Ignore " + this.streetNameFieldName + " not specified");
+      addWarning(sourceRecord, "Ignore " + this.streetNameFieldName + " not specified");
       return null;
     }
     if (Property.hasValue(streetNumber)) {
       final SitePointProviderRecord sitePoint = newSitePoint(this, point);
+      sitePoint.setValue(CUSTODIAN_FULL_ADDRESS, custodianFullAddress);
       sitePoint.setValue(UNIT_DESCRIPTOR, unitDescriptor);
       sitePoint.setValue(CIVIC_NUMBER, civicNumber);
       sitePoint.setValue(CIVIC_NUMBER_SUFFIX, civicNumberSuffix);

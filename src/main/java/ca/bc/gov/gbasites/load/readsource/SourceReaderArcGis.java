@@ -1,4 +1,4 @@
-package ca.bc.gov.gbasites.load.sourcereader;
+package ca.bc.gov.gbasites.load.readsource;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -33,8 +33,8 @@ public class SourceReaderArcGis extends AbstractRecordReaderSourceReader {
     try {
       final FeatureLayer layer = FeatureLayer.getRecordLayerDescription(this.serverUrl, this.path);
       if (layer == null) {
-        Logs.error(this, this.dataProvider + ": using cached files. Cannot find layer: " + this.path
-          + " on " + this.serverUrl);
+        Logs.error(this, getPartnerOrganizationName() + ": using cached files. Cannot find layer: "
+          + this.path + " on " + this.serverUrl);
       } else {
         this.expectedRecordCount = layer.getRecordCount((Query)null);
         if (this.loadByObjectId || !layer.isSupportsPagination()
@@ -45,8 +45,8 @@ public class SourceReaderArcGis extends AbstractRecordReaderSourceReader {
         }
       }
     } catch (final Throwable e) {
-      Logs.error(this,
-        this.dataProvider + ": using cached files. Cannot connect to server: " + this.serverUrl, e);
+      Logs.error(this, getPartnerOrganizationName()
+        + ": using cached files. Cannot connect to server: " + this.serverUrl, e);
     }
     return null;
   }

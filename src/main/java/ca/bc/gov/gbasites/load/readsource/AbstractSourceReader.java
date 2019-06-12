@@ -1,4 +1,4 @@
-package ca.bc.gov.gbasites.load.sourcereader;
+package ca.bc.gov.gbasites.load.readsource;
 
 import java.nio.file.Path;
 
@@ -6,6 +6,11 @@ import org.jeometry.common.data.type.DataType;
 import org.jeometry.common.io.PathName;
 import org.jeometry.common.logging.Logs;
 
+import ca.bc.gov.gba.model.type.code.PartnerOrganization;
+import ca.bc.gov.gba.model.type.code.PartnerOrganizationProxy;
+import ca.bc.gov.gba.ui.StatisticsDialog;
+import ca.bc.gov.gbasites.load.ImportSites;
+import ca.bc.gov.gbasites.load.common.PartnerOrganizationFiles;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 
 import com.revolsys.collection.map.MapEx;
@@ -18,18 +23,16 @@ import com.revolsys.record.io.RecordWriter;
 import com.revolsys.record.schema.FieldDefinition;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.record.schema.RecordDefinitionImpl;
-import com.revolsys.util.Cancellable;
 import com.revolsys.util.Counter;
 
-public abstract class AbstractSourceReader extends BaseObjectWithProperties {
+public abstract class AbstractSourceReader extends BaseObjectWithProperties
+  implements PartnerOrganizationProxy {
 
   private GeometryFactory geometryFactory;
 
   protected int expectedRecordCount = -1;
 
-  private Cancellable cancellable;
-
-  protected String dataProvider;
+  private StatisticsDialog dialog;
 
   private RecordWriter writer;
 
@@ -37,7 +40,11 @@ public abstract class AbstractSourceReader extends BaseObjectWithProperties {
 
   protected Path baseDirectory;
 
+  private PartnerOrganizationFiles partnerOrganizationFiles;
+
   private Counter counter;
+
+  private String countPrefix = "";
 
   public AbstractSourceReader(final MapEx properties) {
     setProperties(properties);
@@ -46,8 +53,9 @@ public abstract class AbstractSourceReader extends BaseObjectWithProperties {
   protected void checkExpectedCount() {
     if (this.expectedRecordCount != -1) {
       if (this.expectedRecordCount != this.recordCount) {
-        Logs.error(ProviderSitePointConverter.class, "Expecting site record count="
-          + this.expectedRecordCount + " not " + this.recordCount + " for " + this.dataProvider);
+        Logs.error(ProviderSitePointConverter.class,
+          "Expecting site record count=" + this.expectedRecordCount + " not " + this.recordCount
+            + " for " + getPartnerOrganizationName());
       }
     }
   }
@@ -57,23 +65,39 @@ public abstract class AbstractSourceReader extends BaseObjectWithProperties {
     super.close();
   }
 
-  public void downloadData(final AtomicPathUpdator pathUpdator) {
-    final RecordDefinition sourceWriterRecordDefinition = getSourceRecordDefinition();
-    if (sourceWriterRecordDefinition != null) {
-      final Path sourceOutputPath = pathUpdator.getPath();
-      try (
-        RecordWriter sourceRecordWriter = RecordWriter.newRecordWriter(sourceWriterRecordDefinition,
-          sourceOutputPath)) {
-        this.writer = sourceRecordWriter;
-        writeRecords();
+  public void downloadData(final boolean downloadData) {
+    try (
+      AtomicPathUpdator pathUpdator = this.partnerOrganizationFiles
+        .newPathUpdator(ImportSites.SOURCE_BY_PROVIDER)) {
+      if (downloadData || !pathUpdator.isTargetExists()) {
+
+        final RecordDefinition sourceWriterRecordDefinition = getSourceRecordDefinition();
+        if (sourceWriterRecordDefinition != null) {
+          final Path sourceOutputPath = pathUpdator.getPath();
+          try (
+            RecordWriter sourceRecordWriter = RecordWriter
+              .newRecordWriter(sourceWriterRecordDefinition, sourceOutputPath)) {
+            this.writer = sourceRecordWriter;
+            writeRecords();
+          }
+        }
+        checkExpectedCount();
       }
     }
-    checkExpectedCount();
-    pathUpdator.setCancelled(this.cancellable.isCancelled());
+  }
+
+  private Counter getCounter(final String countName) {
+    return this.dialog.getCounter("Provider", getPartnerOrganizationName(),
+      this.countPrefix + countName);
   }
 
   public GeometryFactory getGeometryFactory() {
     return this.geometryFactory;
+  }
+
+  @Override
+  public PartnerOrganization getPartnerOrganization() {
+    return this.partnerOrganizationFiles.getPartnerOrganization();
   }
 
   protected RecordDefinition getSourceRecordDefinition() {
@@ -109,26 +133,36 @@ public abstract class AbstractSourceReader extends BaseObjectWithProperties {
     this.baseDirectory = baseDirectory;
   }
 
-  public void setCancellable(final Cancellable cancellable) {
-    this.cancellable = cancellable;
-  }
-
   public void setCounter(final Counter counter) {
     this.counter = counter;
   }
 
-  public void setDataProvider(final String dataProvider) {
-    this.dataProvider = dataProvider;
+  public void setCountPrefix(final String countPrefix) {
+    this.countPrefix = countPrefix;
+  }
+
+  public void setDialog(final StatisticsDialog dialog) {
+    this.dialog = dialog;
+    this.counter = getCounter("Source");
   }
 
   public void setGeometryFactory(final GeometryFactory geometryFactory) {
     this.geometryFactory = geometryFactory;
   }
 
+  public void setPartnerOrganizationFiles(final PartnerOrganizationFiles partnerOrganizationFiles) {
+    this.partnerOrganizationFiles = partnerOrganizationFiles;
+  }
+
+  @Override
+  public String toString() {
+    return getPartnerOrganizationName();
+  }
+
   protected abstract void writeRecords();
 
   protected void writeRecords(final Iterable<Record> records) {
-    for (final Record sourceRecord : this.cancellable.cancellable(records)) {
+    for (final Record sourceRecord : this.dialog.cancellable(records)) {
       writeSourceRecord(sourceRecord);
     }
   }

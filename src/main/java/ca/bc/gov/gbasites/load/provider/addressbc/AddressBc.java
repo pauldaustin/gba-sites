@@ -56,4 +56,9 @@ public interface AddressBc {
 
   String UNIT_TYPE = "UNIT_TYPE";
 
+  Path ADDRESS_BC_DIRECTORY = SitePoint.SITES_DIRECTORY //
+  .resolve("AddressBc");
+
+  String FILE_SUFFIX = "_ABC";
+
 }

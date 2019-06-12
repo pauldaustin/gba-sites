@@ -28,11 +28,11 @@ import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
+import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
-import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
-import ca.bc.gov.gbasites.load.provider.other.ImportSites;
+import ca.bc.gov.gbasites.load.convert.AbstractSiteConverter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.map.Maps;
@@ -179,9 +179,8 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
   }
 
   public void addIgnore(final Record record, final String message) {
-    this.counts.addCount(this.localityName, ProviderSitePointConverter.IGNORED);
-    this.importSites.addLabelCount(ProviderSitePointConverter.IGNORED, message,
-      ProviderSitePointConverter.IGNORED);
+    this.counts.addCount(this.localityName, "Ignored");
+    addIgnoreCount();
     final Point point = record.getGeometry();
 
     this.allIgnoreLog.error(this.localityName, message, record, point);
@@ -196,12 +195,12 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
   }
 
   @Override
-  public void addWarningCount(final String message) {
+  public void addWarning(final String message) {
     addWarning(this.sourceRecord, message);
   }
 
   @Override
-  public SitePointProviderRecord convert(final Record sourceRecord, final Point point) {
+  public SitePointProviderRecord convertRecordSite(final Record sourceRecord, final Point point) {
     this.sourceRecord = sourceRecord;
     final GeocoderCaSite sourceSite = new GeocoderCaSite(this, sourceRecord, point);
     if (!sourceSite.isPartsEqual()) {
@@ -222,22 +221,22 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
       try {
         final Identifier localityId = LOCALITIES.getBoundaryId(point);
         setLocalityName(LOCALITIES.getValue(localityId));
-        final SitePointProviderRecord sitePoint = convert(sourceRecord, point);
+        final SitePointProviderRecord sitePoint = convertRecordSite(sourceRecord, point);
         if (sitePoint == null) {
-          this.counts.addCount(this.localityName, ProviderSitePointConverter.IGNORED);
+          addIgnoreCount();
         } else {
           return sitePoint;
         }
       } catch (final NullPointerException e) {
         Logs.error(ImportSites.class, "Null pointer", e);
         addError(sourceRecord, "Null Pointer");
-        this.counts.addCount(this.localityName, ProviderSitePointConverter.IGNORED);
+        addIgnoreCount();
       } catch (final IgnoreSiteException e) {
         addIgnore(sourceRecord, e.getMessage());
       } catch (final Throwable e) {
         Logs.error(this, e);
         addError(sourceRecord, e.getMessage());
-        this.counts.addCount(this.localityName, ProviderSitePointConverter.IGNORED);
+        addIgnoreCount();
       }
     }
     return null;
@@ -443,7 +442,7 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
 
   public void run() {
 
-    final RecordDefinitionImpl siteRecordDefinition = ProviderSitePointConverter
+    final RecordDefinitionImpl siteRecordDefinition = AbstractSiteConverter
       .getSitePointTsvRecordDefinition();
     final Path file = this.importSites.getSitePointByProviderDirectory() //
       .resolve(this.localityFileName + "_SITE_POINT_GEOCODER_CA.tsv");

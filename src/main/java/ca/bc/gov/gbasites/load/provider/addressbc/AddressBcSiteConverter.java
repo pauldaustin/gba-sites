@@ -1,71 +1,92 @@
 package ca.bc.gov.gbasites.load.provider.addressbc;
 
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.function.Consumer;
 
-import org.jeometry.common.data.identifier.Identifier;
-import org.jeometry.common.logging.Logs;
 import org.jeometry.common.number.Integers;
 
 import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.BoundaryCache;
-import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gba.ui.StatisticsDialog;
-import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
-import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
+import ca.bc.gov.gbasites.load.ImportSites;
+import ca.bc.gov.gbasites.load.common.PartnerOrganizationFiles;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
-import ca.bc.gov.gbasites.load.converter.AbstractSiteConverter;
-import ca.bc.gov.gbasites.load.provider.other.ImportSites;
+import ca.bc.gov.gbasites.load.convert.AbstractSiteConverter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.code.FeatureStatus;
 
 import com.revolsys.collection.map.Maps;
 import com.revolsys.collection.range.RangeSet;
 import com.revolsys.geometry.model.Point;
-import com.revolsys.io.file.Paths;
+import com.revolsys.parallel.process.ProcessNetwork;
 import com.revolsys.record.Record;
 import com.revolsys.record.RecordLog;
 import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.io.RecordWriter;
 import com.revolsys.record.io.format.json.Json;
-import com.revolsys.record.schema.RecordDefinitionImpl;
-import com.revolsys.swing.table.counts.LabelCountMapTableModel;
-import com.revolsys.util.Cancellable;
-import com.revolsys.util.CaseConverter;
-import com.revolsys.util.Counter;
+import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.util.Debug;
 import com.revolsys.util.Property;
 import com.revolsys.util.Strings;
 
-public class AddressBcSiteConverter extends AbstractSiteConverter implements Cancellable {
+public class AddressBcSiteConverter extends AbstractSiteConverter {
 
-  private static final BoundaryCache LOCALITIES = GbaController.getLocalities();
+  public static void convertAll(final StatisticsDialog dialog, final boolean convert) {
 
-  private static final Comparator<SitePointProviderRecord> SUFFIX_UNIT_COMPARATOR = (a, b) -> {
-    final String suffix1 = a.getString(CIVIC_NUMBER_SUFFIX, "");
-    final String suffix2 = b.getString(CIVIC_NUMBER_SUFFIX, "");
-    int compare = suffix1.compareTo(suffix2);
-    if (compare == 0) {
-      final RangeSet descriptor1 = a.getUnitDescriptorRanges();
-      final RangeSet descriptor2 = b.getUnitDescriptorRanges();
-      compare = descriptor1.compareTo(descriptor2);
-      if (compare == 0) {
-        final Point point1 = a.getGeometry();
-        final Point point2 = b.getGeometry();
-        compare = point1.compareTo(point2);
+    final List<PartnerOrganization> partnerOrganizations = ImportSites.SOURCE_BY_PROVIDER
+      .listPartnerOrganizations(AddressBc.ADDRESS_BC_DIRECTORY, AddressBc.FILE_SUFFIX);
+
+    if (!partnerOrganizations.isEmpty()) {
+
+      final RecordDefinition recordDefinition;
+      {
+        final PartnerOrganization partnerOrganization = partnerOrganizations.get(0);
+        final Path firstFile = ImportSites.SOURCE_BY_PROVIDER
+          .getFilePath(AddressBc.ADDRESS_BC_DIRECTORY, partnerOrganization, AddressBc.FILE_SUFFIX);
+        try (
+          RecordReader reader = RecordReader.newRecordReader(firstFile)) {
+          recordDefinition = reader.getRecordDefinition();
+        }
+
+      }
+      try (
+        RecordLog allErrorLog = newAllRecordLog(AddressBc.ADDRESS_BC_DIRECTORY, recordDefinition,
+          "ERROR");
+        RecordLog allWarningLog = newAllRecordLog(AddressBc.ADDRESS_BC_DIRECTORY, recordDefinition,
+          "WARNING");) {
+        final StructuredNames structuredNames = GbaController.getStructuredNames();
+        structuredNames.setLoadAll(true);
+        structuredNames.setLoadMissingCodes(false);
+        structuredNames.refresh();
+
+        AbstractSiteConverter.init();
+
+        final ProcessNetwork processNetwork = new ProcessNetwork();
+        for (int i = 0; i < 8; i++) {
+          processNetwork.addProcess(() -> {
+            while (!dialog.isCancelled()) {
+              PartnerOrganization partnerOrganization;
+              synchronized (partnerOrganizations) {
+                if (partnerOrganizations.isEmpty()) {
+                  return;
+                }
+                partnerOrganization = partnerOrganizations.remove(0);
+              }
+              final AddressBcSiteConverter converter = new AddressBcSiteConverter(dialog,
+                partnerOrganization, allErrorLog, allWarningLog);
+              converter.convertSourceRecords(convert);
+            }
+          });
+        }
+        processNetwork.startAndWait();
       }
     }
-    return compare;
-  };
+  }
 
   public static String getCleanStringIntern(final Record record, final String fieldName) {
     String value = record.getString(fieldName);
@@ -77,38 +98,36 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
     return value;
   }
 
-  private final StatisticsDialog dialog;
-
-  private final LabelCountMapTableModel counts;
+  public static RecordLog newAllRecordLog(final Path directory,
+    final RecordDefinition recordDefinition, final String suffix) {
+    final Path allErrorFile = directory.resolve("ADDRESS_BC_CONVERT_" + suffix + ".tsv");
+    return new RecordLog(allErrorFile, recordDefinition, true);
+  }
 
   private final Map<String, Consumer<AddressBcSite>> fixesByProvider = new HashMap<>();
 
-  private final Path inputFile;
-
-  private String localityName;
-
-  private final PartnerOrganization partnerOrganization;
-
   private RecordWriter sitePointWriter;
-
-  private Record sourceRecord;
-
-  private final AddressBcConvert convertProcess;
 
   private final RecordLog allErrorLog;
 
   private final RecordLog allWarningLog;
 
-  private final Path directory;
+  public AddressBcSiteConverter(final StatisticsDialog dialog,
+    final PartnerOrganization partnerOrganization, final RecordLog allErrorLog,
+    final RecordLog allWarningLog) {
+    setCountPrefix("ABC ");
+    setFileSuffix(AddressBc.FILE_SUFFIX);
+    setBaseDirectory(AddressBc.ADDRESS_BC_DIRECTORY);
 
-  private final Counter convertCounter;
+    this.createModifyPartnerOrganization = PartnerOrganizations
+      .newPartnerOrganization("ICI Society");
 
-  public AddressBcSiteConverter(final AddressBcConvert convertProcess,
-    final StatisticsDialog dialog, final Path directory, final Path path,
-    final RecordLog allErrorLog, final RecordLog allWarningLog) {
-    this.dialog = dialog;
-    this.directory = directory;
-    this.convertProcess = convertProcess;
+    final PartnerOrganizationFiles partnerOrganizationFiles = new PartnerOrganizationFiles(dialog,
+      partnerOrganization, AddressBc.ADDRESS_BC_DIRECTORY, AddressBc.FILE_SUFFIX);
+    setPartnerOrganizationFiles(partnerOrganizationFiles);
+
+    setDialog(dialog);
+
     this.fixesByProvider.put("Agassiz", this::fixAgassiz);
     this.fixesByProvider.put("Cranbrook", this::fixCranbrook);
     this.fixesByProvider.put("Chilliwack", this::fixChilliwack);
@@ -119,104 +138,43 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
     this.fixesByProvider.put("North Vancouver City", this::fixNorthVancouverCity);
     this.fixesByProvider.put("Revelstoke", this::fixRevelstoke);
     this.fixesByProvider.put("Summerland", this::fixSummerland);
-    this.inputFile = path;
-    this.counts = convertProcess.counts;
-    final String fileName = Paths.getBaseName(path);
-    final String providerShortName = fileName.replace("_ADDRESS_BC", "");
-    this.partnerOrganization = PartnerOrganizations
-      .newPartnerOrganization(CaseConverter.toCapitalizedWords(providerShortName));
 
     this.allErrorLog = allErrorLog;
     this.allWarningLog = allWarningLog;
     this.ignoreNames.clear();
-
-    this.convertCounter = dialog.getCounter("Provider", this.partnerOrganization,
-      "Address BC Convert");
   }
 
   @Override
   public void addError(final Record record, final String message) {
-    this.counts.addCount(this.partnerOrganization, BatchUpdateDialog.ERROR);
-    this.dialog.addLabelCount(BatchUpdateDialog.ERROR, message, BatchUpdateDialog.ERROR);
-    final Point point = record.getGeometry();
+    super.addError(record, message);
 
-    this.allErrorLog.error(this.partnerOrganization.getPartnerOrganizationName(), message, record,
-      point);
+    final Point point = record.getGeometry();
+    this.allErrorLog.error(getPartnerOrganizationName(), message, record, point);
   }
 
+  @Override
   public void addWarning(final Record record, final String message) {
-    this.counts.addCount(this.partnerOrganization, ProviderSitePointConverter.WARNING);
-    this.dialog.addLabelCount(ProviderSitePointConverter.WARNING, message,
-      ProviderSitePointConverter.WARNING);
+    super.addWarning(record, message);
     final Point point = record.getGeometry();
-    this.allWarningLog.error(this.partnerOrganization.getPartnerOrganizationName(), message, record,
-      point);
+    this.allWarningLog.error(getPartnerOrganizationName(), message, record, point);
   }
 
   @Override
-  public void addWarningCount(final String message) {
-    addWarning(this.sourceRecord, message);
-  }
-
-  @Override
-  public SitePointProviderRecord convert(final Record sourceRecord, final Point point) {
-    this.sourceRecord = sourceRecord;
+  public SitePointProviderRecord convertRecordSite(final Record sourceRecord, final Point point) {
     // if (sourceRecord.equalValue(FULL_ADDRESS, "3042 XE PAY RD")) {
     // Debug.noOp();
     // }
     final AddressBcSite sourceSite = new AddressBcSite(this, sourceRecord, point);
     providerFix(sourceSite);
     if (sourceSite.fixSourceSite(this, this.localityName)) {
-      return newSitePoint(sourceSite);
+      return newSitePoint(sourceRecord, sourceSite);
     } else {
       return null;
     }
   }
 
-  private SitePointProviderRecord convertSite(final Record sourceRecord) {
-    final Point sourcePoint = sourceRecord.getGeometry();
-    if (Property.isEmpty(sourcePoint)) {
-      addError(sourceRecord, "Record does not contain a point geometry");
-    } else if (!sourcePoint.isValid()) {
-      addError(sourceRecord, "Record does not contain a valid point geometry");
-    } else {
-
-      try {
-        final Point point = Gba.GEOMETRY_FACTORY_2D_1M.point(sourcePoint);
-
-        final Identifier localityId = LOCALITIES.getBoundaryId(point);
-        setLocalityName(LOCALITIES.getValue(localityId));
-        final SitePointProviderRecord sitePoint = convert(sourceRecord, point);
-        if (sitePoint == null) {
-          this.counts.addCount(this.partnerOrganization, ProviderSitePointConverter.IGNORED);
-        } else {
-          sitePoint.setValue(OPEN_DATA_IND, "N");
-          sitePoint.setValue(LOCALITY_ID, localityId);
-
-          sitePoint.updateFullAddress();
-          final Identifier partnerOrgId = getPartnerOrganizationId();
-          sitePoint.setValue(CREATE_PARTNER_ORG_ID, partnerOrgId);
-          sitePoint.setValue(MODIFY_PARTNER_ORG_ID, partnerOrgId);
-          sitePoint.setValue(CUSTODIAN_PARTNER_ORG_ID, partnerOrgId);
-        }
-        return sitePoint;
-      } catch (final NullPointerException e) {
-        Logs.error(ImportSites.class, "Null pointer", e);
-        addError(sourceRecord, "Null Pointer");
-        this.counts.addCount(this.partnerOrganization, ProviderSitePointConverter.IGNORED);
-      } catch (final IgnoreSiteException e) {
-        addError(sourceRecord, e.getMessage());
-        this.counts.addCount(this.partnerOrganization, ProviderSitePointConverter.IGNORED);
-      } catch (final Throwable e) {
-        addError(sourceRecord, e.getMessage());
-        this.counts.addCount(this.partnerOrganization, ProviderSitePointConverter.IGNORED);
-      }
-    }
-    return null;
-  }
-
   public boolean equalsShortName(final String shortName) {
-    return this.partnerOrganization.equalsShortName(shortName);
+    return getPartnerOrganization().equalsShortName(shortName);
   }
 
   private void fixAgassiz(final AddressBcSite site) {
@@ -314,106 +272,8 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
     }
   }
 
-  @Override
-  protected StatisticsDialog getDialog() {
-    return this.dialog;
-  }
-
-  @Override
-  public Identifier getPartnerOrganizationId() {
-    return this.partnerOrganization.getPartnerOrganizationId();
-  }
-
-  @Override
-  public String getPartnerOrganizationShortName() {
-    return this.partnerOrganization.getPartnerOrganizationShortName();
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return this.convertProcess.isCancelled();
-  }
-
-  private void mergeDuplicates(final List<SitePointProviderRecord> sites) {
-    final int recordCount = sites.size();
-    if (recordCount > 1) {
-      for (int i = 0; i < sites.size() - 1; i++) {
-        final SitePointProviderRecord site1 = sites.get(i);
-        for (int j = sites.size() - 1; j > i; j--) {
-          String custodianAddress1 = site1.getString(CUSTODIAN_FULL_ADDRESS);
-          final Point point1 = site1.getGeometry();
-          final String suffix1 = site1.getString(CIVIC_NUMBER_SUFFIX, "");
-          final RangeSet range1 = site1.getUnitDescriptorRanges();
-
-          final SitePointProviderRecord site2 = sites.get(j);
-          String custodianAddress2 = site2.getString(CUSTODIAN_FULL_ADDRESS);
-          final Point point2 = site2.getGeometry();
-          final String suffix2 = site2.getString(CIVIC_NUMBER_SUFFIX, "");
-          final RangeSet range2 = site2.getUnitDescriptorRanges();
-          if (point1.isWithinDistance(point2, 1)) {
-            if (site1.equalValuesExclude(site2,
-              Arrays.asList(CUSTODIAN_FULL_ADDRESS, GEOMETRY, POSTAL_CODE))) {
-              sites.remove(j);
-              addWarning(site1, "Duplicate");
-              addWarning(site2, "Duplicate");
-              if (!site1.hasValue(POSTAL_CODE)) {
-                site1.setValue(site2, POSTAL_CODE);
-              }
-              this.counts.addCount(this.partnerOrganization, "Duplicate");
-            } else {
-              boolean mergeSites = false;
-              if (suffix1.equals(suffix2)) {
-                if (range1.equals(range2)) {
-                  Debug.noOp();
-                } else if (range1.isEmpty()) {
-                  if (custodianAddress2.endsWith(custodianAddress1)) {
-                    site1.setValue(CUSTODIAN_FULL_ADDRESS, custodianAddress2);
-                  } else {
-                    addError(site1, "Merge CUSTODIAN_FULL_ADDRESS different");
-                    addError(site2, "Merge CUSTODIAN_FULL_ADDRESS different");
-                  }
-                  site1.setUnitDescriptor(range2);
-                  mergeSites = true;
-                } else if (range2.isEmpty()) {
-                  Logs.error(this, "Not expecting range2 to be empty");
-                } else {
-                  final RangeSet newRange = new RangeSet();
-                  newRange.addRanges(range1);
-                  newRange.addRanges(range2);
-                  site1.setUnitDescriptor(newRange);
-                  custodianAddress1 = removeUnitFromAddress(custodianAddress1, range1);
-                  custodianAddress2 = removeUnitFromAddress(custodianAddress2, range2);
-                  if (custodianAddress1.equals(custodianAddress2)) {
-                    final String custodianAddress = SitePoint.getSimplifiedUnitDescriptor(newRange)
-                      + " " + custodianAddress1;
-                    site1.setValue(CUSTODIAN_FULL_ADDRESS, custodianAddress);
-                  } else {
-                    addError(site1, "Merge CUSTODIAN_FULL_ADDRESS different");
-                    addError(site2, "Merge CUSTODIAN_FULL_ADDRESS different");
-                  }
-                  mergeSites = true;
-                }
-              } else {
-                Debug.noOp();
-              }
-              if (mergeSites) {
-                SitePoint.updateFullAddress(site1);
-                sites.remove(j);
-                addWarning(site1, "Merged UNIT_DESCRIPTOR");
-                addWarning(site2, "Merged UNIT_DESCRIPTOR");
-                if (!site1.hasValue(POSTAL_CODE)) {
-                  site1.setValue(site2, POSTAL_CODE);
-                }
-                this.counts.addCount(this.partnerOrganization, "Merged UD");
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  public SitePointProviderRecord newSitePoint(final AddressBcSite sourceSite) {
+  private SitePointProviderRecord newSitePoint(final Record sourceRecord,
+    final AddressBcSite sourceSite) {
     final Point point = sourceSite.getPoint();
     final SitePointProviderRecord sitePoint = newSitePoint(this, point);
     sitePoint.setValue(SITE_LOCATION_CODE, sourceSite.siteLocationCode);
@@ -424,7 +284,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
       partnerOrganizationShortName.toUpperCase(), structuredName, FeatureStatus.ACTIVE);
     if (featureStatusCode.isIgnored()) {
       final String message = "Ignored STREET_NAME in STRUCTURED_NAME_ALIAS.xlsx";
-      addStructuredNameError(partnerOrganizationShortName, message, structuredName, null, null);
+      addStructuredNameError(message, structuredName, null, null);
       sourceSite.addWarning(message);
       return null;
     } else if (!setStructuredName(sourceSite, sitePoint, 0, structuredName, structuredName)) {
@@ -445,18 +305,18 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
       } else if (Integers.isInteger(sourceSite.civicNumberSuffix)) {
         sourceSite.unitDescriptor = RangeSet.newRangeSet(sourceSite.civicNumberSuffix);
         sourceSite.civicNumberSuffix = null;
-        addWarningCount("CIVIC_NUMBER_SUFFIX is UNIT_DESCRIPTOR numeric");
+        addWarning(sourceRecord, "CIVIC_NUMBER_SUFFIX is UNIT_DESCRIPTOR numeric");
       } else if (sourceSite.civicNumberSuffix.matches("[A-Z]\\d+")
         || sourceSite.civicNumberSuffix.matches("\\d+[A-Z]")) {
         sourceSite.unitDescriptor = RangeSet.newRangeSet(
           Strings.toString(",", sourceSite.unitDescriptor, sourceSite.civicNumberSuffix));
         sourceSite.civicNumberSuffix = "";
-        addWarningCount("CIVIC_NUMBER_SUFFIX is UNIT_DESCRIPTOR");
+        addWarning(sourceRecord, "CIVIC_NUMBER_SUFFIX is UNIT_DESCRIPTOR");
       } else if (sourceSite.civicNumberSuffix.matches("[A-Z0-9]-[A-Z0-9]")) {
         sourceSite.unitDescriptor = RangeSet.newRangeSet(
           Strings.toString(",", sourceSite.unitDescriptor, sourceSite.civicNumberSuffix));
         sourceSite.civicNumberSuffix = "";
-        addWarningCount("CIVIC_NUMBER_SUFFIX is UNIT_DESCRIPTOR range");
+        addWarning(sourceRecord, "CIVIC_NUMBER_SUFFIX is UNIT_DESCRIPTOR range");
       } else if (sourceSite.civicNumberSuffix.matches("-[A-Z]")) {
         sourceSite.civicNumberSuffix = sourceSite.civicNumberSuffix.substring(1);
         addError(sourceSite, "CIVIC_NUMBER_SUFFIX includes - prefix");
@@ -530,48 +390,6 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
     return address;
   }
 
-  public void run() {
-    final RecordDefinitionImpl siteRecordDefinition = ProviderSitePointConverter
-      .getSitePointTsvRecordDefinition();
-    final String shortName = getPartnerOrganizationShortName();
-    final String baseName = BatchUpdateDialog.toFileName(shortName);
-
-    final Path file = this.directory //
-      .resolve(baseName + "_SITE_POINT_ADDRESS_BC.tsv");
-    try (
-      RecordReader reader = RecordReader.newRecordReader(this.inputFile);
-      RecordWriter sitePointWriter = this.sitePointWriter = RecordWriter
-        .newRecordWriter(siteRecordDefinition, file);) {
-      this.sitePointWriter.setProperty("useQuotes", false);
-
-      final Map<String, Map<Integer, List<SitePointProviderRecord>>> sitesByStreetAddress = new TreeMap<>();
-
-      for (final Record sourceRecord : cancellable(reader)) {
-        this.counts.addCount(this.partnerOrganization, "Read");
-        this.convertCounter.add();
-        final SitePointProviderRecord siteRecord = convertSite(sourceRecord);
-        if (siteRecord != null) {
-          final String streetName = siteRecord.getStructuredName();
-          final Integer civicNumber = siteRecord.getCivicNumber();
-          Maps.addToList(Maps.factoryTree(), sitesByStreetAddress, streetName, civicNumber,
-            siteRecord);
-        }
-      }
-      for (final Map<Integer, List<SitePointProviderRecord>> sitesByCivicNumber : cancellable(
-        sitesByStreetAddress.values())) {
-        for (final List<SitePointProviderRecord> sites : cancellable(sitesByCivicNumber.values())) {
-          sites.sort(SUFFIX_UNIT_COMPARATOR);
-          mergeDuplicates(sites);
-          for (final Record record : sites) {
-            writeSitePoint(record);
-          }
-        }
-      }
-    } catch (final Throwable e) {
-      Logs.error(this, e);
-    }
-  }
-
   public void setLocalityName(final String localityName) {
     this.localityName = localityName;
   }
@@ -580,6 +398,5 @@ public class AddressBcSiteConverter extends AbstractSiteConverter implements Can
     final Record writeRecord = this.sitePointWriter.newRecord(record);
     writeRecord.setGeometryValue(record);
     this.sitePointWriter.write(writeRecord);
-    this.counts.addCount(this.partnerOrganization, "Write");
   }
 }

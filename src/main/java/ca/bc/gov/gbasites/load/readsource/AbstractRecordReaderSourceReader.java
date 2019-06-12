@@ -1,4 +1,4 @@
-package ca.bc.gov.gbasites.load.sourcereader;
+package ca.bc.gov.gbasites.load.readsource;
 
 import com.revolsys.collection.map.MapEx;
 import com.revolsys.record.io.RecordReader;

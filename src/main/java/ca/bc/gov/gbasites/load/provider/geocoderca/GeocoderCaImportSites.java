@@ -2,7 +2,6 @@ package ca.bc.gov.gbasites.load.provider.geocoderca;
 
 import java.nio.file.Path;
 
-import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.type.StructuredName;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.model.type.SitePoint;
@@ -11,9 +10,6 @@ import com.revolsys.transaction.Transaction;
 
 public class GeocoderCaImportSites extends BatchUpdateDialog implements SitePoint, StructuredName {
 
-  /**
-   *
-   */
   private static final long serialVersionUID = 1L;
 
   public static final String LOCALITY_NAME = "LOCALITY_NAME";
@@ -21,8 +17,6 @@ public class GeocoderCaImportSites extends BatchUpdateDialog implements SitePoin
   public static void main(final String[] args) {
     start(GeocoderCaImportSites.class);
   }
-
-  private final Path directory = GbaController.getDataDirectory("Sites/geocoder.ca");
 
   private final boolean action1ExtractBc = false;
 
@@ -59,7 +53,7 @@ public class GeocoderCaImportSites extends BatchUpdateDialog implements SitePoin
   }
 
   public Path getDirectory() {
-    return this.directory;
+    return GeocoderCa.DIRECTORY;
   }
 
   public Path getInputByProviderDirectory() {

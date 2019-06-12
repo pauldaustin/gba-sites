@@ -1,35 +1,41 @@
 package ca.bc.gov.gbasites.load.provider.geocoderca;
 
+import java.nio.file.Path;
+
+import ca.bc.gov.gbasites.load.ImportSites;
+
 public interface GeocoderCa {
 
-  static String A_TYPE = "aType";
+  String A_TYPE = "aType";
 
-  static String CITY = "City";
+  String CITY = "City";
 
-  static String CONFIDENCE = "Confidence";
+  String CONFIDENCE = "Confidence";
 
-  static String COUNT = "Count";
+  String COUNT = "Count";
 
-  static String DIRECTON = "Direction";
+  String DIRECTON = "Direction";
 
-  static String LATITUDE = "Latitude";
+  String LATITUDE = "Latitude";
 
-  static String LONGITUDE = "Longitude";
+  String LONGITUDE = "Longitude";
 
-  static String NUMBER = "Number";
+  String NUMBER = "Number";
 
-  static String POINT = "Point";
+  String POINT = "Point";
 
-  static String POST_CODE = "PostCode";
+  String POST_CODE = "PostCode";
 
-  static String PROVINCE = "Province";
+  String PROVINCE = "Province";
 
-  static String STREET = "Street";
+  String STREET = "Street";
 
-  static String STREET_NAME = "Street Name";
+  String STREET_NAME = "Street Name";
 
-  static String TYPE = "Type";
+  String TYPE = "Type";
 
-  static String UNIT = "Unit";
+  String UNIT = "Unit";
+
+  Path DIRECTORY = ImportSites.SITES_DIRECTORY.resolve("geocoder.ca");
 
 }
