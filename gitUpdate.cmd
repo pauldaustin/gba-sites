@@ -25,6 +25,7 @@ if NOT "%1" == "--batch" (
   pause
 )
 
+endlocal
 exit /b
 
 rem -- git update     -----------------
@@ -48,4 +49,3 @@ echo(
 endlocal
 exit /b
 rem -- git update END -----------------
-
