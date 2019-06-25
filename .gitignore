@@ -1,0 +1,13 @@
+target
+.settings
+.project
+.classpath
+*.log
+*.mdmp
+.DS_Store
+~*
+*.tmp
+*.ldb
+/log/
+/.factorypath
+config
