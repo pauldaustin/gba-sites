@@ -12,11 +12,11 @@ cd src
 
 rem ----------------
 
-call gitUpdate com.revolsys.open revolsys/gba master
+call :gitUpdate com.revolsys.open revolsys/gba master
 
-call gitUpdate gba pauldaustin/ca.bc.gov.gba major
+call :gitUpdate gba pauldaustin/ca.bc.gov.gba major
 
-call gitUpdate gba-sites pauldaustin/gba-sites master
+call :gitUpdate gba-sites pauldaustin/gba-sites master
 
 rem ----------------
 
@@ -33,7 +33,7 @@ if NOT "%1" == "--batch" (
 exit /b
 
 rem -- git update     -----------------
-:git_update
+:gitUpdate
 setlocal
 
 set DIR=%1
