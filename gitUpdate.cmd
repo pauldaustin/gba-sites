@@ -11,7 +11,7 @@ if not exist src (
 
 rem ----------------
 
-call :gitUpdate src\com.revolsys.open jeometry/jeometry
+call :gitUpdate src\com.revolsys.open jeometry-org/jeometry
 
 call :gitUpdate src\com.revolsys.open revolsys/com.revolsys.open master
 
