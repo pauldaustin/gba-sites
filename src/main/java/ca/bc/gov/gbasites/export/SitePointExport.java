@@ -35,7 +35,7 @@ import com.revolsys.record.schema.RecordDefinitionImpl;
 import com.revolsys.record.schema.RecordStore;
 import com.revolsys.transaction.Transaction;
 import com.revolsys.util.Cancellable;
-import com.revolsys.util.count.LabelCountMap;
+import com.revolsys.util.count.LabelCounters;
 
 public class SitePointExport implements SitePoint, Cancellable {
 
@@ -94,7 +94,7 @@ public class SitePointExport implements SitePoint, Cancellable {
       final FileGdbWriterProcess writerProcess = new FileGdbWriterProcess(sitePointFile);
       newSitePointExportRecordDefinition(writerProcess);
 
-      final LabelCountMap writeCounts = this.dialog.getLabelCountMap(StatisticsDialog.COUNTS,
+      final LabelCounters writeCounts = this.dialog.getLabelCountMap(StatisticsDialog.COUNTS,
         BatchUpdateDialog.WRITE);
       writerProcess //
         .setCounts(writeCounts)//
@@ -131,7 +131,7 @@ public class SitePointExport implements SitePoint, Cancellable {
     } else {
       final String idFieldName = recordDefinition.getIdFieldName();
       query = Query.orderBy(pathName, idFieldName);
-      final LabelCountMap counts = this.dialog.getLabelCountMap(StatisticsDialog.COUNTS,
+      final LabelCounters counts = this.dialog.getLabelCountMap(StatisticsDialog.COUNTS,
         BatchUpdateDialog.READ);
       query.setStatistics(counts);
       this.dialog.newLabelCount(StatisticsDialog.COUNTS, pathName, BatchUpdateDialog.READ);

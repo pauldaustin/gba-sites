@@ -81,6 +81,8 @@ public class SiteConverterParts extends AbstractSiteConverter {
 
   private Predicate<Record> activeTest = Predicates.all();
 
+  private boolean civicNumberIncludesUnitPrefix;
+
   public SiteConverterParts() {
   }
 
@@ -103,6 +105,9 @@ public class SiteConverterParts extends AbstractSiteConverter {
       throw new IgnoreSiteException(IGNORE_STREET_NAME_NOT_SPECIFIED);
     }
     String sourceUnitDescriptor = getUpperString(sourceRecord, this.unitFieldName);
+    if ("NONE".equals(sourceUnitDescriptor)) {
+      sourceUnitDescriptor = null;
+    }
     final String sourceCivicNumber = getUpperString(sourceRecord, this.civicNumberFieldName);
     final String sourceCivicNumberSuffix = getUpperString(sourceRecord,
       this.civicNumberSuffixFieldName);
@@ -250,11 +255,31 @@ public class SiteConverterParts extends AbstractSiteConverter {
         addError(sourceRecord, "Ignore " + this.civicNumberFieldName + " is not valid");
         return null;
       } else {
-        sitePoint.setCivicNumber(sourceCivicNumber, Property.hasValue(this.unitFieldName));
+        sitePoint.setCivicNumber(sourceCivicNumber, Property.hasValue(this.unitFieldName),
+          this.civicNumberIncludesUnitPrefix);
       }
     }
     if (Property.hasValue(sourceCivicNumberSuffix)) {
-      sitePoint.setCivicNumberSuffix(sourceCivicNumberSuffix);
+      if (sourceCivicNumberSuffix.charAt(0) == '-') {
+        final Integer civicNumber = sitePoint.getCivicNumber();
+        try {
+          final int civicNumberEnd = Integer.parseInt(sourceCivicNumberSuffix.substring(1));
+          if (civicNumber == null) {
+            sitePoint.setCivicNumber(civicNumber);
+          } else if (civicNumber != civicNumberEnd) {
+            sitePoint.setCivicNumber(null);
+            if (civicNumber < civicNumberEnd) {
+              sitePoint.setCivicNumberRange(civicNumber + "~" + civicNumberEnd);
+            } else {
+              sitePoint.setCivicNumberRange(civicNumberEnd + "~" + civicNumber);
+            }
+          }
+        } catch (final NumberFormatException e) {
+          sitePoint.setCivicNumberSuffix(sourceCivicNumberSuffix.substring(1));
+        }
+      } else {
+        sitePoint.setCivicNumberSuffix(sourceCivicNumberSuffix);
+      }
     }
 
     String compareStreetName = originalStreetName;
@@ -392,6 +417,10 @@ public class SiteConverterParts extends AbstractSiteConverter {
 
   public void setCivicNumberFieldName(final String civicNumberFieldName) {
     this.civicNumberFieldName = civicNumberFieldName;
+  }
+
+  public void setCivicNumberIncludesUnitPrefix(final boolean civicNumberIncludesUnitPrefix) {
+    this.civicNumberIncludesUnitPrefix = civicNumberIncludesUnitPrefix;
   }
 
   public void setCivicNumberSuffixFieldName(final String civicNumberSuffixFieldName) {

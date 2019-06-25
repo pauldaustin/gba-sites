@@ -18,7 +18,11 @@ public class CommunityPoly {
       if (communities == null) {
         final RecordStore recordStore = GbaController.getUserRecordStore();
         communities = recordStore.getCodeTable(COMMUNITY_POLY);
-        communities.refreshIfNeeded();
+        if (communities == null) {
+          communities = new BoundaryCache();
+        } else {
+          communities.refreshIfNeeded();
+        }
       }
     }
     return communities;

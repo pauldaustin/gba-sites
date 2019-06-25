@@ -76,7 +76,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     final Path sourceByProviderDirectory = ImportSites.SOURCE_BY_PROVIDER
       .newDirectoryPath(AddressBc.ADDRESS_BC_DIRECTORY) //
     ;
-
+    Paths.createDirectories(sourceByProviderDirectory);
     if (!dialog.isCancelled() && (split || !Paths.exists(sourceByProviderDirectory))) {
       new AddressBcSplitByProvider(dialog, sourceDirectory, sourceByProviderDirectory).run();
     }
@@ -113,7 +113,6 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     this.directory = sourceByProviderDirectory;
     this.sourceDirectory = sourceDirectory;
     this.sourceByProviderDirectory = sourceByProviderDirectory;
-    Paths.createDirectories(this.sourceByProviderDirectory);
   }
 
   private void addWriter(final String dataProvider, final SplitByProviderWriter providerWriter) {

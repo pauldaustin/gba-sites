@@ -62,6 +62,8 @@ public class LoadProviderSitesIntoGba extends AbstractTaskByLocalityProcess impl
 
   private static final Map<String, Map<String, Integer>> localitiesWithNoSites = new TreeMap<>();
 
+  public static final ThreadLocal<Identifier> custodianPartnerOrgIdForThread = new ThreadLocal<>();
+
   public static String toFullAddress(final String unitDescriptor, final String civicNumber,
     final String civicNumberSuffix, final String name) {
     final StringBuilder fullAddress = new StringBuilder();
@@ -95,28 +97,6 @@ public class LoadProviderSitesIntoGba extends AbstractTaskByLocalityProcess impl
     return fullAddress.toString();
   }
 
-  public static void writeNoSites() {
-    final RecordDefinition recordDefinition = new RecordDefinitionBuilder("NO_SITES")//
-      .addField("REGIONAL_DISTRICT_NAME", DataTypes.STRING, 42) //
-      .addField("LOCALITY_NAME", DataTypes.STRING, 28) //
-      .addField("TRANSPORT_LINE_COUNT", DataTypes.INT) //
-      .getRecordDefinition();
-    final Path file = ImportSites.SITES_DIRECTORY.resolve("NO_SITES.xlsx");
-    try (
-      final RecordWriter writer = RecordWriter.newRecordWriter(recordDefinition, file)) {
-      for (final Entry<String, Map<String, Integer>> regionalDistrictEntry : ImportSites.dialog
-        .cancellable(localitiesWithNoSites.entrySet())) {
-        final String regionalDistrictName = regionalDistrictEntry.getKey();
-        for (final Entry<String, Integer> localityEntry : ImportSites.dialog
-          .cancellable(regionalDistrictEntry.getValue().entrySet())) {
-          final String localityName = localityEntry.getKey();
-          final Integer transportLineCount = localityEntry.getValue();
-          writer.write(regionalDistrictName, localityName, transportLineCount);
-        }
-      }
-    }
-  }
-
   private final ImportSites dialog;
 
   public LoadProviderSitesIntoGba(final ImportSites dialog) {
@@ -125,7 +105,7 @@ public class LoadProviderSitesIntoGba extends AbstractTaskByLocalityProcess impl
   }
 
   private void addLocalityCount(final String localityName, final String counterName) {
-    ImportSites.dialog.addLabelCount(LOCALITY, localityName, counterName);
+    // ImportSites.dialog.addLabelCount(LOCALITY, localityName, counterName);
   }
 
   private Map<String, List<Record>> getSitesByAddress(final List<Record> records,
@@ -355,10 +335,10 @@ public class LoadProviderSitesIntoGba extends AbstractTaskByLocalityProcess impl
       final List<Record> providerCustodianSites = providerSitesByCustodianId.remove(custodianOrgId);
       final List<Record> gbaCustodianSites = gbaSitesByCustodianId.remove(custodianOrgId);
       try {
-        ImportSites.custodianPartnerOrgIdForThread.set(custodianOrgId);
+        custodianPartnerOrgIdForThread.set(custodianOrgId);
         loadSitesCustodian(localityName, custodianOrgId, gbaCustodianSites, providerCustodianSites);
       } finally {
-        ImportSites.custodianPartnerOrgIdForThread.set(null);
+        custodianPartnerOrgIdForThread.set(null);
       }
     }
     providerSitesByCustodianId.clear();
@@ -548,5 +528,27 @@ public class LoadProviderSitesIntoGba extends AbstractTaskByLocalityProcess impl
       }
     }
     return true;
+  }
+
+  public void writeNoSites() {
+    final RecordDefinition recordDefinition = new RecordDefinitionBuilder("NO_SITES")//
+      .addField("REGIONAL_DISTRICT_NAME", DataTypes.STRING, 42) //
+      .addField("LOCALITY_NAME", DataTypes.STRING, 28) //
+      .addField("TRANSPORT_LINE_COUNT", DataTypes.INT) //
+      .getRecordDefinition();
+    final Path file = ImportSites.SITES_DIRECTORY.resolve("NO_SITES.xlsx");
+    try (
+      final RecordWriter writer = RecordWriter.newRecordWriter(recordDefinition, file)) {
+      for (final Entry<String, Map<String, Integer>> regionalDistrictEntry : this.dialog
+        .cancellable(localitiesWithNoSites.entrySet())) {
+        final String regionalDistrictName = regionalDistrictEntry.getKey();
+        for (final Entry<String, Integer> localityEntry : this.dialog
+          .cancellable(regionalDistrictEntry.getValue().entrySet())) {
+          final String localityName = localityEntry.getKey();
+          final Integer transportLineCount = localityEntry.getValue();
+          writer.write(regionalDistrictName, localityName, transportLineCount);
+        }
+      }
+    }
   }
 }

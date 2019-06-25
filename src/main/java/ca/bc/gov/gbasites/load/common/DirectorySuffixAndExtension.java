@@ -13,7 +13,6 @@ import com.revolsys.io.file.AtomicPathUpdator;
 import com.revolsys.io.file.Paths;
 import com.revolsys.util.Cancellable;
 import com.revolsys.util.CaseConverter;
-import com.revolsys.util.Property;
 
 public class DirectorySuffixAndExtension {
 
@@ -30,6 +29,11 @@ public class DirectorySuffixAndExtension {
     this.extension = extension;
   }
 
+  public void createDirectory(final Path baseDirectory) {
+    final Path directory = baseDirectory.resolve(this.directory);
+    Paths.createDirectories(directory);
+  }
+
   public String getDirectory() {
     return this.directory;
   }
@@ -44,6 +48,10 @@ public class DirectorySuffixAndExtension {
     return getFileName(partnerOrganizationFileName, providerSuffix);
   }
 
+  private String getFileName(final String prefix) {
+    return prefix + this.suffix + this.extension;
+  }
+
   private String getFileName(final String prefix, final String providerSuffix) {
     return prefix + this.suffix + providerSuffix + this.extension;
   }
@@ -52,6 +60,12 @@ public class DirectorySuffixAndExtension {
     final String providerSuffix) {
     final Path directory = newDirectoryPath(baseDirectory);
     final String fileName = getFileName(partnerOrganization, providerSuffix);
+    return directory.resolve(fileName);
+  }
+
+  public Path getLocalityFilePath(final Path baseDirectory, final String localityName) {
+    final Path directory = newDirectoryPath(baseDirectory);
+    final String fileName = getFileName(localityName);
     return directory.resolve(fileName);
   }
 
@@ -65,6 +79,14 @@ public class DirectorySuffixAndExtension {
     }
     final List<Path> files = Paths.listFiles(newDirectoryPath(baseDirectory),
       "[^_].*" + this.suffix + providerSuffix + this.extension);
+    Collections.sort(files);
+    return files;
+  }
+
+  public List<Path> listLocalityFiles(final Path baseDirectory, final String localityName) {
+    final String localityFileName = BatchUpdateDialog.toFileName(localityName);
+    final String pattern = localityFileName + this.suffix + ".*" + this.extension;
+    final List<Path> files = Paths.listFiles(newDirectoryPath(baseDirectory), pattern);
     Collections.sort(files);
     return files;
   }
@@ -96,28 +118,33 @@ public class DirectorySuffixAndExtension {
     return baseDirectory.resolve(this.directory);
   }
 
+  public AtomicPathUpdator newLocalityPathUpdator(final Cancellable cancellable,
+    final Path baseDirectory, final String localityName) {
+    final Path directory = newDirectoryPath(baseDirectory);
+
+    final String prefixFileName = BatchUpdateDialog.toFileName(localityName);
+    final String fileName = getFileName(prefixFileName);
+
+    return new AtomicPathUpdator(cancellable, directory, fileName);
+  }
+
+  public AtomicPathUpdator newLocalityPathUpdator(final Cancellable cancellable,
+    final Path baseDirectory, final String localityName,
+    final PartnerOrganization partnerOrganization, String providerSuffix) {
+    final Path directory = newDirectoryPath(baseDirectory);
+
+    final String prefixFileName = BatchUpdateDialog.toFileName(localityName);
+    final String partnerOrganizationFileName = partnerOrganization.getPartnerOrganizationFileName();
+    providerSuffix = "_" + partnerOrganizationFileName + providerSuffix;
+    final String fileName = getFileName(prefixFileName, providerSuffix);
+
+    return new AtomicPathUpdator(cancellable, directory, fileName);
+  }
+
   public AtomicPathUpdator newPathUpdator(final Cancellable cancellable, final Path baseDirectory,
     final PartnerOrganization partnerOrganization, final String providerSuffix) {
     final Path directory = newDirectoryPath(baseDirectory);
     final String fileName = getFileName(partnerOrganization, providerSuffix);
-    return new AtomicPathUpdator(cancellable, directory, fileName);
-  }
-
-  public AtomicPathUpdator newPrefixPathUpdator(final Cancellable cancellable,
-    final Path baseDirectory, final String prefix, final PartnerOrganization partnerOrganization,
-    String providerSuffix) {
-    final Path directory = newDirectoryPath(baseDirectory);
-
-    final String prefixFileName = BatchUpdateDialog.toFileName(prefix);
-    if (!Property.hasValue(providerSuffix)) {
-      final String partnerOrganizationFileName = partnerOrganization
-        .getPartnerOrganizationFileName();
-      if (!prefixFileName.equals(partnerOrganizationFileName)) {
-        providerSuffix = "_" + partnerOrganizationFileName + providerSuffix;
-      }
-    }
-    final String fileName = getFileName(prefixFileName, providerSuffix);
-
     return new AtomicPathUpdator(cancellable, directory, fileName);
   }
 }

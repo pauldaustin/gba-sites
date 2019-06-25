@@ -129,6 +129,10 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
           newUnitDescriptor = newUnitDescriptor.substring(startIndex, endIndex).trim();
           replaceWordInFullAddress(unitDescriptor.toString(), newUnitDescriptor);
         }
+        newUnitDescriptor = newUnitDescriptor //
+          .replaceAll("-", "~") //
+          .replaceAll("&", ",") //
+        ;
 
         if (IGNORE_UNIT_DESCRIPTORS.contains(newUnitDescriptor)) {
           replaceAllInFullAddress("\\s*-\\s*", "-");
@@ -143,13 +147,12 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
             replaceWordInFullAddress(unitDescriptor.toString(), "");
           }
         } else {
+          final RangeSet range = RangeSet.newRangeSet(newUnitDescriptor);
           if (Property.hasValue(originalUnitDescriptor)) {
-            final RangeSet range = RangeSet.newRangeSet(originalUnitDescriptor);
-            range.add(newUnitDescriptor);
-            setValue(UNIT_DESCRIPTOR, range.toString());
-          } else {
-            setValue(UNIT_DESCRIPTOR, newUnitDescriptor);
+            final RangeSet range2 = RangeSet.newRangeSet(originalUnitDescriptor);
+            range.addRanges(range2);
           }
+          setValue(UNIT_DESCRIPTOR, range.toString());
         }
       } else {
         replaceWordInFullAddress(unitDescriptor.toString(), "");
@@ -181,7 +184,16 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
     return setValue(UNIT_DESCRIPTOR, null);
   }
 
-  private boolean fixCivicNumber(String streetNumber, final boolean hasUnitField) {
+  @Override
+  public SitePointProviderRecord clone() {
+    final SitePointProviderRecord clone = new SitePointProviderRecord(this.siteConverter,
+      getRecordDefinition());
+    clone.setValues(this);
+    return clone;
+  }
+
+  private boolean fixCivicNumber(String streetNumber, final boolean hasUnitField,
+    final boolean civicNumberIncludesUnitPrefix) {
     if (streetNumber.matches("\\d*\\.0*")) {
       final Integer civicNumber = Integer
         .valueOf(streetNumber.substring(0, streetNumber.indexOf('.')));
@@ -199,47 +211,50 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
         final int number1 = Integer.parseInt(numberRangeMatcher.group(1));
         String separator = numberRangeMatcher.group(2);
         final int number2 = Integer.parseInt(numberRangeMatcher.group(3));
-
-        final int diff = number1 - number2;
-        if (diff < -100 || number1 < 100 && number2 > 100) {
-          addWarningOrError(CIVIC_NUMBER_INCLUDES_UNIT_DESCRIPTOR_PREFIX, hasUnitField);
-          addUnitDescriptor(Integer.toString(number1));
+        if (civicNumberIncludesUnitPrefix) {
+          addUnitDescriptor(number1);
           return setCivicNumber(number2);
-        } else if (diff > 100 || number2 < 100 && number1 > 100) {
-          addWarningOrError(CIVIC_NUMBER_INCLUDES_UNIT_DESCRIPTOR_SUFFIX, hasUnitField);
-          addUnitDescriptor(Integer.toString(number2));
-          return setCivicNumber(number1);
         } else {
-          if ("CVRD".equals(this.siteConverter.getPartnerOrganizationShortName())) {
-            addWarningCount(CIVIC_NUMBER_INCLUDES_UNIT_DESCRIPTOR_SUFFIX);
-            addUnitDescriptor(number2);
+          final int diff = number1 - number2;
+          if (diff < -100 || number1 < 100 && number2 > 100) {
+            addWarningOrError(CIVIC_NUMBER_INCLUDES_UNIT_DESCRIPTOR_PREFIX, hasUnitField);
+            addUnitDescriptor(Integer.toString(number1));
+            return setCivicNumber(number2);
+          } else if (diff > 100 || number2 < 100 && number1 > 100) {
+            addWarningOrError(CIVIC_NUMBER_INCLUDES_UNIT_DESCRIPTOR_SUFFIX, hasUnitField);
+            addUnitDescriptor(Integer.toString(number2));
             return setCivicNumber(number1);
           } else {
-            String type;
-            if ("/".equals(separator) || ",".equals(separator)) {
-              separator = ",";
-              type = "list";
-            } else {
-              separator = "~";
-              type = "range";
-            }
-            if (number1 < number2) {
-              addWarningCount("CIVIC_NUMBER is a " + type);
-              final String civicNumberRange = number1 + separator + number2;
-              replaceWordInFullAddress(streetNumber, civicNumberRange);
-              return setCivicNumberRange(civicNumberRange);
-            } else if (number1 > number2) {
-              addWarningCount("CIVIC_NUMBER is a " + type);
-              final String civicNumberRange = number2 + separator + number1;
-              replaceWordInFullAddress(streetNumber, civicNumberRange);
-              return setCivicNumberRange(civicNumberRange);
-            } else {
-              addError("CIVIC_NUMBER has duplicate value in " + type);
+            if ("CVRD".equals(this.siteConverter.getPartnerOrganizationShortName())) {
+              addWarningCount(CIVIC_NUMBER_INCLUDES_UNIT_DESCRIPTOR_SUFFIX);
+              addUnitDescriptor(number2);
               return setCivicNumber(number1);
+            } else {
+              String type;
+              if ("/".equals(separator) || ",".equals(separator)) {
+                separator = ",";
+                type = "list";
+              } else {
+                separator = "~";
+                type = "range";
+              }
+              if (number1 < number2) {
+                addWarningCount("CIVIC_NUMBER is a " + type);
+                final String civicNumberRange = number1 + separator + number2;
+                replaceWordInFullAddress(streetNumber, civicNumberRange);
+                return setCivicNumberRange(civicNumberRange);
+              } else if (number1 > number2) {
+                addWarningCount("CIVIC_NUMBER is a " + type);
+                final String civicNumberRange = number2 + separator + number1;
+                replaceWordInFullAddress(streetNumber, civicNumberRange);
+                return setCivicNumberRange(civicNumberRange);
+              } else {
+                addError("CIVIC_NUMBER has duplicate value in " + type);
+                return setCivicNumber(number1);
+              }
             }
           }
         }
-
       } else {
         if (fixCivicNumberListWithSuffix(streetNumber)) {
           return true;
@@ -506,7 +521,8 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
     return setValue(CIVIC_NUMBER, civicNumber);
   }
 
-  public boolean setCivicNumber(String streetNumber, final boolean hasUnitField) {
+  public boolean setCivicNumber(String streetNumber, final boolean hasUnitField,
+    final boolean civicNumberIncludesUnitPrefix) {
     if (IGNORE_UNIT_DESCRIPTORS.contains(streetNumber)) {
       return clearCivicNumber();
     } else if (Property.hasValue(streetNumber)) {
@@ -520,7 +536,7 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
         final int number = Integer.parseInt(streetNumber);
         return setCivicNumber(number);
       } catch (final RuntimeException e) {
-        return fixCivicNumber(streetNumber, hasUnitField);
+        return fixCivicNumber(streetNumber, hasUnitField, civicNumberIncludesUnitPrefix);
       }
     } else {
       return clearCivicNumber();

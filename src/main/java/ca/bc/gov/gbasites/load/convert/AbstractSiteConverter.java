@@ -15,7 +15,6 @@ import java.util.TreeMap;
 import org.jeometry.common.compare.CompareUtil;
 import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.data.type.DataTypes;
-import org.jeometry.common.io.PathName;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaController;
@@ -23,16 +22,15 @@ import ca.bc.gov.gba.model.BoundaryCache;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.GbaTables;
 import ca.bc.gov.gba.model.type.code.NameDirection;
+import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gba.ui.StatisticsDialog;
-import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
 import ca.bc.gov.gbasites.load.common.StructuredNameMapping;
 import ca.bc.gov.gbasites.model.type.SitePoint;
-import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.model.type.code.CommunityPoly;
 import ca.bc.gov.gbasites.model.type.code.FeatureStatus;
 
@@ -50,7 +48,6 @@ import com.revolsys.record.Record;
 import com.revolsys.record.code.CodeTable;
 import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.io.RecordWriter;
-import com.revolsys.record.schema.FieldDefinition;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.record.schema.RecordDefinitionBuilder;
 import com.revolsys.record.schema.RecordDefinitionImpl;
@@ -62,7 +59,7 @@ import com.revolsys.util.Uuid;
 public abstract class AbstractSiteConverter extends AbstractRecordConverter<SitePointProviderRecord>
   implements SitePoint {
 
-  private static final String LOCALITY_NAME = "LOCALITY_NAME";
+  public static final String LOCALITY_NAME = "LOCALITY_NAME";
 
   public static final StructuredNames STRUCTURED_NAMES = GbaController.getStructuredNames();
 
@@ -90,35 +87,8 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
 
   public static RecordDefinitionImpl sitePointTsvRecordDefinition;
 
-  public static RecordDefinitionImpl getSitePointTsvRecordDefinition() {
-    if (sitePointTsvRecordDefinition == null) {
-      final RecordDefinition sitePointRecordDefinition = GbaSiteDatabase.getRecordStore()
-        .getRecordDefinition(SiteTables.SITE_POINT);
-
-      final RecordDefinitionImpl recordDefinition = new RecordDefinitionImpl(
-        PathName.newPathName("SITE_POINT"));
-      recordDefinition.setDefaultValues(sitePointRecordDefinition.getDefaultValues());
-      for (final FieldDefinition sitePointField : sitePointRecordDefinition.getFields()) {
-        final String fieldName = sitePointField.getName();
-        final FieldDefinition tsvField = new FieldDefinition(sitePointField);
-        recordDefinition.addField(tsvField);
-        if (fieldName.startsWith("STREET_NAME") || fieldName.endsWith("_PARTNER_ORG_ID")) {
-          final String newFieldName = fieldName.replace("_ID", "");
-          if (!sitePointRecordDefinition.hasField(newFieldName)) {
-            recordDefinition.addField(newFieldName, DataTypes.STRING);
-          }
-        } else if (fieldName.equals(LOCALITY_ID)) {
-          final String newFieldName = LOCALITY_NAME;
-          if (!sitePointRecordDefinition.hasField(newFieldName)) {
-            recordDefinition.addField(newFieldName, DataTypes.STRING);
-          }
-        }
-      }
-      recordDefinition.setGeometryFactory(Gba.GEOMETRY_FACTORY_2D);
-      sitePointTsvRecordDefinition = recordDefinition;
-    }
-    return sitePointTsvRecordDefinition;
-  }
+  private static final RecordDefinitionImpl RECORD_DEFINITION = ImportSites
+    .getSitePointTsvRecordDefinition();
 
   public static void init() {
     loadStructuredNameIdByCustodianAndAliasName();
@@ -191,8 +161,6 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
 
   private String openDataInd = "N";
 
-  private final RecordDefinitionImpl writeRecordDefinition = getSitePointTsvRecordDefinition();
-
   public void addProviderBoundary(final Map<String, List<Geometry>> sourceGeometryByLocality) {
     if (ProviderSitePointConverter.calculateBoundary) {
       for (final Entry<String, List<Geometry>> entry : sourceGeometryByLocality.entrySet()) {
@@ -260,6 +228,14 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
     }
   }
 
+  private void addWithCivicNumber(final SitePointProviderRecord sitePoint, final int civicNumber) {
+    final SitePointProviderRecord record = sitePoint.clone();
+    record.setCivicNumber(civicNumber);
+    record.setCivicNumberRange(null);
+    record.updateFullAddress();
+    Maps.addToList(this.recordsByLocalityName, this.localityName, record);
+  }
+
   @Override
   public void close() {
     super.close();
@@ -299,8 +275,6 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
         throw new IgnoreSiteException("Ignore Record does not contain a point geometry");
       } else {
         if (this.localityId != null) {
-          this.dialog.addLabelCount(ProviderSitePointConverter.LOCALITY, this.localityName,
-            "P Convert");
           if (ProviderSitePointConverter.isCalculateBoundary()) {
             Maps.addToList(this.sourceGeometryByLocality, this.localityName,
               convertedSourceGeometry);
@@ -311,6 +285,9 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
           sitePoint.setValue(OPEN_DATA_IND, this.openDataInd);
           sitePoint.setValue(LOCALITY_ID, this.localityId);
           sitePoint.setValue(LOCALITY_NAME, this.localityName);
+          if (sitePoint.equalValue(UNIT_DESCRIPTOR, "0")) {
+            sitePoint.setValue(UNIT_DESCRIPTOR, null);
+          }
           sitePoint.updateFullAddress();
           sitePoint.setCreateModifyOrg(this.createModifyPartnerOrganization);
           sitePoint.setCustodianOrg(getPartnerOrganization());
@@ -653,10 +630,8 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
 
   public SitePointProviderRecord newSitePoint(final AbstractSiteConverter siteConverter,
     final Point point) {
-    final RecordDefinitionImpl recordDefinition = AbstractSiteConverter
-      .getSitePointTsvRecordDefinition();
     final SitePointProviderRecord sitePoint = new SitePointProviderRecord(siteConverter,
-      recordDefinition);
+      RECORD_DEFINITION);
     sitePoint.setGeometryValue(point);
 
     final Identifier regionalDistrictId = regionalDistricts.getBoundaryId(point);
@@ -676,9 +651,10 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
         final int spaceIndex = name1.indexOf(' ');
         if (spaceIndex > -1) {
           final String firstPart = name1.substring(0, spaceIndex);
-
-          nameDirectionPrefix1 = NameDirection.valueOf(firstPart);
-          name1 = name1.substring(spaceIndex + 1);
+          if (firstPart.length() < 2) {
+            nameDirectionPrefix1 = NameDirection.valueOf(firstPart);
+            name1 = name1.substring(spaceIndex + 1);
+          }
         }
       } catch (final Throwable e) {
       }
@@ -689,8 +665,10 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
         if (spaceIndex > -1) {
           final String firstPart = name2.substring(0, spaceIndex);
 
-          nameDirectionPrefix2 = NameDirection.valueOf(firstPart);
-          name2 = name2.substring(spaceIndex + 1);
+          if (firstPart.length() < 2) {
+            nameDirectionPrefix2 = NameDirection.valueOf(firstPart);
+            name2 = name2.substring(spaceIndex + 1);
+          }
         }
       } catch (final Throwable e) {
       }
@@ -714,10 +692,17 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
   @Override
   protected void postConvertRecord(final SitePointProviderRecord sitePoint) {
     super.postConvertRecord(sitePoint);
-    Maps.addToList(this.recordsByLocalityName, this.localityName, sitePoint);
-    if (this.localityId != null) {
-      this.dialog.addLabelCount(ProviderSitePointConverter.LOCALITY, this.localityName,
-        this.countPrefix + " Convert");
+    final String range = sitePoint.getCivicNumberRange();
+    if (range.length() > 0) {
+      final int index = range.indexOf('~');
+      final int civicNumber1 = Integer.parseInt(range.substring(0, index));
+      final int civicNumber2 = Integer.parseInt(range.substring(index + 1));
+
+      addWithCivicNumber(sitePoint, civicNumber1);
+      addWithCivicNumber(sitePoint, civicNumber2);
+
+    } else {
+      Maps.addToList(this.recordsByLocalityName, this.localityName, sitePoint);
     }
   }
 
@@ -729,11 +714,13 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
 
   private void postConvertRecordsWriteLocality(final String localityName,
     final List<Record> localityRecords) {
+    final PartnerOrganization partnerOrganization = this.partnerOrganizationFiles
+      .getPartnerOrganization();
     try (
       AtomicPathUpdator localityPathUpdator = ImportSites.SITE_POINT_BY_LOCALITY
-        .newPrefixPathUpdator(this.dialog, this.baseDirectory, localityName,
-          this.createModifyPartnerOrganization, this.fileSuffix);
-      RecordWriter localityWriter = RecordWriter.newRecordWriter(this.writeRecordDefinition,
+        .newLocalityPathUpdator(this.dialog, this.baseDirectory, localityName, partnerOrganization,
+          this.fileSuffix);
+      RecordWriter localityWriter = RecordWriter.newRecordWriter(this.RECORD_DEFINITION,
         localityPathUpdator.getPath())) {
       localityWriter.writeAll(localityRecords);
     }
@@ -745,8 +732,9 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
 
       final Path dataProviderPath = this.pathUpdator.getPath();
       try (
-        RecordWriter dataProviderWriter = RecordWriter.newRecordWriter(this.writeRecordDefinition,
+        RecordWriter dataProviderWriter = RecordWriter.newRecordWriter(this.RECORD_DEFINITION,
           dataProviderPath)) {
+
         for (final Entry<String, List<Record>> localityEntry : cancellable(
           this.recordsByLocalityName.entrySet())) {
           final String localityName = localityEntry.getKey();
@@ -754,7 +742,9 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
 
           localityRecords.sort(comparator);
 
-          dataProviderWriter.writeAll(localityRecords);
+          for (final Record record : cancellable(localityRecords)) {
+            dataProviderWriter.write(record);
+          }
 
           postConvertRecordsWriteLocality(localityName, localityRecords);
         }

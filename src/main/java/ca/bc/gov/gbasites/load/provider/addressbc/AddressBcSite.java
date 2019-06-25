@@ -896,17 +896,17 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
     } else if (this.addressParts.matches(this.streetNumber + "[A-Z]")) {
       // [NUMBER][NUMBER_SUFFIX]
       this.civicNumberSuffix = this.addressParts.substring(this.streetNumber.length());
-      addError(AddressBcSite.FULL_ADDRESS_HAS_EXTRA_CIVIC_NUMBER_SUFFIX);
+      addError(FULL_ADDRESS_HAS_EXTRA_CIVIC_NUMBER_SUFFIX);
       return true;
     } else if (this.addressParts.matches(this.streetNumber + " [A-Z]")) {
       // [NUMBER][NUMBER_SUFFIX]
       this.civicNumberSuffix = this.addressParts.substring(this.streetNumber.length() + 1);
-      addError(AddressBcSite.FULL_ADDRESS_HAS_EXTRA_CIVIC_NUMBER_SUFFIX);
+      addError(FULL_ADDRESS_HAS_EXTRA_CIVIC_NUMBER_SUFFIX);
       return true;
     } else if (this.addressParts.matches(this.streetNumber + "-[A-Z]")) {
       // [NUMBER]-[NUMBER_SUFFIX]
       this.civicNumberSuffix = this.addressParts.substring(this.streetNumber.length() + 1);
-      addError(AddressBcSite.FULL_ADDRESS_HAS_EXTRA_CIVIC_NUMBER_SUFFIX);
+      addError(FULL_ADDRESS_HAS_EXTRA_CIVIC_NUMBER_SUFFIX);
       return true;
     } else if (this.addressParts.matches("\\d+-\\d+ " + this.streetNumber)) {
       // [UNIT]-[NUMBER]

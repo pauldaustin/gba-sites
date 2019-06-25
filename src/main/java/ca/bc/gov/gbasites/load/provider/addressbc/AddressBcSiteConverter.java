@@ -10,7 +10,6 @@ import org.jeometry.common.number.Integers;
 
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
@@ -119,8 +118,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
     setFileSuffix(AddressBc.FILE_SUFFIX);
     setBaseDirectory(AddressBc.ADDRESS_BC_DIRECTORY);
 
-    this.createModifyPartnerOrganization = PartnerOrganizations
-      .newPartnerOrganization("ICI Society");
+    this.createModifyPartnerOrganization = AddressBc.getAbcPartnerOrganization();
 
     final PartnerOrganizationFiles partnerOrganizationFiles = new PartnerOrganizationFiles(dialog,
       partnerOrganization, AddressBc.ADDRESS_BC_DIRECTORY, AddressBc.FILE_SUFFIX);
@@ -363,31 +361,6 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
     if (providerFixes != null) {
       providerFixes.accept(sourceSite);
     }
-  }
-
-  private String removeUnitFromAddress(String address, final RangeSet range) {
-    final String unit = SitePoint.getSimplifiedUnitDescriptor(range);
-    if (address.startsWith(unit)) {
-      address = address.substring(unit.length());
-    } else if (address.startsWith(unit.replace('~', '-'))) {
-      address = address.substring(unit.length());
-    } else {
-      final String unit2 = range.toString().replace(',', '-');
-      if (address.startsWith(unit2)) {
-        address = address.substring(unit2.length());
-      } else {
-        final String unit3 = range.getFrom() + "-" + range.getTo();
-        if (address.startsWith(unit3)) {
-          address = address.substring(unit3.length());
-        }
-      }
-    }
-    if (address.startsWith("-")) {
-      address = address.substring(1);
-    } else if (address.startsWith(" ")) {
-      address = address.substring(1);
-    }
-    return address;
   }
 
   public void setLocalityName(final String localityName) {

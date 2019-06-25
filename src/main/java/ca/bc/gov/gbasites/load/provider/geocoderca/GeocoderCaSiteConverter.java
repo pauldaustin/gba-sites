@@ -442,7 +442,7 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
 
   public void run() {
 
-    final RecordDefinitionImpl siteRecordDefinition = AbstractSiteConverter
+    final RecordDefinitionImpl siteRecordDefinition = ImportSites
       .getSitePointTsvRecordDefinition();
     final Path file = this.importSites.getSitePointByProviderDirectory() //
       .resolve(this.localityFileName + "_SITE_POINT_GEOCODER_CA.tsv");
