@@ -6,7 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>ca.bc.gov.gba</groupId>
   <artifactId>gba-sites</artifactId>
-  <name>GeoBC Atlas Tools &amp; Data Model</name>
+  <name>GeoBC Atlas Sites</name>
   <version>MAJOR-SNAPSHOT</version>
   <packaging>jar</packaging>
 

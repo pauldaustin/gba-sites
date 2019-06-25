@@ -1,7 +1,0 @@
-{
-  "j:type":"gridLayer",
-  "name":"BCGS 1:20 000",
-  "visible":false,
-  "gridName":"BCGS 1:20 000",
-  "minimumScale": 1000000
-}

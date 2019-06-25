@@ -42,7 +42,7 @@
       <outputDirectory></outputDirectory>
       <includes>
         <include>Projects/**</include>
-        <include>data/**</include>
+        <include>data/**<include>
         <include>sql/**</include>
       </includes>
     </fileSet>

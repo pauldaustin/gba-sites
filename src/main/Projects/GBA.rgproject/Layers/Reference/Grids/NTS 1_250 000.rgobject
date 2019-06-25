@@ -1,7 +1,0 @@
-{
-  "j:type":"gridLayer",
-  "name":"NTS 1:250 000",
-  "visible":false,
-  "gridName":"NTS 1:250 000",
-  "minimumScale": 25000000
-}
