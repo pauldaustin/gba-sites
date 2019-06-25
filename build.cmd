@@ -12,6 +12,8 @@ if not exist log mkdir log
 
 rem -------------------------------------
 
+call :mvnBuild jeometry
+
 call :mvnBuild com.revolsys.open
 
 call :mvnBuild gba
@@ -34,7 +36,7 @@ setlocal
 set DIR=%1
 
 echo Build %DIR%
-call mvn -settings %APPS_DIR%\settings.xml -f src\%DIR% --log-file %DIR%\log\%DIR.log -B -Dmaven.javadoc.skip=true -Dsources.skip=true -DskipTests clean install
+call mvn -settings %APPS_DIR%\settings.xml -f src\%DIR% --log-file %DIR%\log\%DIR.log -B -Dmaven.javadoc.skip=true -Dsources.skip=true -DskipTests install
 echo(
 
 endlocal

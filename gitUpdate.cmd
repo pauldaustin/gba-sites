@@ -11,6 +11,8 @@ if not exist src (
 
 rem ----------------
 
+call :gitUpdate src\com.revolsys.open jeometry/jeometry
+
 call :gitUpdate src\com.revolsys.open revolsys/com.revolsys.open master
 
 call :gitUpdate src\gba pauldaustin/ca.bc.gov.gba major
