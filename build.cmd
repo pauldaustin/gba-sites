@@ -4,9 +4,9 @@ set DIR=%~dp0%
 set APPS_DIR=%DIR%\..\..\apps64
 set JAVA_HOME=%APPS_DIR%\jdk-11
 set PATH=%JAVA_HOME%\bin;%PATH
-set PATH %APPS_DIR%\PortableGit\cmd;%PATH%
-set PATH %APPS_DIR%\7-Zip;%PATH%
-set PATH %APPS_DIR%\maven\bin;%PATH%
+set PATH=%APPS_DIR%\PortableGit\cmd;%PATH%
+set PATH=%APPS_DIR%\7-Zip;%PATH%
+set PATH=%APPS_DIR%\maven\bin;%PATH%
 
 set BASE_NAME=gba-sites-MAJOR-SNAPSHOT-bin
 
@@ -14,7 +14,7 @@ cd %DIR%\..
 
 if not exist log mkdir log
 
-call gitUpdate.cmd --batch
+call cmd\gitUpdate.cmd --batch
 
 rem -------------------------------------
 
@@ -35,7 +35,7 @@ IF %ERRORLEVEL% == 0 (
   echo "*** BUILD FAILED check %LOG% ****"
 )
 
-call activateVersion.cmd MAJOR-SNAPSHOT --batch
+call cmd\activateVersion.cmd MAJOR-SNAPSHOT --batch
 
 if NOT "%1" == "--batch" (
   pause
