@@ -3,7 +3,7 @@ setlocal
 set DIR=%~dp0%
 set APPS_DIR=%DIR%\..\..\apps64
 set JAVA_HOME=%APPS_DIR%\jdk-11
-set PATH=%JAVA_HOME%\bin;%PATH
+set PATH=%JAVA_HOME%\bin;%PATH%
 set PATH=%APPS_DIR%\maven\bin;%PATH%
 
 cd %DIR%\..
@@ -19,6 +19,18 @@ call :mvnBuild com.revolsys.open
 call :mvnBuild gba
 
 call :mvnBuild gba-sites
+
+
+IF %ERRORLEVEL% == 0 (
+  echo Install
+
+  set BASE_NAME=gba-sites-MAJOR-SNAPSHOT-bin
+
+  if exist %BASE_NAME% rmdir /s /q %BASE_NAME%
+  7z x src\gba-sites\target\%BASE_NAME%.zip -o%BASE_NAME% > %DIR%\log\7z.log
+) ELSE (
+  echo "*** BUILD FAILED check %LOG% ****"
+)
 
 rem -------------------------------------
 
