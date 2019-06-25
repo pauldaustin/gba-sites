@@ -1,7 +1,7 @@
 @echo off
 setlocal
 set DIR=%~dp0%
-set PATH=\apps64\PortableGit\cmd;%PATH%
+set PATH=%DIR\..\..\apps64\PortableGit\cmd;%PATH%
 
 cd %DIR%\..
 
