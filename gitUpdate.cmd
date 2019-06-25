@@ -3,7 +3,7 @@ setlocal
 set DIR=%~dp0%
 set PATH=\apps64\PortableGit\cmd;%PATH%
 
-cd %DIR%
+cd %DIR%\..
 
 if not exist src (
   mkdir src
