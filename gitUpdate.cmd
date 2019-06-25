@@ -1,30 +1,25 @@
 @echo off
 setlocal
 set DIR=%~dp0%
-set PATH=%DIR\..\..\apps64\PortableGit\cmd;%PATH%
+set PATH=%DIR%\..\..\apps64\PortableGit\cmd;%PATH%
 
 cd %DIR%\..
 
 if not exist src (
   mkdir src
 )
-cd src
 
 rem ----------------
 
-call :gitUpdate com.revolsys.open revolsys/gba master
+call :gitUpdate src\com.revolsys.open revolsys/com.revolsys.open master
 
-call :gitUpdate gba pauldaustin/ca.bc.gov.gba major
+call :gitUpdate src\gba pauldaustin/ca.bc.gov.gba major
 
-call :gitUpdate gba-sites pauldaustin/gba-sites master
+call :gitUpdate src\gba-sites pauldaustin/gba-sites master
 
 rem ----------------
 
-cd ..\..
-
-echo Git Update GBA Config
-git -C config pull
-echo(
+call :gitUpdate ..\config revolsys/ca.bc.gov.gba.config master
 
 if NOT "%1" == "--batch" (
   pause
