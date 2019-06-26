@@ -68,7 +68,7 @@ git config --global user.name "Paul Austin"
   stage ('Checkout') {
     checkoutBranch('jeometry', 'ssh://git@github.com/jeometry-org/jeometry.git', '${rsBranch}');
     checkoutBranch('revolsys', 'ssh://git@github.com/revolsys/com.revolsys.open.git', '${rsBranch}');
-    checkoutBranch('gba', 'ssh://git@github.com/revolsys/ca.bc.gov.gba.git', '${gbaBranch}');
+    checkoutBranch('gba', 'ssh://git@github.com/pauldaustin/ca.bc.gov.gba.git', '${gbaBranch}');
     checkoutBranch('gba-sites', 'ssh://git@github.com/pauldaustin/gba-sites.git', '${gbaSitesBranch}');
   }
 
