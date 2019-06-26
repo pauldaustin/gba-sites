@@ -255,8 +255,8 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     };
 
     final boolean downloadData = this.providerDownloadCheckbox.isSelected();
-    newConverterProcessNetwork(downloadData, providerAction, "Download and Split Address BC",
-      addressBcRunnable);
+    newConverterProcessNetwork("Downloading", downloadData, providerAction,
+      "Download and Split Address BC", addressBcRunnable);
   }
 
   private void action2Convert() {
@@ -274,13 +274,14 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     final boolean convert = this.providerConvertCheckbox.isSelected();
     try {
       ProviderSitePointConverter.preProcess();
-      newConverterProcessNetwork(convert, providerAction, "Convert Address BC", addressBcRunnable);
+      newConverterProcessNetwork("Converting", convert, providerAction, "Convert Address BC",
+        addressBcRunnable);
     } finally {
       ProviderSitePointConverter.postProcess(this.dataProvidersToProcess);
     }
   }
 
-  private void addConverterProcesses(final ProcessNetwork processes,
+  private void addConverterProcesses(final String label, final ProcessNetwork processes,
     final Consumer<ProviderSitePointConverter> action) {
     if (!this.dataProvidersToProcess.isEmpty()) {
       final List<ProviderSitePointConverter> converters = Lists.toList(LinkedList::new,
@@ -290,8 +291,13 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
           while (!isCancelled()) {
             try {
               final ProviderSitePointConverter converter = converters.remove(0);
-              action.accept(converter);
-            } catch (final Throwable e) {
+              try {
+                action.accept(converter);
+              } catch (final Throwable e) {
+                Logs.error(ProviderSitePointConverter.class,
+                  "Error " + label + "\n" + converter.getPartnerOrganizationFileName(), e);
+              }
+            } catch (final IndexOutOfBoundsException e) {
               return;
             }
           }
@@ -436,12 +442,12 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     });
   }
 
-  private void newConverterProcessNetwork(final boolean providerEnabled,
+  private void newConverterProcessNetwork(final String label, final boolean providerEnabled,
     final Consumer<ProviderSitePointConverter> action, final String addressBcProcessName,
     final Runnable addressBcRunnable) {
     final ProcessNetwork processes = new ProcessNetwork();
     if (providerEnabled) {
-      addConverterProcesses(processes, action);
+      addConverterProcesses(label, processes, action);
     }
     processes.addProcess(addressBcProcessName, addressBcRunnable);
     setSelectedTab(PROVIDER);

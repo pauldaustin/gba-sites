@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.jeometry.common.logging.Logs;
 import org.jeometry.common.number.Integers;
 
 import ca.bc.gov.gba.controller.GbaController;
@@ -76,11 +77,17 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
                 }
                 partnerOrganization = partnerOrganizations.remove(0);
               }
-              final AddressBcSiteConverter converter = new AddressBcSiteConverter(dialog,
-                partnerOrganization, allErrorLog, allWarningLog);
-              converter.convertSourceRecords(convert);
+              try {
+                final AddressBcSiteConverter converter = new AddressBcSiteConverter(dialog,
+                  partnerOrganization, allErrorLog, allWarningLog);
+                converter.convertSourceRecords(convert);
+              } catch (final Exception e) {
+                Logs.error(AddressBcSiteConverter.class,
+                  "Error converting Address BC for " + partnerOrganization, e);
+              }
             }
-          });
+          }).setName("Address BC Convert " + (i + 1));
+          ;
         }
         processNetwork.startAndWait();
       }
