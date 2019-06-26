@@ -68,7 +68,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
 
         final ProcessNetwork processNetwork = new ProcessNetwork();
         for (int i = 0; i < 8; i++) {
-          processNetwork.addProcess(() -> {
+          processNetwork.addProcess("Address BC Convert " + (i + 1), () -> {
             while (!dialog.isCancelled()) {
               PartnerOrganization partnerOrganization;
               synchronized (partnerOrganizations) {
@@ -86,7 +86,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
                   "Error converting Address BC for " + partnerOrganization, e);
               }
             }
-          }).setName("Address BC Convert " + (i + 1));
+          });
           ;
         }
         processNetwork.startAndWait();

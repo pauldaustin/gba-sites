@@ -284,21 +284,25 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
   private void addConverterProcesses(final String label, final ProcessNetwork processes,
     final Consumer<ProviderSitePointConverter> action) {
     if (!this.dataProvidersToProcess.isEmpty()) {
-      final List<ProviderSitePointConverter> converters = Lists.toList(LinkedList::new,
-        this.dataProvidersToProcess);
+      final LinkedList<ProviderSitePointConverter> converters = (LinkedList<ProviderSitePointConverter>)Lists
+        .toList(LinkedList::new, this.dataProvidersToProcess);
       for (int i = 0; i < getThreadCount(); i++) {
-        processes.addProcess("Provider " + i, () -> {
+        processes.addProcess("Provider " + label + " " + (i + 1), () -> {
           while (!isCancelled()) {
-            try {
-              final ProviderSitePointConverter converter = converters.remove(0);
-              try {
-                action.accept(converter);
-              } catch (final Throwable e) {
-                Logs.error(ProviderSitePointConverter.class,
-                  "Error " + label + "\n" + converter.getPartnerOrganizationFileName(), e);
+            final ProviderSitePointConverter converter;
+            synchronized (converters) {
+              if (converters.isEmpty()) {
+                return;
+              } else {
+                converter = converters.removeFirst();
               }
-            } catch (final IndexOutOfBoundsException e) {
-              return;
+            }
+
+            try {
+              action.accept(converter);
+            } catch (final Throwable e) {
+              Logs.error(ProviderSitePointConverter.class,
+                "Error " + label + "\n" + converter.getPartnerOrganizationFileName(), e);
             }
           }
         });
