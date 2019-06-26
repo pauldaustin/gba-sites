@@ -13,7 +13,7 @@ IF [%VERSION%] EQU [] (
   )
   SET LATEST_VERSION=%LATEST_VERSION:gbasites-=%
   SET LATEST_VERSION=%LATEST_VERSION:-bin.zip=%
-  set /p VERSION=Enter Version (%LATEST_VERSION%):
+  set /p VERSION="Enter Version (%LATEST_VERSION%):"
   IF [%VERSION%] EQU [] SET VERSION=%LATEST_VERSION%
 )
 set VERSION_DIR=gba-sites-%VERSION%-bin
