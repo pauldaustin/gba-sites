@@ -62,7 +62,7 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
 
   public static final Path PROVIDER_DIRECTORY = ImportSites.SITES_DIRECTORY.resolve("Provider");
 
-  public static final Path SITE_CONFIG_DIRECTORY = GbaController.getGbaPath().resolve("etc/Sites");
+  public static final Path SITE_CONFIG_DIRECTORY = GbaController.getConfigPath("Sites");
 
   static final Map<String, ProviderSitePointConverter> siteLoaderByDataProvider = new TreeMap<>();
 
