@@ -1,6 +1,6 @@
 call download.cmd
-call install.cmd %VERSION%
+call install.cmd %VERSION% --batch
 call activateVersion.cmd %VERSION% --batch
-call copyTestProd.cmd %VERSION%
+rem call copyTestProd.cmd %VERSION%
 
 pause

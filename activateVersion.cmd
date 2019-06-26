@@ -1,16 +1,19 @@
 @echo off
+setlocal
+cd %~dp0\..
 SET VERSION=%1
-for /f %%f in ('dir /o:n /b gba-*-bin') do (
+for /f %%f in ('dir /o:n /b gba-sites-*-bin') do (
   set LATEST_VERSION=%%f
 )
 SET LATEST_VERSION=%LATEST_VERSION:gba-sites-=%
 SET LATEST_VERSION=%LATEST_VERSION:-bin=%
 IF [%VERSION%] EQU [] set /p VERSION=Enter Version (%LATEST_VERSION%):
 IF [%VERSION%] EQU [] SET VERSION=%LATEST_VERSION%
-IF EXIST %~dp0\gba-sites-%VERSION%-bin\bin (
-  copy %~dp0\gba-sites-%VERSION%-bin\ini\GbaTools.ini ..\GbaTools.ini
-  copy %~dp0\gba-sites-%VERSION%-bin\ini\GbaUi.ini ..\GbaUi.ini
-  copy "%~dp0\gba-sites-%VERSION%-bin\ini\Bc GIS.ini" "..\Bc GIS.ini" 
+
+set INI_DIR=gba-sites-%VERSION%-bin\ini
+IF EXIST %INI_DIR% (
+
+  copy %INI_DIR%\*.ini ..\GbaSiteTools.ini
   echo Activated %VERSION%
 ) ELSE (
   echo Version %VERSION% does not exist
@@ -19,3 +22,4 @@ IF EXIST %~dp0\gba-sites-%VERSION%-bin\bin (
 if NOT "%2" == "--batch" (
   pause
 )
+endlocal
