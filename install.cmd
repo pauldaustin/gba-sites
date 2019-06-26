@@ -1,5 +1,4 @@
 @echo off
-setlocal
 set DIR=%~dp0%
 
 set APPS_DIR=%DIR%\..\..\apps64
@@ -7,12 +6,12 @@ set PATH=%APPS_DIR%\7-zip;%PATH%
 
 cd %DIR%\..
 SET VERSION=%1
+for /f %%f in ('dir /o:n /b gba-sites-*-bin.zip') do (
+  set LATEST_VERSION=%%f
+)
+SET LATEST_VERSION=%LATEST_VERSION:gba-sites-=%
+SET LATEST_VERSION=%LATEST_VERSION:-bin.zip=%
 IF [%VERSION%] EQU [] (
-  for /f %%f in ('dir /o:n /b gbasites-*-bin.zip') do (
-    set LATEST_VERSION=%%f
-  )
-  SET LATEST_VERSION=%LATEST_VERSION:gbasites-=%
-  SET LATEST_VERSION=%LATEST_VERSION:-bin.zip=%
   set /p VERSION="Enter Version (%LATEST_VERSION%):"
   IF [%VERSION%] EQU [] SET VERSION=%LATEST_VERSION%
 )
@@ -33,5 +32,3 @@ IF EXIST %VERSION_ZIP% (
 if NOT "%2" == "--batch" (
   pause
 )
-
-endlocal
