@@ -27,13 +27,6 @@
     </developer>
   </developers>
 
-  <scm>
-    <connection>scm:svn:https://a100.gov.bc.ca/pub/svn/gba/trunk/</connection>
-    <developerConnection>scm:svn:https://a100.gov.bc.ca/pub/svn/gba/trunk/</developerConnection>
-    <url>https://a100.gov.bc.ca/pub/viewvc/gba/trunk/</url>
-  </scm>
-
-
   <build>
     <plugins>
       <plugin>
@@ -130,7 +123,7 @@
     <dependency>
       <groupId>ca.bc.gov</groupId>
       <artifactId>gba</artifactId>
-      <version>${project.version}</version>
+      <version>${ca.bc.gov.gba.version}</version>
     </dependency>
   </dependencies>
 
@@ -149,5 +142,6 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <ca.bc.gov.gba.version>MAJOR-SNAPSHOT</ca.bc.gov.gba.version>
   </properties>
 </project>
