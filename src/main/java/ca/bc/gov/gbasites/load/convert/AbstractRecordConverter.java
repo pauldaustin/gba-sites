@@ -27,6 +27,7 @@ import com.revolsys.record.schema.FieldDefinition;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.util.Cancellable;
 import com.revolsys.util.Counter;
+import com.revolsys.util.Debug;
 
 public abstract class AbstractRecordConverter<R extends Record> extends BaseObjectWithProperties
   implements Cancellable, MapSerializer, PartnerOrganizationProxy {
@@ -106,6 +107,9 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
     R record = null;
     try {
       record = convertRecordDo(sourceRecord);
+      if (record == null) {
+        Debug.noOp();
+      }
     } catch (final IgnoreSiteException e) {
       final String countName = e.getCountName();
       if (e.isError()) {
@@ -208,6 +212,11 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
     this.countPrefix = countPrefix;
   }
 
+  public void setCreateModifyPartnerOrganization(
+    final PartnerOrganization createModifyPartnerOrganization) {
+    this.createModifyPartnerOrganization = createModifyPartnerOrganization;
+  }
+
   public void setDialog(final StatisticsDialog dialog) {
     this.dialog = dialog;
     this.convertCounter = getCounter("Converted");
@@ -222,6 +231,8 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
 
   public void setPartnerOrganizationFiles(final PartnerOrganizationFiles partnerOrganizationFiles) {
     this.partnerOrganizationFiles = partnerOrganizationFiles;
+    setFileSuffix(partnerOrganizationFiles.getProviderSuffix());
+    setBaseDirectory(partnerOrganizationFiles.getBaseDirectory());
     if (this.createModifyPartnerOrganization == null) {
       this.createModifyPartnerOrganization = partnerOrganizationFiles.getPartnerOrganization();
     }

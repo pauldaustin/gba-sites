@@ -6,8 +6,8 @@ import java.util.Collections;
 import java.util.List;
 
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 
 import com.revolsys.io.file.AtomicPathUpdator;
 import com.revolsys.io.file.Paths;
@@ -105,7 +105,7 @@ public class DirectorySuffixAndExtension {
       final String fileName = Paths.getFileName(file);
       final String providerShortName = fileName.substring(0,
         fileName.length() - fullSuffix.length());
-      final PartnerOrganization partnerOrganization = PartnerOrganizations
+      final PartnerOrganization partnerOrganization = GbaSiteDatabase
         .newPartnerOrganization(CaseConverter.toCapitalizedWords(providerShortName));
       partnerOrganizations.add(partnerOrganization);
     }

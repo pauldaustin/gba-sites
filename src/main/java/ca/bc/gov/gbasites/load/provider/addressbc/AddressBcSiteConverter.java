@@ -122,13 +122,11 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
     final PartnerOrganization partnerOrganization, final RecordLog allErrorLog,
     final RecordLog allWarningLog) {
     setCountPrefix("ABC ");
-    setFileSuffix(AddressBc.FILE_SUFFIX);
-    setBaseDirectory(AddressBc.ADDRESS_BC_DIRECTORY);
 
     this.createModifyPartnerOrganization = AddressBc.getAbcPartnerOrganization();
 
-    final PartnerOrganizationFiles partnerOrganizationFiles = new PartnerOrganizationFiles(dialog,
-      partnerOrganization, AddressBc.ADDRESS_BC_DIRECTORY, AddressBc.FILE_SUFFIX);
+    final PartnerOrganizationFiles partnerOrganizationFiles = newPartnerOrganizationFiles(dialog,
+      partnerOrganization);
     setPartnerOrganizationFiles(partnerOrganizationFiles);
 
     setDialog(dialog);
@@ -154,21 +152,22 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
     super.addError(record, message);
 
     final Point point = record.getGeometry();
-    this.allErrorLog.error(getPartnerOrganizationName(), message, record, point);
+    if (this.allErrorLog != null) {
+      this.allErrorLog.error(getPartnerOrganizationName(), message, record, point);
+    }
   }
 
   @Override
   public void addWarning(final Record record, final String message) {
     super.addWarning(record, message);
     final Point point = record.getGeometry();
-    this.allWarningLog.error(getPartnerOrganizationName(), message, record, point);
+    if (this.allWarningLog != null) {
+      this.allWarningLog.error(getPartnerOrganizationName(), message, record, point);
+    }
   }
 
   @Override
   public SitePointProviderRecord convertRecordSite(final Record sourceRecord, final Point point) {
-    // if (sourceRecord.equalValue(FULL_ADDRESS, "3042 XE PAY RD")) {
-    // Debug.noOp();
-    // }
     final AddressBcSite sourceSite = new AddressBcSite(this, sourceRecord, point);
     providerFix(sourceSite);
     if (sourceSite.fixSourceSite(this, this.localityName)) {
@@ -277,6 +276,12 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
     }
   }
 
+  protected PartnerOrganizationFiles newPartnerOrganizationFiles(final StatisticsDialog dialog,
+    final PartnerOrganization partnerOrganization) {
+    return new PartnerOrganizationFiles(dialog, partnerOrganization, AddressBc.ADDRESS_BC_DIRECTORY,
+      AddressBc.FILE_SUFFIX);
+  }
+
   private SitePointProviderRecord newSitePoint(final Record sourceRecord,
     final AddressBcSite sourceSite) {
     final Point point = sourceSite.getPoint();
@@ -360,6 +365,11 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
     }
     // SitePoint.updateCustodianSiteId("addressBc", sitePoint);
     return sitePoint;
+  }
+
+  @Override
+  protected void postConvertRecordsWriteLocality(final String localityName,
+    final List<Record> localityRecords) {
   }
 
   public void providerFix(final AddressBcSite sourceSite) {

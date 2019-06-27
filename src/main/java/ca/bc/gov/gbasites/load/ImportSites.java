@@ -30,14 +30,13 @@ import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.common.DirectorySuffixAndExtension;
-import ca.bc.gov.gbasites.load.common.LoadProviderSitesIntoGba;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.convert.AbstractSiteConverter;
 import ca.bc.gov.gbasites.load.convert.SiteConverterAddress;
 import ca.bc.gov.gbasites.load.convert.SiteConverterCKRD;
 import ca.bc.gov.gbasites.load.convert.SiteConverterParts;
 import ca.bc.gov.gbasites.load.merge.LoadEmergencyManagementSites;
-import ca.bc.gov.gbasites.load.merge.MergeEmergencyManagementSites;
+import ca.bc.gov.gbasites.load.merge.LoadSupplementalAddress;
 import ca.bc.gov.gbasites.load.merge.RecordMergeCounters;
 import ca.bc.gov.gbasites.load.merge.SitePointMerger;
 import ca.bc.gov.gbasites.load.provider.addressbc.AddressBcSiteConverter;
@@ -62,7 +61,6 @@ import com.revolsys.io.map.MapObjectFactory;
 import com.revolsys.io.map.MapObjectFactoryRegistry;
 import com.revolsys.parallel.process.ProcessNetwork;
 import com.revolsys.record.Record;
-import com.revolsys.record.code.CodeTable;
 import com.revolsys.record.code.SimpleCodeTable;
 import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.schema.FieldDefinition;
@@ -82,6 +80,8 @@ import com.revolsys.util.Counter;
 import com.revolsys.util.Property;
 
 public class ImportSites extends AbstractTaskByLocality implements SitePoint {
+
+  private static final String GEOBC_READ = "GEOBC_READ";
 
   public static final String PROVIDER = "Provider";
 
@@ -134,6 +134,10 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   public static final String ABC_SPLIT = "ABC Split";
 
+  public static final String TO_DELETE = "To Delete";
+
+  public static final String PROVIDER_READ = "P Read";
+
   public static void deleteTempFiles(final Path directory) {
     try {
       Files.list(directory).forEach(path -> {
@@ -168,15 +172,30 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
           final String fieldName = sitePointField.getName();
           final FieldDefinition tsvField = new FieldDefinition(sitePointField);
           recordDefinition.addField(tsvField);
-          if (fieldName.startsWith("STREET_NAME") || fieldName.endsWith("_PARTNER_ORG_ID")) {
+          if (fieldName.startsWith(STREET_NAME)) {
             final String newFieldName = fieldName.replace("_ID", "");
             if (!sitePointRecordDefinition.hasField(newFieldName)) {
-              recordDefinition.addField(newFieldName, DataTypes.STRING);
+              recordDefinition.addField(newFieldName, DataTypes.STRING, 100, false);
+            }
+          } else if (fieldName.endsWith("_PARTNER_ORG_ID")) {
+            final String newFieldName = fieldName.replace("_ID", "");
+            if (!sitePointRecordDefinition.hasField(newFieldName)) {
+              recordDefinition.addField(newFieldName, DataTypes.STRING, 30, false);
             }
           } else if (fieldName.equals(LOCALITY_ID)) {
-            final String newFieldName = AbstractSiteConverter.LOCALITY_NAME;
+            final String newFieldName = LOCALITY_NAME;
             if (!sitePointRecordDefinition.hasField(newFieldName)) {
-              recordDefinition.addField(newFieldName, DataTypes.STRING);
+              recordDefinition.addField(newFieldName, DataTypes.STRING, 50, false);
+            }
+          } else if (fieldName.equals(COMMUNITY_ID)) {
+            final String newFieldName = COMMUNITY_NAME;
+            if (!sitePointRecordDefinition.hasField(newFieldName)) {
+              recordDefinition.addField(newFieldName, DataTypes.STRING, 50, false);
+            }
+          } else if (fieldName.equals(REGIONAL_DISTRICT_ID)) {
+            final String newFieldName = REGIONAL_DISTRICT_NAME;
+            if (!sitePointRecordDefinition.hasField(newFieldName)) {
+              recordDefinition.addField(newFieldName, DataTypes.STRING, 50, false);
             }
           }
         }
@@ -187,6 +206,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
     }
     return AbstractSiteConverter.sitePointTsvRecordDefinition;
+
   }
 
   public static void initializeService() {
@@ -323,7 +343,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   @Override
   protected boolean batchUpdate(final Transaction transaction) {
-    for (final String directory : Arrays.asList("AddressBc", PROVIDER)) {
+    for (final String directory : Arrays.asList("AddressBc", PROVIDER, "GEOBC")) {
       final Path baseDirectory = SITES_DIRECTORY.resolve(directory);
       NAME_ERROR_BY_PROVIDER.createDirectory(baseDirectory);
       ERROR_BY_PROVIDER.createDirectory(baseDirectory);
@@ -366,24 +386,29 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
   }
 
   private void initPartnerOrganizationShortNames() {
-    final CodeTable partnerOrganizations = GbaController.getPartnerOrganizations();
-    for (final Identifier partnerOrganizationId : partnerOrganizations.getIdentifiers()) {
-      final String partnerOrganizationName = partnerOrganizations.getValue(partnerOrganizationId);
-      String shortName = null;
-      if (partnerOrganizationName.startsWith("Locality - ")) {
-        shortName = partnerOrganizationName.substring(11);
-      } else if (partnerOrganizationName.startsWith("Regional District - ")) {
-        shortName = partnerOrganizationName.substring(20);
-      } else if (partnerOrganizationName.startsWith("Provider - ")) {
-        shortName = partnerOrganizationName.substring(11);
-      } else {
-        shortName = partnerOrganizationName;
-      }
-      if (shortName != null) {
-        shortName = shortName.replace(' ', '_').toUpperCase();
-        this.partnerOrganizationIdByShortName.put(shortName, partnerOrganizationId);
-      }
-    }
+    // TODO disabled while we are using files
+    // final CodeTable partnerOrganizations =
+    // GbaController.getPartnerOrganizations();
+    // for (final Identifier partnerOrganizationId :
+    // partnerOrganizations.getIdentifiers()) {
+    // final String partnerOrganizationName =
+    // partnerOrganizations.getValue(partnerOrganizationId);
+    // String shortName = null;
+    // if (partnerOrganizationName.startsWith("Locality - ")) {
+    // shortName = partnerOrganizationName.substring(11);
+    // } else if (partnerOrganizationName.startsWith("Regional District - ")) {
+    // shortName = partnerOrganizationName.substring(20);
+    // } else if (partnerOrganizationName.startsWith("Provider - ")) {
+    // shortName = partnerOrganizationName.substring(11);
+    // } else {
+    // shortName = partnerOrganizationName;
+    // }
+    // if (shortName != null) {
+    // shortName = shortName.replace(' ', '_').toUpperCase();
+    // this.partnerOrganizationIdByShortName.put(shortName,
+    // partnerOrganizationId);
+    // }
+    // }
   }
 
   private void loadCodes() {
@@ -580,10 +605,11 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
       INSERTED, //
       UPDATED, //
       DELETED, //
-      LoadProviderSitesIntoGba.TO_DELETE, //
+      TO_DELETE, //
       MERGED_WRITE, //
 
       EM_READ, //
+      GEOBC_READ, //
       FGDB_WRITE //
     );
 
@@ -609,9 +635,9 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     for (final String localityName : getLocalityNamesToProcess()) {
       localityCounts.addRowLabel(localityName);
     }
-    newLabelCountTableModel(MergeEmergencyManagementSites.EM_SITES, "Type Name", GBA_READ,
-      LoadProviderSitesIntoGba.PROVIDER_READ, MergeEmergencyManagementSites.IGNORE_XCOVER, INSERTED,
-      UPDATED);
+    newLabelCountTableModel(LoadEmergencyManagementSites.EM_SITES, "Type Name", GBA_READ,
+      PROVIDER_READ, LoadEmergencyManagementSites.IGNORE_XCOVER, INSERTED, UPDATED);
+    newLabelCountTableModel("GEOBC", "Type Name", READ, "Converted", IGNORED);
     if (hasProviders) {
       newLabelCountTableModel(ERROR, //
         "Message", //
@@ -650,24 +676,31 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
       try (
         FileGdbWriter writer = recordStore.newRecordWriter(recordDefinition)) {
 
-        final CollectionMap<String, Record, List<Record>> emergencyManagementSitesByLocality = new LoadEmergencyManagementSites()
-          .loadEmergencyManagementSites(this);
+        // final CollectionMap<String, Record, List<Record>>
+        // emergencyManagementSitesByLocality = new
+        // LoadEmergencyManagementSites()
+        // .loadEmergencyManagementSites(this);
+        final CollectionMap<String, Record, List<Record>> emergencyManagementSitesByLocality = CollectionMap
+          .hashArray();
+
+        final LoadSupplementalAddress loadSupplementalAddress = new LoadSupplementalAddress(this);
+        try {
+          loadSupplementalAddress.convertSourceRecords();
+        } catch (final Exception e) {
+          Logs.error(this, "Error reading Supplemental_Address.gdb", e);
+        }
 
         final Collection<String> localityNames = GbaController.getLocalities().getBoundaryNames();
         for (final String localityName : cancellable(localityNames)) {
           final String localityFileName = BatchUpdateDialog.toFileName(localityName);
           final Counter writeCounter = getCounter("Locality", localityName, FGDB_WRITE);
 
-          final List<Record> emSites = emergencyManagementSitesByLocality.getOrEmpty(localityName);
-          if (!emSites.isEmpty()) {
-            final Counter emCounter = getCounter("Locality", localityName, EM_READ);
-            for (final Record record : emSites) {
-              emCounter.add();
-              final Record writeRecord = writer.newRecord(record);
-              writer.write(writeRecord);
-              writeCounter.add();
-            }
-          }
+          writeFgdbLocalityRecords(writer, emergencyManagementSitesByLocality, localityName,
+            writeCounter, EM_READ);
+
+          final List<Record> geoBcRecords = loadSupplementalAddress
+            .getRecordsForLocality(localityName);
+          writeFgdbLocalityRecords(writer, localityName, writeCounter, GEOBC_READ, geoBcRecords);
 
           final Path localityFile = SITE_POINT.getLocalityFilePath(SITES_DIRECTORY,
             localityFileName);
@@ -680,6 +713,26 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
             }
           }
         }
+      }
+    }
+  }
+
+  protected void writeFgdbLocalityRecords(final FileGdbWriter writer,
+    final CollectionMap<String, Record, List<Record>> recordsByLocalityName,
+    final String localityName, final Counter writeCounter, final String readCountName) {
+    final List<Record> records = recordsByLocalityName.getOrEmpty(localityName);
+    writeFgdbLocalityRecords(writer, localityName, writeCounter, readCountName, records);
+  }
+
+  protected void writeFgdbLocalityRecords(final FileGdbWriter writer, final String localityName,
+    final Counter writeCounter, final String readCountName, final List<Record> records) {
+    if (!records.isEmpty()) {
+      final Counter counter = getCounter("Locality", localityName, readCountName);
+      for (final Record record : records) {
+        counter.add();
+        final Record writeRecord = writer.newRecord(record);
+        writer.write(writeRecord);
+        writeCounter.add();
       }
     }
   }

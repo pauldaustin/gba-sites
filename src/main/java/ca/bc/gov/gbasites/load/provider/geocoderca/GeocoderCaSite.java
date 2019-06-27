@@ -200,7 +200,7 @@ public class GeocoderCaSite extends DelegatingRecord implements GeocoderCa, Site
     this.structuredName = getCleanString(STREET);
 
     if (IGNORE_STREETS.contains(this.structuredName)) {
-      throw new IgnoreSiteException("[STREET] ignored", false);
+      throw IgnoreSiteException.warning("[STREET] ignored");
     }
     if (this.structuredName.equals("STN MAIN")) {
       this.structuredName = "MAIN ST";
@@ -209,7 +209,7 @@ public class GeocoderCaSite extends DelegatingRecord implements GeocoderCa, Site
     }
     converter.localityFixes.accept(this);
     if (this.structuredName.contains(" AND ")) {
-      throw new IgnoreSiteException("[STREET] contains AND");
+      throw IgnoreSiteException.warning("[STREET] contains AND");
     }
     if (this.nameSuffixDirection.length() != 0) {
       if (this.nameSuffixDirection.endsWith(".")) {
@@ -298,10 +298,10 @@ public class GeocoderCaSite extends DelegatingRecord implements GeocoderCa, Site
     if (Strings.containsWord(this.structuredName, "BOX")) {
       if (this.structuredName.contains("PO BOX") || this.structuredName.contains("P O BOX")
         || "BOX".equals(this.nameBody)) {
-        throw new IgnoreSiteException("PO BOX address");
+        throw IgnoreSiteException.warning("PO BOX address");
       } else if (this.structuredName.matches(".* BOX \\d+")
         || this.structuredName.matches("BOX \\d+ .*")) {
-        throw new IgnoreSiteException("BOX address");
+        throw IgnoreSiteException.warning("BOX address");
       } else {
         Debug.noOp();
       }
@@ -468,13 +468,13 @@ public class GeocoderCaSite extends DelegatingRecord implements GeocoderCa, Site
       final String fullAddress = Strings.toString(" ", civicNumber, this.structuredName);
       final int length = fullAddress.length();
       if (civicNumber.equals(fullAddress)) {
-        throw new IgnoreSiteException(NO_STREET_NAME, false);
+        throw IgnoreSiteException.warning(NO_STREET_NAME);
       } else if (length % 2 == 1) {
         final String part1 = fullAddress.substring(0, length / 2);
         final String part2 = fullAddress.substring(length / 2 + 1);
         if (part1.equals(part2)) {
           if (part1.matches("\\d+")) {
-            throw new IgnoreSiteException(NO_STREET_NAME, false);
+            throw IgnoreSiteException.warning(NO_STREET_NAME);
           }
           final String fullName = part1.substring(civicNumber.length() + 1);
           this.structuredName = fullName;
@@ -549,7 +549,7 @@ public class GeocoderCaSite extends DelegatingRecord implements GeocoderCa, Site
       fixDoubleAddress();
     }
     if (this.structuredName.isEmpty()) {
-      throw new IgnoreSiteException(NO_STREET_NAME, false);
+      throw IgnoreSiteException.warning(NO_STREET_NAME);
     }
     {
       final Matcher unitEndMatcher = SUITE_AT_END_PATTERN.matcher(this.structuredName);
@@ -950,7 +950,7 @@ public class GeocoderCaSite extends DelegatingRecord implements GeocoderCa, Site
 
       final Record typeRecord = STREET_TYPES.get(name);
       if (name.equals(type) || typeRecord != null && typeRecord.equalValue("GBA_VALUE", type)) {
-        throw new IgnoreSiteException("[body] not specified", true);
+        throw IgnoreSiteException.error("[body] not specified");
       }
       if (direction.isEmpty()) {
         if (name.startsWith(type + " ")) {
@@ -1390,7 +1390,7 @@ public class GeocoderCaSite extends DelegatingRecord implements GeocoderCa, Site
 
           } catch (final Exception e) {
             if (after.contains("AND ")) {
-              throw new IgnoreSiteException("Address is intersection", false);
+              throw IgnoreSiteException.warning("Address is intersection");
             }
           }
           return false;
@@ -1442,7 +1442,7 @@ public class GeocoderCaSite extends DelegatingRecord implements GeocoderCa, Site
       return setStructuredName(prefixDirection, namePrefix, after, nameSuffix, "");
     } else {
       if (before.startsWith("BOX ")) {
-        throw new IgnoreSiteException("BOX", false);
+        throw IgnoreSiteException.warning("BOX");
       }
       if (!"LOT".equals(before)) {
         this.unitRange.add(before);

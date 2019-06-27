@@ -114,7 +114,7 @@ public class LoadEmergencyManagementSites implements SitePoint {
     final Identifier id = emSite.getIdentifier("ID");
     final String plType = Strings.trim(emSite.getString("PL_TYPE"));
     if ("XCOVER".equals(plType)) {
-      throw new IgnoreSiteException(IGNORE_XCOVER);
+      throw IgnoreSiteException.warning(IGNORE_XCOVER);
     } else {
       final String plGroup = Strings.trim(emSite.getString("PL_GROUP"));
       this.typeCounts.addCount(plGroup + " " + plType);
@@ -196,12 +196,13 @@ public class LoadEmergencyManagementSites implements SitePoint {
         });
       }
 
-      final Identifier localityId = this.localityCache.setBoundaryId(site, point);
+      final Identifier localityId = this.localityCache.setBoundaryIdAndName(site, point,
+        LOCALITY_NAME);
       final String localityName = this.localityCache.getValue(localityId);
       this.sitesByLocality.addValue(localityName, site);
 
-      this.communityCache.setBoundaryId(site, point);
-      this.regionalDistrictCache.setBoundaryId(site, point);
+      this.communityCache.setBoundaryIdAndName(site, point, COMMUNITY_NAME);
+      this.regionalDistrictCache.setBoundaryIdAndName(site, point, REGIONAL_DISTRICT_NAME);
 
       Identifier structuredNameId = null;
       Identifier aliasStructuredNameId = null;
@@ -280,9 +281,9 @@ public class LoadEmergencyManagementSites implements SitePoint {
       site.setValue(USE_SITE_NAME_IN_ADDRESS_IND, useSiteNameInAddress);
       site.setValue(FEATURE_STATUS_CODE, FeatureStatus.ACTIVE);
       site.setValue(ADDRESS_COMMENT, addressComment);
-      site.setValue(CREATE_PARTNER_ORG_ID, 3);
-      site.setValue(MODIFY_PARTNER_ORG_ID, 3);
-      site.setValue(CUSTODIAN_PARTNER_ORG_ID, 3);
+      site.setValue(CREATE_PARTNER_ORG, "GeoBC");
+      site.setValue(MODIFY_PARTNER_ORG, "GeoBC");
+      site.setValue(CUSTODIAN_PARTNER_ORG, "GeoBC");
       site.setValue(OPEN_DATA_IND, "N");
 
       if (localityId == null) {

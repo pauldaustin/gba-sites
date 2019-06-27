@@ -186,6 +186,7 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
     this.allIgnoreLog.error(this.localityName, message, record, point);
   }
 
+  @Override
   public void addWarning(final Record record, final String message) {
     this.counts.addCount(this.localityName, ProviderSitePointConverter.WARNING);
     this.importSites.addLabelCount(ProviderSitePointConverter.WARNING, message,
@@ -406,10 +407,9 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
       sitePoint.setValue(OPEN_DATA_IND, "Y");
       sitePoint.setValue(LOCALITY_ID, this.localityId);
 
-      final Identifier partnerOrgId = getPartnerOrganizationId();
-      sitePoint.setValue(CREATE_PARTNER_ORG_ID, partnerOrgId);
-      sitePoint.setValue(MODIFY_PARTNER_ORG_ID, partnerOrgId);
-      sitePoint.setValue(CUSTODIAN_PARTNER_ORG_ID, partnerOrgId);
+      final String partnerOrganizationName = getPartnerOrganizationName();
+      sitePoint.setCreateModifyOrg(this.createModifyPartnerOrganization);
+      sitePoint.setCustodianOrg(this.partnerOrganization);
 
       return sitePoint;
     }
@@ -442,8 +442,7 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
 
   public void run() {
 
-    final RecordDefinitionImpl siteRecordDefinition = ImportSites
-      .getSitePointTsvRecordDefinition();
+    final RecordDefinitionImpl siteRecordDefinition = ImportSites.getSitePointTsvRecordDefinition();
     final Path file = this.importSites.getSitePointByProviderDirectory() //
       .resolve(this.localityFileName + "_SITE_POINT_GEOCODER_CA.tsv");
     try (

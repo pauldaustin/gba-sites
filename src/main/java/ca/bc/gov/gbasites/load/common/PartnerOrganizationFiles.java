@@ -32,6 +32,10 @@ public class PartnerOrganizationFiles implements CharSequence, PartnerOrganizati
     return this.partnerOrganization.charAt(index);
   }
 
+  public Path getBaseDirectory() {
+    return this.baseDirectory;
+  }
+
   public String getFileName(final DirectorySuffixAndExtension dirAndSuffix) {
     return dirAndSuffix.getFileName(this.partnerOrganization, this.providerSuffix);
   }
@@ -44,6 +48,10 @@ public class PartnerOrganizationFiles implements CharSequence, PartnerOrganizati
   @Override
   public PartnerOrganization getPartnerOrganization() {
     return this.partnerOrganization;
+  }
+
+  public String getProviderSuffix() {
+    return this.providerSuffix;
   }
 
   @Override

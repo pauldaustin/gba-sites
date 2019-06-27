@@ -220,7 +220,7 @@ public class SiteConverterCKRD extends AbstractSiteConverter {
           }
         }
         if (!matched) {
-          throw new IgnoreSiteException(IGNORED_FULL_ADDRESS_NOT_EQUAL_PARTS, true);
+          throw IgnoreSiteException.error(IGNORED_FULL_ADDRESS_NOT_EQUAL_PARTS);
         }
       }
     }

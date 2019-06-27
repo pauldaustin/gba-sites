@@ -16,7 +16,6 @@ import ca.bc.gov.gba.process.qa.AbstractTaskByLocalityProcess;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.ImportSites;
-import ca.bc.gov.gbasites.load.common.LoadProviderSitesIntoGba;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.provider.addressbc.AddressBc;
 import ca.bc.gov.gbasites.model.type.SitePoint;
@@ -36,6 +35,7 @@ import com.revolsys.transaction.Propagation;
 import com.revolsys.transaction.Transaction;
 import com.revolsys.util.Cancellable;
 import com.revolsys.util.Counter;
+import com.revolsys.util.Debug;
 import com.revolsys.util.Strings;
 
 public class SitePointMerger extends AbstractTaskByLocalityProcess
@@ -43,17 +43,21 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
 
   public static final String MOVED = "Moved";
 
-  private static final List<String> UPDATE_FIELD_NAMES = Arrays.asList(COMMUNITY_ID, CIVIC_NUMBER,
-    CIVIC_NUMBER_RANGE, CIVIC_NUMBER_SUFFIX, EXTENDED_DATA, FEATURE_STATUS_CODE,
-    CUSTODIAN_FULL_ADDRESS, FULL_ADDRESS, LOCALITY_ID, POSTAL_CODE, REGIONAL_DISTRICT_ID,
-    SITE_LOCATION_CODE, SITE_NAME_1, SITE_TYPE_CODE, STREET_NAME, STREET_NAME_ID,
-    STREET_NAME_ALIAS_1_ID, UNIT_DESCRIPTOR, GEOMETRY);
+  private static final List<String> UPDATE_IGNORE_FIELD_NAMES = Arrays.asList(SITE_ID,
+    PARENT_SITE_ID);
 
   private static final List<String> UPDATE_IGNORE_NULL_FIELD_NAMES = Arrays.asList(POSTAL_CODE,
     SITE_LOCATION_CODE, SITE_NAME_1, SITE_TYPE_CODE, STREET_NAME, STREET_NAME_ALIAS_1_ID);
 
   private static final List<String> COPY_NULL_FIELD_NAMES = Lists.newArray(CUSTODIAN_SITE_ID,
     POSTAL_CODE);
+
+  private static final List<String> FIELD_NAMES = Lists
+    .toArray(ImportSites.getSitePointTsvRecordDefinition().getFieldNames());
+
+  static {
+    FIELD_NAMES.removeAll(UPDATE_IGNORE_FIELD_NAMES);
+  }
 
   public static boolean isAddressBc(final Record record) {
     final String organizationName = record.getString(CREATE_PARTNER_ORG);
@@ -260,9 +264,9 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
     super.initLocality(localityId);
     this.counterInsert = getCounter(BatchUpdateDialog.INSERTED);
     this.counterUpdate = getCounter(BatchUpdateDialog.UPDATED);
-    this.counterToDelete = getCounter(LoadProviderSitesIntoGba.TO_DELETE);
+    this.counterToDelete = getCounter(ImportSites.TO_DELETE);
     this.counterDelete = getCounter(BatchUpdateDialog.DELETED);
-    this.counterMatched = getCounter(LoadProviderSitesIntoGba.MATCHED);
+    this.counterMatched = getCounter(ImportSites.MATCHED);
 
     this.counterMergedWrite = getCounter(ImportSites.MERGED_WRITE);
 
@@ -391,7 +395,7 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
         for (final Iterator<Record> gbaIterator = gbaRecords.iterator(); gbaIterator.hasNext();) {
           final Record gbaRecord = gbaIterator.next();
           if (gbaRecord.equalValue(providerRecord, FULL_ADDRESS)
-            && gbaRecord.equalValue(providerRecord, CREATE_PARTNER_ORG_ID)) {
+            && gbaRecord.equalValue(providerRecord, CREATE_PARTNER_ORG)) {
             gbaIterator.remove();
             if (matched) {
               this.counterDelete.add();
@@ -456,12 +460,13 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
 
   private void updateRecord(final Record gbaRecord, final Record providerRecord) {
     final MapEx newValues = new LinkedHashMapEx();
-    for (final String fieldName : UPDATE_FIELD_NAMES) {
+    for (final String fieldName : FIELD_NAMES) {
       final Object providerValue = providerRecord.getValue(fieldName);
+      if (REGIONAL_DISTRICT_NAME.equals(fieldName)) {
+        Debug.noOp();
+      }
       if (!gbaRecord.equalValue(fieldName, providerValue)) {
-        if (providerValue != null || !UPDATE_IGNORE_NULL_FIELD_NAMES.contains(fieldName)) {
-          newValues.put(fieldName, providerValue);
-        }
+        newValues.put(fieldName, providerValue);
       }
     }
     updateRecord(gbaRecord, providerRecord, newValues);

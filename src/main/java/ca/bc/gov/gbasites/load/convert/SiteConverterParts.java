@@ -95,14 +95,14 @@ public class SiteConverterParts extends AbstractSiteConverter {
     final String partnerOrganizationShortName = getPartnerOrganizationShortName();
     final String addressFieldName = getAddressFieldName();
     if (!this.activeTest.test(sourceRecord)) {
-      throw new IgnoreSiteException("Ignore inactive record");
+      throw IgnoreSiteException.warning("Ignore inactive record");
     }
     final SitePointProviderRecord sitePoint = newSitePoint(this, point);
     String sourceFullAddress = getUpperString(sourceRecord, addressFieldName);
     sitePoint.setValue(CUSTODIAN_FULL_ADDRESS, sourceFullAddress);
     setFeatureStatusCodeByFullAddress(sitePoint, sourceFullAddress);
     if ("NO CIVIC".equalsIgnoreCase(sourceFullAddress)) {
-      throw new IgnoreSiteException(IGNORE_STREET_NAME_NOT_SPECIFIED);
+      throw IgnoreSiteException.warning(IGNORE_STREET_NAME_NOT_SPECIFIED);
     }
     String sourceUnitDescriptor = getUpperString(sourceRecord, this.unitFieldName);
     if ("NONE".equals(sourceUnitDescriptor)) {
@@ -315,7 +315,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
       prefixNameDirectionCode, streetName, streetType, suffixNameDirectionCode, unitType,
       this.civicNumberFieldName, this.streetTypeFieldName,
       this.addressIncludesUnit) == Boolean.FALSE) {
-      throw new IgnoreSiteException(IGNORED_FULL_ADDRESS_NOT_EQUAL_PARTS, true);
+      throw IgnoreSiteException.error(IGNORED_FULL_ADDRESS_NOT_EQUAL_PARTS);
     }
 
     boolean unitDescriptorWithNoCivicNumber = false;
@@ -329,7 +329,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
         if (sitePoint.hasValue(UNIT_DESCRIPTOR)) {
           unitDescriptorWithNoCivicNumber = true;
         } else {
-          throw new IgnoreSiteException("Ignore no valid CIVIC_NUMBER");
+          throw IgnoreSiteException.warning("Ignore no valid CIVIC_NUMBER");
         }
       }
     }
@@ -337,11 +337,11 @@ public class SiteConverterParts extends AbstractSiteConverter {
       return null;
     }
     if (unitDescriptorWithNoCivicNumber) {
-      throw new IgnoreSiteException("Ignore has UNIT_DESCRIPTOR but no valid CIVIC_NUMBER", true);
+      throw IgnoreSiteException.error("Ignore has UNIT_DESCRIPTOR but no valid CIVIC_NUMBER");
     }
     if (sitePoint.equalValue(CIVIC_NUMBER, 0)) {
       if (sitePoint.equalValue(FULL_ADDRESS, originalStreetName)) {
-        throw new IgnoreSiteException("Ignore CIVIC_NUMBER was 0");
+        throw IgnoreSiteException.warning("Ignore CIVIC_NUMBER was 0");
       } else {
         addError(sourceRecord, "CIVIC_NUMBER was 0");
       }

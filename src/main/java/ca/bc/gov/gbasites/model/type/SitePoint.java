@@ -39,9 +39,11 @@ public interface SitePoint extends GbaType {
 
   String COMMUNITY_ID = "COMMUNITY_ID";
 
-  String CUSTODIAN_SITE_ID = "CUSTODIAN_SITE_ID";
+  String COMMUNITY_NAME = "COMMUNITY_NAME";
 
   String CUSTODIAN_FULL_ADDRESS = "CUSTODIAN_FULL_ADDRESS";
+
+  String CUSTODIAN_SITE_ID = "CUSTODIAN_SITE_ID";
 
   String EMERGENCY_MANAGEMENT_SITE_IND = "EMERGENCY_MANAGEMENT_SITE_IND";
 
@@ -49,13 +51,17 @@ public interface SitePoint extends GbaType {
 
   String LOCALITY_ID = "LOCALITY_ID";
 
-  String OPEN_DATA_IND = "OPEN_DATA_IND";
+  String LOCALITY_NAME = "LOCALITY_NAME";
 
-  String POSTAL_CODE = "POSTAL_CODE";
+  String OPEN_DATA_IND = "OPEN_DATA_IND";
 
   String PARENT_SITE_ID = "PARENT_SITE_ID";
 
+  String POSTAL_CODE = "POSTAL_CODE";
+
   String REGIONAL_DISTRICT_ID = "REGIONAL_DISTRICT_ID";
+
+  String REGIONAL_DISTRICT_NAME = "REGIONAL_DISTRICT_NAME";
 
   String SITE_COMMENT = "SITE_COMMENT";
 
@@ -74,14 +80,15 @@ public interface SitePoint extends GbaType {
 
   String SITE_TYPE_CODE = "SITE_TYPE_CODE";
 
-  String STREET_NAME_ID = "STREET_NAME_ID";
+  Path SITES_DIRECTORY = GbaController.getDataDirectory("Sites");
 
   String STREET_NAME = "STREET_NAME";
 
+  String STREET_NAME_ALIAS_1 = "STREET_NAME_ALIAS_1";
+
   String STREET_NAME_ALIAS_1_ID = "STREET_NAME_ALIAS_1_ID";
 
-  List<String> SITE_STRUCTURED_NAME_FIELD_NAMES = Arrays.asList(STREET_NAME_ID,
-    STREET_NAME_ALIAS_1_ID);
+  String STREET_NAME_ID = "STREET_NAME_ID";
 
   String TRANSPORT_LINE_ID = "TRANSPORT_LINE_ID";
 
@@ -89,14 +96,15 @@ public interface SitePoint extends GbaType {
 
   String UNIT_DESCRIPTOR = "UNIT_DESCRIPTOR";
 
+  Pattern UNIT_SUFFIX_RANGE_PATTERN = Pattern
+    .compile("(\\d+)([A-Z](?::[A-Z])?(?:;[A-Z](?::[A-Z]))*)");
+
   String USE_IN_ADDRESS_RANGE_IND = "USE_IN_ADDRESS_RANGE_IND";
 
   String USE_SITE_NAME_IN_ADDRESS_IND = "USE_SITE_NAME_IN_ADDRESS_IND";
 
-  Path SITES_DIRECTORY = GbaController.getDataDirectory("Sites");
-
-  Pattern UNIT_SUFFIX_RANGE_PATTERN = Pattern
-    .compile("(\\d+)([A-Z](?::[A-Z])?(?:;[A-Z](?::[A-Z]))*)");
+  List<String> SITE_STRUCTURED_NAME_FIELD_NAMES = Arrays.asList(STREET_NAME_ID,
+    STREET_NAME_ALIAS_1_ID);
 
   static void addRanges(final RangeSet ranges, final Iterable<Record> sites) {
     for (final Record site : sites) {

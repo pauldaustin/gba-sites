@@ -138,7 +138,7 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
     this.converter = converter;
     this.unitNumber = getValue(UNIT_DESCRIPTOR);
 
-    this.fullAddress = getValueCleanIntern("FULL_ADDRESS");
+    this.fullAddress = getValueCleanIntern(AddressBc.FULL_ADDRESS);
     this.streetNumberPrefix = getValueCleanIntern(STREET_NUMBER_PREFIX);
     if (this.streetNumberPrefix != null) {
       this.streetNumberPrefix = this.streetNumberPrefix.replace("#", "");
@@ -226,7 +226,7 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
           this.streetNumber = null;
           this.civicNumberRange = number1 + "-" + number2;
           addError("CIVIC_NUMBER_SUFFIX is a range");
-        } else if (number1 < number2) {
+        } else if (number2 < number1) {
           this.streetNumber = null;
           this.civicNumberRange = number2 + "-" + number1;
           addError("CIVIC_NUMBER_SUFFIX is a range");
@@ -408,100 +408,190 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
 
   boolean fixSourceSite(final AddressBcSiteConverter converter, final String localityName) {
     final String structuredName = getStructuredName();
-    final String providerName = this.converter.getPartnerOrganizationShortName().toUpperCase();
-    String aliasName = converter.getStructuredNameFromAlias(providerName, structuredName);
-    if (aliasName == null) {
-      final String civicNumberSuffixStructuredName = this.civicNumberSuffix + " " + structuredName;
-      aliasName = converter.getStructuredNameFromAlias(providerName,
-        civicNumberSuffixStructuredName);
+    if (structuredName.length() == 0 && this.fullAddress == null) {
+      throw IgnoreSiteException.warning("Ignore No FULL_ADDRESS or parts");
+    } else {
+      final String providerName = this.converter.getPartnerOrganizationShortName().toUpperCase();
+      String aliasName = converter.getStructuredNameFromAlias(providerName, structuredName);
       if (aliasName == null) {
-        {
-          final String streetTypeWithSpace = " " + this.nameSuffixCode;
-          if (this.nameBody != null && this.nameBody.endsWith(streetTypeWithSpace)) {
-            this.nameBody = this.nameBody.substring(0,
-              this.nameBody.length() - streetTypeWithSpace.length());
-            // Remove duplicated suffix from full address
-            if (this.fullAddress.endsWith(streetTypeWithSpace + streetTypeWithSpace)) {
-              this.fullAddress = this.fullAddress.substring(0,
-                this.fullAddress.length() - streetTypeWithSpace.length());
-            }
+        final String civicNumberSuffixStructuredName = this.civicNumberSuffix + " "
+          + structuredName;
+        aliasName = converter.getStructuredNameFromAlias(providerName,
+          civicNumberSuffixStructuredName);
+        if (aliasName == null) {
+          {
+            final String streetTypeWithSpace = " " + this.nameSuffixCode;
+            if (this.nameBody != null && this.nameBody.endsWith(streetTypeWithSpace)) {
+              this.nameBody = this.nameBody.substring(0,
+                this.nameBody.length() - streetTypeWithSpace.length());
+              // Remove duplicated suffix from full address
+              if (this.fullAddress.endsWith(streetTypeWithSpace + streetTypeWithSpace)) {
+                this.fullAddress = this.fullAddress.substring(0,
+                  this.fullAddress.length() - streetTypeWithSpace.length());
+              }
 
-            addWarning("STREET_NAME ends with STREET_TYPE");
-          }
-        }
-        if ("HWY".equals(this.nameSuffixCode)) {
-          if (this.nameBody != null && this.nameBody.startsWith("HWY ")) {
-            this.namePrefixCode = "HWY";
-            this.nameSuffixCode = null;
-            this.nameBody = this.nameBody.substring(4);
-            if (this.fullAddress.endsWith(" HWY")) {
-              this.fullAddress = this.fullAddress.substring(0, this.fullAddress.length() - 4);
+              addWarning("STREET_NAME ends with STREET_TYPE");
             }
-            addWarning("STREET_NAME starts with STREET_TYPE (HWY)");
           }
+          if ("HWY".equals(this.nameSuffixCode)) {
+            if (this.nameBody != null && this.nameBody.startsWith("HWY ")) {
+              this.namePrefixCode = "HWY";
+              this.nameSuffixCode = null;
+              this.nameBody = this.nameBody.substring(4);
+              if (this.fullAddress.endsWith(" HWY")) {
+                this.fullAddress = this.fullAddress.substring(0, this.fullAddress.length() - 4);
+              }
+              addWarning("STREET_NAME starts with STREET_TYPE (HWY)");
+            }
+          }
+        } else {
+          addWarning("Mapped from STRUCTURED_NAME_ALIAS.xlsx");
+          setStructuredNameAndParts(aliasName);
+          this.civicNumberSuffix = null;
+          this.fullAddress = this.fullAddress.replace(civicNumberSuffixStructuredName, aliasName);
+          this.addressParts = this.fullAddress;
         }
       } else {
         addWarning("Mapped from STRUCTURED_NAME_ALIAS.xlsx");
         setStructuredNameAndParts(aliasName);
-        this.civicNumberSuffix = null;
-        this.fullAddress = this.fullAddress.replace(civicNumberSuffixStructuredName, aliasName);
+        this.fullAddress = this.fullAddress.replace(structuredName, aliasName);
         this.addressParts = this.fullAddress;
       }
-    } else {
-      addWarning("Mapped from STRUCTURED_NAME_ALIAS.xlsx");
-      setStructuredNameAndParts(aliasName);
-      this.fullAddress = this.fullAddress.replace(structuredName, aliasName);
-      this.addressParts = this.fullAddress;
-    }
-    if (isIgnored()) {
-      return false;
-    } else if (isMatched()) {
+      if (isIgnored()) {
+        return false;
+      } else if (isMatched()) {
 
-    } else if (Property.hasValue(this.addressParts) && !".".equals(this.addressParts)) {
-      if (this.fullAddress.startsWith("ABC-")) {
-        this.fullAddress = "A~C" + this.fullAddress.substring(3);
-        this.addressParts = this.fullAddress;
-        if (isMatched()) {
-          return true;
+      } else if (Property.hasValue(this.addressParts) && !".".equals(this.addressParts)) {
+        if (this.fullAddress.startsWith("ABC-")) {
+          this.fullAddress = "A~C" + this.fullAddress.substring(3);
+          this.addressParts = this.fullAddress;
+          if (isMatched()) {
+            return true;
+          }
         }
-      }
 
-      if (this.fullAddress.contains("?-")) {
-        this.fullAddress = this.fullAddress.replace("?-", "-");
-        addWarning("[FULL_ADDRESS] contains ? after [UNIT_DESCRIPTOR]");
-        this.addressParts = this.fullAddress;
-        if (isMatched()) {
-          return true;
+        if (this.fullAddress.contains("?-")) {
+          this.fullAddress = this.fullAddress.replace("?-", "-");
+          addWarning("[FULL_ADDRESS] contains ? after [UNIT_DESCRIPTOR]");
+          this.addressParts = this.fullAddress;
+          if (isMatched()) {
+            return true;
+          }
         }
-      }
 
-      fixSpecificAddresses();
+        fixSpecificAddresses();
 
-      fixFullAddress(localityName);
-      if (Property.hasValue(this.nameBody)) {
+        fixFullAddress(localityName);
+        if (Property.hasValue(this.nameBody)) {
 
-        fixStreetNameDirSuffix();
-        fixStreetNameAlias();
-        if (!fixStreetType()) {
-          return false;
-        }
-        if (!fixStreetName()) {
-          return false;
-        }
-        if (!fixStreetNameDirPrefix()) {
-          return false;
-        }
-      } else {
-        // providerData.addError(sourceSite,"STREET_NAME not specified");
-        if (this.addressParts.startsWith(this.streetNumber)) {
-          this
-            .setStructuredNameAndParts(this.addressParts.substring(this.streetNumber.length() + 1));
-          this.addressParts = this.streetNumber;
+          fixStreetNameDirSuffix();
+          fixStreetNameAlias();
+          if (!fixStreetType()) {
+            return false;
+          }
+          if (!fixStreetName()) {
+            return false;
+          }
+          if (!fixStreetNameDirPrefix()) {
+            return false;
+          }
         } else {
-          Debug.noOp();
+          // providerData.addError(sourceSite,"STREET_NAME not specified");
+          if (this.streetNumber != null && this.addressParts.startsWith(this.streetNumber)) {
+            this.setStructuredNameAndParts(
+              this.addressParts.substring(this.streetNumber.length() + 1));
+            this.addressParts = this.streetNumber;
+          } else {
+            Debug.noOp();
+          }
         }
-      }
-      if (getCalculatedStreetNumber().equals(this.addressParts)) {
+        if (getCalculatedStreetNumber().equals(this.addressParts)) {
+          if (Property.hasValue(this.streetNumberPrefix)) {
+            if (hasUnitDescriptor()) {
+              Debug.noOp();
+            } else {
+              this.unitDescriptor = RangeSet.newRangeSet(this.streetNumberPrefix);
+              this.streetNumberPrefix = null;
+            }
+          } else if (Property.hasValue(this.civicNumberSuffix)) {
+            if (this.civicNumberSuffix.matches("-[A-Z]")) {
+              this.civicNumberSuffix = this.civicNumberSuffix.substring(1);
+              addError("CIVIC_NUMBER_SUFFIX includes - prefix");
+            } else if (this.civicNumberSuffix.startsWith("-")) {
+              this.civicNumberSuffix = this.civicNumberSuffix.substring(1);
+              fixCivicNumberSuffixWithHyphen();
+            }
+          }
+        } else {
+          Boolean matched = false;
+          if (hasUnitDescriptor()) {
+            matched = fixUnitDescriptor();
+          } else {
+            if (Property.hasValue(this.streetNumberPrefix)) {
+              if (Property.hasValue(this.civicNumberSuffix)) {
+                Debug.noOp();
+              } else {
+                matched = fixStreetNumberPrefix();
+              }
+            } else if (Property.hasValue(this.civicNumberSuffix)) {
+              matched = fixStreetNumberSuffix();
+            } else {
+              matched = this.fixStreetNumber();
+            }
+          }
+          if (matched == null) {
+            return false;
+          } else if (!matched) {
+            if (!hasUnitDescriptor()) {
+              final String fullAddress = getNewFullAddress();
+              if (this.fullAddress.endsWith(fullAddress)) {
+                final String prefix = this.fullAddress.substring(0,
+                  this.fullAddress.length() - fullAddress.length());
+                final Pattern pattern = Pattern.compile("(\\d+(-?:\\d+?))[- ]+");
+                final Matcher matcher = pattern.matcher(prefix);
+                if (matcher.matches()) {
+                  this.unitDescriptor = RangeSet.newRangeSet(matcher.group(1));
+                }
+              }
+            }
+            if (Property.hasValue(this.unitNumber)) {
+              final String unitPlusStreet = this.unitNumber.replace('~', '-') + " "
+                + this.streetNumber;
+              if (this.addressParts.equals(unitPlusStreet)) {
+                addWarning("UNIT_NUMBER_SUFFIX not included in FULL_ADDRESS");
+                return true;
+              } else {
+                try {
+                  final RangeSet range = RangeSet.newRangeSet(this.unitNumber);
+                  final String unitRanglePlusStreet = range.getFrom() + "-" + range.getTo() + " "
+                    + this.streetNumber;
+                  if (this.addressParts.equals(unitRanglePlusStreet)) {
+                    addWarning(
+                      "UNIT_NUMBER is list and UNIT_NUMBER_SUFFIX not included in FULL_ADDRESS");
+                    return true;
+                  }
+                } catch (final Exception e) {
+                }
+              }
+            }
+            if (this.addressParts.replaceAll(" ", "")
+              .equals(getSimplifiedUnitDescriptor() + "-" + this.streetNumber)) {
+              return true;
+            } else if (("A&B-" + this.streetNumber).equals(this.addressParts)
+              && this.unitDescriptor.toString().equals("A~B")) {
+              return true;
+            } else if (("A/B-" + this.streetNumber).equals(this.addressParts)
+              && this.unitDescriptor.toString().equals("A~B")) {
+              return true;
+            } else if (this.addressParts.startsWith("-") && this.addressParts.substring(1)
+              .equals(getSimplifiedUnitDescriptor() + "-" + this.streetNumber)) {
+              return true;
+            } else {
+              throw IgnoreSiteException
+                .error(AbstractSiteConverter.IGNORED_FULL_ADDRESS_NOT_EQUAL_PARTS);
+            }
+          }
+        }
         if (Property.hasValue(this.streetNumberPrefix)) {
           if (hasUnitDescriptor()) {
             Debug.noOp();
@@ -509,98 +599,13 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
             this.unitDescriptor = RangeSet.newRangeSet(this.streetNumberPrefix);
             this.streetNumberPrefix = null;
           }
-        } else if (Property.hasValue(this.civicNumberSuffix)) {
-          if (this.civicNumberSuffix.matches("-[A-Z]")) {
-            this.civicNumberSuffix = this.civicNumberSuffix.substring(1);
-            addError("CIVIC_NUMBER_SUFFIX includes - prefix");
-          } else if (this.civicNumberSuffix.startsWith("-")) {
-            this.civicNumberSuffix = this.civicNumberSuffix.substring(1);
-            fixCivicNumberSuffixWithHyphen();
-          }
         }
       } else {
-        Boolean matched = false;
-        if (hasUnitDescriptor()) {
-          matched = fixUnitDescriptor();
-        } else {
-          if (Property.hasValue(this.streetNumberPrefix)) {
-            if (Property.hasValue(this.civicNumberSuffix)) {
-              Debug.noOp();
-            } else {
-              matched = fixStreetNumberPrefix();
-            }
-          } else if (Property.hasValue(this.civicNumberSuffix)) {
-            matched = fixStreetNumberSuffix();
-          } else {
-            matched = this.fixStreetNumber();
-          }
-        }
-        if (matched == null) {
-          return false;
-        } else if (!matched) {
-          if (!hasUnitDescriptor()) {
-            final String fullAddress = getNewFullAddress();
-            if (this.fullAddress.endsWith(fullAddress)) {
-              final String prefix = this.fullAddress.substring(0,
-                this.fullAddress.length() - fullAddress.length());
-              final Pattern pattern = Pattern.compile("(\\d+(-?:\\d+?))[- ]+");
-              final Matcher matcher = pattern.matcher(prefix);
-              if (matcher.matches()) {
-                this.unitDescriptor = RangeSet.newRangeSet(matcher.group(1));
-              }
-            }
-          }
-          if (Property.hasValue(this.unitNumber)) {
-            final String unitPlusStreet = this.unitNumber.replace('~', '-') + " "
-              + this.streetNumber;
-            if (this.addressParts.equals(unitPlusStreet)) {
-              addWarning("UNIT_NUMBER_SUFFIX not included in FULL_ADDRESS");
-              return true;
-            } else {
-              try {
-                final RangeSet range = RangeSet.newRangeSet(this.unitNumber);
-                final String unitRanglePlusStreet = range.getFrom() + "-" + range.getTo() + " "
-                  + this.streetNumber;
-                if (this.addressParts.equals(unitRanglePlusStreet)) {
-                  addWarning(
-                    "UNIT_NUMBER is list and UNIT_NUMBER_SUFFIX not included in FULL_ADDRESS");
-                  return true;
-                }
-              } catch (final Exception e) {
-              }
-            }
-          }
-          if (this.addressParts.replaceAll(" ", "")
-            .equals(getSimplifiedUnitDescriptor() + "-" + this.streetNumber)) {
-            return true;
-          } else if (("A&B-" + this.streetNumber).equals(this.addressParts)
-            && this.unitDescriptor.toString().equals("A~B")) {
-            return true;
-          } else if (("A/B-" + this.streetNumber).equals(this.addressParts)
-            && this.unitDescriptor.toString().equals("A~B")) {
-            return true;
-          } else if (this.addressParts.startsWith("-") && this.addressParts.substring(1)
-            .equals(getSimplifiedUnitDescriptor() + "-" + this.streetNumber)) {
-            return true;
-          } else {
-            throw new IgnoreSiteException(
-              AbstractSiteConverter.IGNORED_FULL_ADDRESS_NOT_EQUAL_PARTS, true);
-          }
-        }
+        addWarning("FULL_ADDRESS not specified");
       }
-      if (Property.hasValue(this.streetNumberPrefix)) {
-        if (hasUnitDescriptor()) {
-          Debug.noOp();
-        } else {
-          this.unitDescriptor = RangeSet.newRangeSet(this.streetNumberPrefix);
-          this.streetNumberPrefix = null;
-        }
-      }
-    } else {
-      addWarning("FULL_ADDRESS not specified");
-    }
 
-    return true;
+      return true;
+    }
   }
 
   private void fixSpecificAddresses() {
@@ -683,8 +688,7 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
         }
       }
       if (error) {
-        addError("Ignore STREET_NAME is different from parts");
-        return false;
+        throw IgnoreSiteException.error("Ignore STREET_NAME is different from parts");
       }
     }
     if (this.addressParts.equals(this.nameBody)) {
@@ -937,17 +941,33 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
         addError("FULL_ADDRESS does not include the STREET_NUMBER.");
         return true;
       }
-    } else if (this.streetNumber.length() == 8 && this.addressParts
-      .equals(this.streetNumber.substring(0, 4) + "-" + this.streetNumber.substring(4))) {
-      this.streetNumber = this.addressParts;
-      addError("STREET_NUMBER missing - between range of numbers");
-      return true;
-    } else if (this.addressParts.matches("\\d+") && this.streetNumber.matches("\\d+")) {
-      addError("Ignore STREET_NUMBER different from FULL_ADDRESS");
-      return null;
-    } else if (this.addressParts.equals(this.streetNumber + ".")) {
-      addError("Ignore FULL_ADDRESS has . after STREET_NUMBER");
-      return null;
+    } else if (this.streetNumber != null) {
+      if (this.streetNumber.length() == 8 && this.addressParts
+        .equals(this.streetNumber.substring(0, 4) + "-" + this.streetNumber.substring(4))) {
+        this.streetNumber = this.addressParts;
+        addError("STREET_NUMBER missing - between range of numbers");
+        return true;
+      } else if (this.addressParts.matches("\\d+") && this.streetNumber.matches("\\d+")) {
+        addError("FULL_ADDRESS and CIVIC_NUMBER different");
+        final int number1 = Integer.parseInt(this.streetNumber);
+        final int number2 = Integer.parseInt(this.addressParts);
+        if (number1 < number2) {
+          this.streetNumber = null;
+          this.civicNumberRange = number1 + "-" + number2;
+        } else if (number2 < number1) {
+          this.streetNumber = null;
+          this.civicNumberRange = number2 + "-" + number1;
+        }
+        this.fullAddress = this.civicNumberRange + " "
+          + this.fullAddress.substring(this.addressParts.length()).trim();
+        this.addressParts = null;
+        return true;
+      } else if (this.addressParts.equals(this.streetNumber + ".")) {
+        addError("Ignore FULL_ADDRESS has . after STREET_NUMBER");
+        return null;
+      } else {
+        return false;
+      }
     } else {
       return false;
     }
@@ -1283,8 +1303,8 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
                 this.addressParts = getCalculatedFullAddress(this.streetNumberPrefix,
                   streetNumberDescriptor, this.civicNumberSuffix, this.prefixNameDirectionCode,
                   this.nameBody, null, null);
-                throw new IgnoreSiteException(
-                  AbstractSiteConverter.IGNORED_FULL_ADDRESS_NOT_EQUAL_PARTS, true);
+                throw IgnoreSiteException
+                  .error(AbstractSiteConverter.IGNORED_FULL_ADDRESS_NOT_EQUAL_PARTS);
               }
             }
           }
@@ -1384,7 +1404,7 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
     if (civicNumber == null) {
       civicNumber = this.streetNumber;
     }
-    final String civicNumberString = civicNumber.toString();
+    final String civicNumberString = toString(civicNumber);
     final String fullAddress = SitePoint.getFullAddress(this.unitDescriptor, civicNumberString,
       this.civicNumberSuffix, this.civicNumberRange, structuredName);
     return fullAddress;
@@ -1399,14 +1419,14 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
     final StringBuilder streetAddress = new StringBuilder();
     if (hasUnitDescriptor()) {
       streetAddress.append(this.unitDescriptor);
-      if (Property.hasValuesAny(civicNumber.toString(), this.civicNumberSuffix,
+      if (Property.hasValuesAny(toString(civicNumber), this.civicNumberSuffix,
         this.civicNumberRange, structuredName)) {
         streetAddress.append('-');
       }
     }
-    final boolean hasCivicNumber = Property.hasValue(civicNumber.toString());
+    final boolean hasCivicNumber = Property.hasValue(civicNumber);
     if (hasCivicNumber) {
-      streetAddress.append(civicNumber.toString());
+      streetAddress.append(toString(civicNumber));
     }
     final boolean hasCivicNumberSuffix = Property.hasValue(this.civicNumberSuffix);
     if (hasCivicNumberSuffix) {
@@ -1437,13 +1457,15 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
     if (civicNumber == null) {
       civicNumber = this.streetNumber;
     }
-    final String fullAddress = SitePoint.getFullAddress(null, civicNumber.toString(),
+    final String civicNumberString = toString(civicNumber);
+
+    final String fullAddress = SitePoint.getFullAddress(null, civicNumberString,
       this.civicNumberSuffix, this.civicNumberRange, structuredName);
     return fullAddress;
   }
 
   public String getOriginalFullAddress() {
-    return getValue("FULL_ADDRESS");
+    return getValue(AddressBc.FULL_ADDRESS);
   }
 
   public Point getPoint() {
@@ -1567,6 +1589,11 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
     this.aliasName = aliasName;
   }
 
+  public void setFullAddress(final String fullAddress) {
+    this.fullAddress = fullAddress;
+    this.addressParts = fullAddress;
+  }
+
   public void setIgnored(final boolean ignored) {
     this.ignored = ignored;
   }
@@ -1598,5 +1625,15 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
     string.append('\n');
     string.append(super.toString());
     return string.toString();
+  }
+
+  protected String toString(final Object civicNumber) {
+    final String civicNumberString;
+    if (civicNumber == null) {
+      civicNumberString = "";
+    } else {
+      civicNumberString = civicNumber.toString();
+    }
+    return civicNumberString;
   }
 }

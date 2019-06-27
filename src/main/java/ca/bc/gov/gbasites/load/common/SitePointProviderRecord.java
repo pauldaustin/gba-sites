@@ -301,8 +301,8 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
                     addUnitDescriptor(suffixPart);
                   } else {
                     if (hasValue(CIVIC_NUMBER_SUFFIX)) {
-                      throw new IgnoreSiteException(
-                        "Ignore CIVIC_NUMBER_SUFFIX != null and CIVIC_NUMBER has a suffix");
+                      throw IgnoreSiteException
+                        .error("Ignore CIVIC_NUMBER_SUFFIX != null and CIVIC_NUMBER has a suffix");
                     }
                     setCivicNumberSuffix(suffixPart);
                   }
@@ -325,7 +325,7 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
                     addUnitDescriptor(civicNumberSuffix1 + "," + civicNumberSuffix2);
                     return setCivicNumber(civicNumber1);
                   } else {
-                    throw new IgnoreSiteException("Ignore CIVIC_NUMBER is not numeric", true);
+                    throw IgnoreSiteException.error("Ignore CIVIC_NUMBER is not numeric");
                   }
                 } else {
                   final Matcher civicNumberUnitRangeMatcher = CIVIC_NUMBER_UNIT_RANGE_CIVIC_NUMBER_UNIT_RANGE_PATTERN
@@ -339,7 +339,7 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
                       .valueOf(civicNumberUnitRangeMatcher.group(1));
                     return setCivicNumber(civicNumber);
                   } else {
-                    throw new IgnoreSiteException("Ignore CIVIC_NUMBER is not numeric", true);
+                    throw IgnoreSiteException.error("Ignore CIVIC_NUMBER is not numeric");
                   }
                 }
               }
@@ -562,16 +562,16 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
   public void setCreateModifyOrg(final PartnerOrganization partnerOrganization) {
     final Identifier partnerOrganizationId = partnerOrganization.getPartnerOrganizationId();
     final String partnerOrganizationName = partnerOrganization.getPartnerOrganizationName();
-    setValue(CREATE_PARTNER_ORG_ID, partnerOrganizationId);
+    // TODO setValue(CREATE_PARTNER_ORG_ID, partnerOrganizationId);
     setValue(CREATE_PARTNER_ORG, partnerOrganizationName);
-    setValue(MODIFY_PARTNER_ORG_ID, partnerOrganizationId);
+    // TODO setValue(MODIFY_PARTNER_ORG_ID, partnerOrganizationId);
     setValue(MODIFY_PARTNER_ORG, partnerOrganizationName);
   }
 
   public void setCustodianOrg(final PartnerOrganization partnerOrganization) {
     final Identifier partnerOrganizationId = partnerOrganization.getPartnerOrganizationId();
     final String partnerOrganizationName = partnerOrganization.getPartnerOrganizationName();
-    setValue(CUSTODIAN_PARTNER_ORG_ID, partnerOrganizationId);
+    // TODO setValue(CUSTODIAN_PARTNER_ORG_ID, partnerOrganizationId);
     setValue(CUSTODIAN_PARTNER_ORG, partnerOrganizationName);
   }
 
@@ -709,7 +709,7 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
           }
           if (Property.isEmpty(structuredName)) {
             if (!hasValuesAny(CIVIC_NUMBER, CIVIC_NUMBER_RANGE)) {
-              throw new IgnoreSiteException("Ignore no valid CIVIC_NUMBER");
+              throw IgnoreSiteException.warning("Ignore no valid CIVIC_NUMBER");
             } else if (fullAddress.startsWith(civicNumberString + " ")) {
               structuredName = fullAddress.substring((civicNumberString + " ").length());
               originalStreetName = structuredName;
@@ -734,13 +734,12 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
             if (BigDecimals.isNumber(numberPart)) {
               if (getCivicNumber() == null) {
                 if (civicNumberRangeHyphen.contains(numberPart)) {
-                  throw new IgnoreSiteException(
-                    "Ignore FULL_ADDRESS missing CIVIC_NUMBER list/range", true);
+                  throw IgnoreSiteException
+                    .error("Ignore FULL_ADDRESS missing CIVIC_NUMBER list/range");
                 } else {
                   setCivicNumber(Integer.valueOf(numberPart));
                   if (Property.hasValue(civicNumberFieldName)) {
-                    throw new IgnoreSiteException("Ignore FULL_ADDRESS has extra CIVIC_NUMBER",
-                      true);
+                    throw IgnoreSiteException.error("Ignore FULL_ADDRESS has extra CIVIC_NUMBER");
                   }
                   return true;
                 }

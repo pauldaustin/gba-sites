@@ -35,6 +35,7 @@ import ca.bc.gov.gbasites.model.type.code.CommunityPoly;
 import ca.bc.gov.gbasites.model.type.code.FeatureStatus;
 
 import com.revolsys.beans.Classes;
+import com.revolsys.collection.map.CollectionMap;
 import com.revolsys.collection.map.MapEx;
 import com.revolsys.collection.map.Maps;
 import com.revolsys.collection.set.Sets;
@@ -58,8 +59,6 @@ import com.revolsys.util.Uuid;
 
 public abstract class AbstractSiteConverter extends AbstractRecordConverter<SitePointProviderRecord>
   implements SitePoint {
-
-  public static final String LOCALITY_NAME = "LOCALITY_NAME";
 
   public static final StructuredNames STRUCTURED_NAMES = GbaController.getStructuredNames();
 
@@ -89,6 +88,10 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
 
   private static final RecordDefinitionImpl RECORD_DEFINITION = ImportSites
     .getSitePointTsvRecordDefinition();
+
+  private static final BoundaryCache localities = GbaController.getLocalities();
+
+  private static final BoundaryCache communities = CommunityPoly.getCommunities();
 
   public static void init() {
     loadStructuredNameIdByCustodianAndAliasName();
@@ -149,13 +152,14 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
 
   protected AtomicPathUpdator pathUpdator;
 
-  private final BoundaryCache localities = GbaController.getLocalities();
-
   private AtomicPathUpdator nameDifferentPathUpdator;
 
   private final Map<String, Set<String>> nameDifferentByLocality = new TreeMap<>();
 
-  private final Map<String, List<Record>> recordsByLocalityName = new TreeMap<>();
+  // private final Map<String, List<Record>> recordsByLocalityName = new
+  // TreeMap<>();
+  private final CollectionMap<String, Record, List<Record>> recordsByLocalityName = CollectionMap
+    .treeArray();
 
   private final Map<String, List<Geometry>> sourceGeometryByLocality = new TreeMap<>();
 
@@ -188,7 +192,7 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
             boundary = boundary.convexHull();
           }
           Maps.addToMap(Maps.factoryTree(),
-            ProviderSitePointConverter.boundaryByProviderAndLocality, getPartnerOrganizationId(),
+            ProviderSitePointConverter.boundaryByProviderAndLocality, getPartnerOrganizationName(),
             localityName, boundary);
         }
       }
@@ -233,7 +237,7 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
     record.setCivicNumber(civicNumber);
     record.setCivicNumberRange(null);
     record.updateFullAddress();
-    Maps.addToList(this.recordsByLocalityName, this.localityName, record);
+    this.recordsByLocalityName.addValue(this.localityName, record);
   }
 
   @Override
@@ -259,20 +263,20 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
   protected SitePointProviderRecord convertRecordDo(final Record sourceRecord) {
     final Geometry sourceGeometry = sourceRecord.getGeometry();
     if (Property.isEmpty(sourceGeometry)) {
-      throw new IgnoreSiteException("Ignore Record does not contain a point geometry");
+      throw IgnoreSiteException.warning("Ignore Record does not contain a point geometry");
     } else {
       final Geometry convertedSourceGeometry = getValidSourceGeometry(sourceGeometry);
 
       final Point point = convertedSourceGeometry.getPointWithin();
 
-      this.localityId = this.localities.getBoundaryId(point);
+      this.localityId = localities.getBoundaryId(point);
       if (this.localityId == null) {
         this.localityName = "Unknown";
       } else {
-        this.localityName = this.localities.getValue(this.localityId);
+        this.localityName = localities.getValue(this.localityId);
       }
       if (Property.isEmpty(point) || !point.isValid()) {
-        throw new IgnoreSiteException("Ignore Record does not contain a point geometry");
+        throw IgnoreSiteException.warning("Ignore Record does not contain a point geometry");
       } else {
         if (this.localityId != null) {
           if (ProviderSitePointConverter.isCalculateBoundary()) {
@@ -595,6 +599,10 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
     }
   }
 
+  public List<Record> getRecordsForLocality(final String localityName) {
+    return this.recordsByLocalityName.getOrEmpty(localityName);
+  }
+
   public String getStructuredNameFromAlias(final String dataProvider, final String nameAlias) {
     return Maps.getMap(structuredNameByCustodianAndAliasName, dataProvider, nameAlias);
   }
@@ -634,11 +642,8 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
       RECORD_DEFINITION);
     sitePoint.setGeometryValue(point);
 
-    final Identifier regionalDistrictId = regionalDistricts.getBoundaryId(point);
-    sitePoint.setValue(REGIONAL_DISTRICT_ID, regionalDistrictId);
-
-    final Identifier communityId = CommunityPoly.getCommunities().getBoundaryId(point);
-    sitePoint.setValue(COMMUNITY_ID, communityId);
+    communities.setBoundaryIdAndName(sitePoint, point, COMMUNITY_NAME);
+    regionalDistricts.setBoundaryIdAndName(sitePoint, point, REGIONAL_DISTRICT_NAME);
 
     return sitePoint;
   }
@@ -702,7 +707,7 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
       addWithCivicNumber(sitePoint, civicNumber2);
 
     } else {
-      Maps.addToList(this.recordsByLocalityName, this.localityName, sitePoint);
+      this.recordsByLocalityName.addValue(this.localityName, sitePoint);
     }
   }
 
@@ -712,7 +717,7 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
     addProviderBoundary(this.sourceGeometryByLocality);
   }
 
-  private void postConvertRecordsWriteLocality(final String localityName,
+  protected void postConvertRecordsWriteLocality(final String localityName,
     final List<Record> localityRecords) {
     final PartnerOrganization partnerOrganization = this.partnerOrganizationFiles
       .getPartnerOrganization();
@@ -720,19 +725,19 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
       AtomicPathUpdator localityPathUpdator = ImportSites.SITE_POINT_BY_LOCALITY
         .newLocalityPathUpdator(this.dialog, this.baseDirectory, localityName, partnerOrganization,
           this.fileSuffix);
-      RecordWriter localityWriter = RecordWriter.newRecordWriter(this.RECORD_DEFINITION,
+      RecordWriter localityWriter = RecordWriter.newRecordWriter(RECORD_DEFINITION,
         localityPathUpdator.getPath())) {
       localityWriter.writeAll(localityRecords);
     }
   }
 
-  private void postConvertRecordsWriteSitePoints() {
+  protected void postConvertRecordsWriteSitePoints() {
     if (!this.recordsByLocalityName.isEmpty()) {
       final Comparator<Record> comparator = newSitePointComparator();
 
       final Path dataProviderPath = this.pathUpdator.getPath();
       try (
-        RecordWriter dataProviderWriter = RecordWriter.newRecordWriter(this.RECORD_DEFINITION,
+        RecordWriter dataProviderWriter = RecordWriter.newRecordWriter(RECORD_DEFINITION,
           dataProviderPath)) {
 
         for (final Entry<String, List<Record>> localityEntry : cancellable(
@@ -789,7 +794,7 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
         FeatureStatus.ACTIVE);
       if (featureStatusCode.isIgnored()) {
         final String message = "Ignored FULL_ADDRESS in FULL_ADDRESS_FEATURE_STATUS_CODE.xlsx";
-        throw new IgnoreSiteException(message);
+        throw IgnoreSiteException.warning(message);
       } else {
         sitePoint.setValue(FEATURE_STATUS_CODE, featureStatusCode.getCode());
       }
@@ -835,7 +840,7 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
         final String message = "Ignored STREET_NAME in STRUCTURED_NAME_ALIAS.xlsx";
         addStructuredNameError(message, originalName, null, null);
 
-        throw new IgnoreSiteException(message);
+        throw IgnoreSiteException.warning(message);
       } else if (sitePoint.equalValue(FEATURE_STATUS_CODE, "A")) {
         sitePoint.setValue(FEATURE_STATUS_CODE, featureStatusCode.getCode());
       }

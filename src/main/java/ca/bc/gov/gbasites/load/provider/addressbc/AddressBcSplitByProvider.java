@@ -19,8 +19,8 @@ import org.jeometry.common.logging.Logs;
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
 import ca.bc.gov.gba.ui.StatisticsDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.PartnerOrganizationFiles;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
@@ -126,7 +126,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
       writer = this.writerByProvider.get(issuingAgency.toUpperCase());
       if (writer == null) {
         final String dataProviderWords = CaseConverter.toCapitalizedWords(issuingAgency);
-        final PartnerOrganization partnerOrganization = PartnerOrganizations
+        final PartnerOrganization partnerOrganization = GbaSiteDatabase
           .newPartnerOrganization(dataProviderWords);
         final String partnerOrganizationName = partnerOrganization.getPartnerOrganizationName();
 
@@ -404,7 +404,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
   private SplitByProviderWriter newProviderWriter(final String dataProvider) {
     SplitByProviderWriter providerWriter;
-    final PartnerOrganization partnerOrganization = PartnerOrganizations
+    final PartnerOrganization partnerOrganization = GbaSiteDatabase
       .newPartnerOrganization(dataProvider);
     final PartnerOrganizationFiles partnerOrganizationFiles = new PartnerOrganizationFiles(
       this.dialog, partnerOrganization, AddressBc.ADDRESS_BC_DIRECTORY, AddressBc.FILE_SUFFIX);

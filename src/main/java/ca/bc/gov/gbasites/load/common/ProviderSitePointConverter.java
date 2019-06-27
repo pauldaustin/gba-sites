@@ -3,7 +3,6 @@ package ca.bc.gov.gbasites.load.common;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +10,6 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.function.Function;
 
-import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.data.type.DataType;
 import org.jeometry.common.logging.Logs;
 
@@ -19,8 +17,8 @@ import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.PartnerOrganizationProxy;
-import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
 import ca.bc.gov.gba.ui.StatisticsDialog;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.convert.AbstractSiteConverter;
 import ca.bc.gov.gbasites.load.readsource.AbstractSourceReader;
@@ -48,7 +46,7 @@ import com.revolsys.util.ServiceInitializer;
 public class ProviderSitePointConverter extends BaseObjectWithProperties
   implements SitePoint, PartnerOrganizationProxy {
 
-  public final static Map<Identifier, Map<String, Geometry>> boundaryByProviderAndLocality = new TreeMap<>();
+  public final static Map<String, Map<String, Geometry>> boundaryByProviderAndLocality = new TreeMap<>();
 
   public static boolean calculateBoundary;
 
@@ -57,8 +55,6 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
   public static final String LOCALITY = "Locality";
 
   public static final String NAME_ERRORS = "Name Errors";
-
-  private static final Map<Identifier, String> PARTNER_ORGANIZATION_SHORT_NAMES = new HashMap<>();
 
   public static final Path PROVIDER_DIRECTORY = ImportSites.SITES_DIRECTORY.resolve("Provider");
 
@@ -70,28 +66,6 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
 
   public static Collection<ProviderSitePointConverter> getLoaders() {
     return siteLoaderByDataProvider.values();
-  }
-
-  static String getPartnerOrganizationName(final Identifier partnerOrganizationId) {
-    return GbaController.getPartnerOrganizations().getValue(partnerOrganizationId);
-  }
-
-  public static String getPartnerOrganizationShortName(final Identifier partnerOrganizationId) {
-    String shortName = PARTNER_ORGANIZATION_SHORT_NAMES.get(partnerOrganizationId);
-    if (shortName == null) {
-      final String name = GbaController.getPartnerOrganizations().getValue(partnerOrganizationId);
-      if (name != null) {
-        final int index = name.indexOf(" - ");
-        if (index != -1) {
-          shortName = name.substring(index + 3);
-          PARTNER_ORGANIZATION_SHORT_NAMES.put(partnerOrganizationId, shortName);
-          return shortName;
-        }
-      }
-      return null;
-
-    }
-    return shortName;
   }
 
   public static RecordDefinition getSourceWriterRecordDefinition(
@@ -155,15 +129,13 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
       try (
         TsvWriter writer = Tsv.plainWriter(path)) {
         writer.write("PROVIDER_NAME", "LOCALITY_NAME", "GEOMETRY");
-        for (final Entry<Identifier, Map<String, Geometry>> providerEntry : boundaryByProviderAndLocality
+        for (final Entry<String, Map<String, Geometry>> providerEntry : boundaryByProviderAndLocality
           .entrySet()) {
-          final Identifier partnerOrganizationId = providerEntry.getKey();
+          final String partnerOrganizationName = providerEntry.getKey();
           final Map<String, Geometry> boundaryByLocality = providerEntry.getValue();
           for (final Entry<String, Geometry> localityEntry : boundaryByLocality.entrySet()) {
             final String name = localityEntry.getKey();
             final Geometry geometry = localityEntry.getValue();
-            final String partnerOrganizationName = ProviderSitePointConverter
-              .getPartnerOrganizationName(partnerOrganizationId);
             writer.write(partnerOrganizationName, name, geometry);
           }
         }
@@ -268,7 +240,7 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
 
   public void setDataProvider(final String dataProvider) {
     this.dataProvider = dataProvider;
-    this.partnerOrganization = PartnerOrganizations.newPartnerOrganization(dataProvider);
+    this.partnerOrganization = GbaSiteDatabase.newPartnerOrganization(dataProvider);
   }
 
   public void setEnabled(final boolean enabled) {

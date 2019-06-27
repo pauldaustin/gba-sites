@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import org.jeometry.common.io.PathName;
 
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.PartnerOrganizations;
+import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 public interface AddressBc {
@@ -42,6 +42,10 @@ public interface AddressBc {
 
   String STREET_DIR_SUFFIX = "STREET_DIR_SUFFIX";
 
+  String FULL_ADDRESS = "FULL_ADDRESS";
+
+  String STREET_NAME = "STREET_NAME";
+
   String STREET_NUMBER = "STREET_NUMBER";
 
   String STREET_NUMBER_PREFIX = "STREET_NUMBER_PREFIX";
@@ -61,14 +65,14 @@ public interface AddressBc {
   String UNIT_TYPE = "UNIT_TYPE";
 
   Path ADDRESS_BC_DIRECTORY = SitePoint.SITES_DIRECTORY //
-  .resolve("AddressBc");
+    .resolve("AddressBc");
 
   String FILE_SUFFIX = "_ABC";
 
   String PROVIDER_ICI_SOCIETY = "Provider - ICI Society";
 
   static PartnerOrganization getAbcPartnerOrganization() {
-    return PartnerOrganizations.newPartnerOrganization(ICI_SOCIETY);
+    return GbaSiteDatabase.newPartnerOrganization(ICI_SOCIETY);
   }
 
 }

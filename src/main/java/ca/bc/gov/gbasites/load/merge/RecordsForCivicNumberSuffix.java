@@ -82,7 +82,7 @@ public class RecordsForCivicNumberSuffix {
       if (point.intersects(point1)) {
         SitePointMerger.setMergedPoint(record1, record);
         SitePointMerger.setMergedUnit(record1, record);
-        if (record.equalValue(record1, SitePoint.CREATE_PARTNER_ORG_ID)) {
+        if (record.equalValue(record1, SitePoint.CREATE_PARTNER_ORG)) {
           counters.mergePoint.add();
         } else if (SitePointMerger.isAddressBc(record)) {
           counters.matchPoint.add();
@@ -136,7 +136,7 @@ public class RecordsForCivicNumberSuffix {
       final Record record1 = this.records.get(i);
       for (int j = this.records.size() - 1; j > i; j--) {
         final Record record2 = this.records.get(j);
-        if (record2.equalValue(record1, SitePoint.CREATE_PARTNER_ORG_ID)) {
+        if (record2.equalValue(record1, SitePoint.CREATE_PARTNER_ORG)) {
           if (record1.equalValue(record2, SitePoint.FULL_ADDRESS)) {
             if (SitePointMerger.isAddressBc(record1) == addressBc) {
               if (SitePointMerger.setMergedPoint(record1, record2)) {

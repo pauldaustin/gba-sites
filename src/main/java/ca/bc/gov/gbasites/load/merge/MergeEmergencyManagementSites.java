@@ -18,7 +18,6 @@ import ca.bc.gov.gba.model.BoundaryCache;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
-import ca.bc.gov.gbasites.load.common.LoadProviderSitesIntoGba;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.model.type.code.CommunityPoly;
@@ -46,7 +45,6 @@ import com.revolsys.util.count.LabelCountMap;
 import com.revolsys.util.count.LabelCounters;
 
 public class MergeEmergencyManagementSites implements SitePoint {
-
   public static final String IGNORE_XCOVER = "Ignore XCOVER";
 
   public static final String EM_SITES = "Em Sites";
@@ -116,7 +114,7 @@ public class MergeEmergencyManagementSites implements SitePoint {
       this.typeCounts.addCount(plGroup + " " + plType);
       String siteName1 = Strings.trim(draSite.getString("PL_NAME"));
       String civicNumber = Strings.trim(draSite.getString("ADDR_NUM"));
-      String name = Strings.trim(draSite.getString("ADDR_ROAD"));
+      final String name = Strings.trim(draSite.getString("ADDR_ROAD"));
       final String addrOther = Strings.trim(draSite.getString("ADDR_OTHER"));
       final String city = Strings.trim(draSite.getString("CITY"));
       @SuppressWarnings("unused")
@@ -191,13 +189,13 @@ public class MergeEmergencyManagementSites implements SitePoint {
           id, plGroup, plType
         });
       }
-
-      final Identifier localityId = this.localityCache.setBoundaryId(site, point);
-
-      this.communityCache.setBoundaryId(site, point);
-      this.regionalDistrictCache.setBoundaryId(site, point);
+      final Identifier localityId = this.localityCache.setBoundaryIdAndName(site, point, LOCALITY_NAME);
+      this.communityCache.setBoundaryIdAndName(site, point, COMMUNITY_NAME);
+      this.regionalDistrictCache.setBoundaryIdAndName(site, point, REGIONAL_DISTRICT_NAME);
 
       Identifier structuredNameId = null;
+      String name1 = null;
+      String name2 = null;
       Identifier aliasStructuredNameId = null;
       if (Property.hasValue(name)) {
         final int slashIndex = name.indexOf('/');
@@ -205,23 +203,25 @@ public class MergeEmergencyManagementSites implements SitePoint {
           structuredNameId = getNameId(localityId, id, name);
           if (structuredNameId == null) {
             extendedData.put("NAME", name);
+            name1 = name;
           } else {
-            name = GbaController.structuredNames.getValue(structuredNameId);
+            name1 = GbaController.structuredNames.getValue(structuredNameId);
           }
         } else {
-          final String name1 = name.substring(0, slashIndex).trim();
-          final String name2 = name.substring(slashIndex + 1).trim();
+          name1 = name.substring(0, slashIndex).trim();
+          name2 = name.substring(slashIndex + 1).trim();
 
           structuredNameId = getNameId(localityId, id, name1);
           if (structuredNameId == null) {
-            name = name1;
             extendedData.put("NAME", name1);
           } else {
-            name = GbaController.structuredNames.getValue(structuredNameId);
+            name1 = GbaController.structuredNames.getValue(structuredNameId);
           }
           aliasStructuredNameId = getNameId(localityId, id, name2);
           if (aliasStructuredNameId == null) {
             extendedData.put("ALIAS_NAME", name2);
+          } else {
+            name2 = GbaController.structuredNames.getValue(structuredNameId);
           }
         }
       }
@@ -241,7 +241,9 @@ public class MergeEmergencyManagementSites implements SitePoint {
         site.setValue(CIVIC_NUMBER_SUFFIX, Strings.upperCase(civicNumberSuffix));
       }
       site.setValue(STREET_NAME_ID, structuredNameId);
+      site.setValue(STREET_NAME, name1);
       site.setValue(STREET_NAME_ALIAS_1_ID, aliasStructuredNameId);
+      site.setValue(STREET_NAME_ALIAS_1, name2);
       SitePoint.updateFullAddress(site);
       String fullAddress = site.getString(FULL_ADDRESS);
 
@@ -275,9 +277,9 @@ public class MergeEmergencyManagementSites implements SitePoint {
       site.setValue(USE_SITE_NAME_IN_ADDRESS_IND, useSiteNameInAddress);
       site.setValue(FEATURE_STATUS_CODE, FeatureStatus.ACTIVE);
       site.setValue(ADDRESS_COMMENT, addressComment);
-      site.setValue(CREATE_PARTNER_ORG_ID, 3);
-      site.setValue(MODIFY_PARTNER_ORG_ID, 3);
-      site.setValue(CUSTODIAN_PARTNER_ORG_ID, 3);
+      site.setValue(CREATE_PARTNER_ORG, "GeoBC");
+      site.setValue(MODIFY_PARTNER_ORG, "GeoBC");
+      site.setValue(CUSTODIAN_PARTNER_ORG, "GeoBC");
       site.setValue(OPEN_DATA_IND, "N");
 
       if (localityId == null) {
@@ -325,8 +327,7 @@ public class MergeEmergencyManagementSites implements SitePoint {
       try (
         Reader<Record> emReader = emRecordStore.getRecords(query)) {
         for (final Record emSite : this.dialog.cancellable(emReader)) {
-          this.dialog.addLabelCount(EM_SITES, SiteTables.SITE_POINT,
-            LoadProviderSitesIntoGba.PROVIDER_READ);
+          this.dialog.addLabelCount(EM_SITES, SiteTables.SITE_POINT, ImportSites.PROVIDER_READ);
           final Record site = loadEmergencyManagementSite(gbaRecordStore, emSite);
           if (site != null) {
             final Identifier identifier = site.getIdentifier();
@@ -368,7 +369,7 @@ public class MergeEmergencyManagementSites implements SitePoint {
         .addField("SITE_ID", DataTypes.INT) //
         .addField(FULL_ADDRESS, DataTypes.STRING, 20) //
         .addField("CITY", DataTypes.STRING, 28) //
-        .addField("LOCALITY_NAME", DataTypes.STRING, 28) //
+        .addField(LOCALITY_NAME, DataTypes.STRING, 28) //
         .getRecordDefinition();
       try (
         final RecordWriter writer = RecordWriter.newRecordWriter(recordDefinition, file)) {

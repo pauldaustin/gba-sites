@@ -6,6 +6,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
 
 import com.revolsys.collection.map.MapEx;
@@ -83,8 +84,7 @@ public class SiteConverterAddress extends AbstractSiteConverter {
       setCustodianSiteId(sitePoint, sourceRecord);
       return sitePoint;
     } else {
-      addWarning(sourceRecord, "Ignore FULL_ADDRESS not specified");
-      return null;
+      throw IgnoreSiteException.warning("Ignore FULL_ADDRESS not specified");
     }
   }
 
