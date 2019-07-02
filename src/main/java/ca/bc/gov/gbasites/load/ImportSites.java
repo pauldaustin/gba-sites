@@ -344,13 +344,14 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
     setLocation(bounds.x + 20, bounds.y + 20);
 
-    final int width = Math.min(1500, bounds.width - 40);
+    final int width = Math.min(1550, bounds.width - 40);
     final int height = bounds.height - 40;
     setSize(width, height);
   }
 
   @Override
   protected boolean batchUpdate(final Transaction transaction) {
+    Paths.createDirectories(SITES_TEMP_DIRECTORY);
     for (final String directory : Arrays.asList("AddressBc", PROVIDER, "GEOBC")) {
       final Path baseDirectory = SITES_DIRECTORY.resolve(directory);
       NAME_ERROR_BY_PROVIDER.createDirectory(baseDirectory);
