@@ -1,4 +1,5 @@
 @echo off
+setlocal
 set DIR=%~dp0%
 
 set APPS_DIR=%DIR%\..\..\apps64
@@ -32,3 +33,4 @@ IF EXIST %VERSION_ZIP% (
 if NOT "%2" == "--batch" (
   pause
 )
+endlocal
