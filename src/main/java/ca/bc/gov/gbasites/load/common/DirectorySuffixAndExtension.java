@@ -8,6 +8,7 @@ import java.util.List;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
+import ca.bc.gov.gbasites.load.ImportSites;
 
 import com.revolsys.io.file.AtomicPathUpdator;
 import com.revolsys.io.file.Paths;
@@ -125,7 +126,7 @@ public class DirectorySuffixAndExtension {
     final String prefixFileName = BatchUpdateDialog.toFileName(localityName);
     final String fileName = getFileName(prefixFileName);
 
-    return new AtomicPathUpdator(cancellable, directory, fileName);
+    return ImportSites.newPathUpdator(cancellable, directory, fileName);
   }
 
   public AtomicPathUpdator newLocalityPathUpdator(final Cancellable cancellable,
@@ -138,13 +139,13 @@ public class DirectorySuffixAndExtension {
     providerSuffix = "_" + partnerOrganizationFileName + providerSuffix;
     final String fileName = getFileName(prefixFileName, providerSuffix);
 
-    return new AtomicPathUpdator(cancellable, directory, fileName);
+    return ImportSites.newPathUpdator(cancellable, directory, fileName);
   }
 
   public AtomicPathUpdator newPathUpdator(final Cancellable cancellable, final Path baseDirectory,
     final PartnerOrganization partnerOrganization, final String providerSuffix) {
     final Path directory = newDirectoryPath(baseDirectory);
     final String fileName = getFileName(partnerOrganization, providerSuffix);
-    return new AtomicPathUpdator(cancellable, directory, fileName);
+    return ImportSites.newPathUpdator(cancellable, directory, fileName);
   }
 }

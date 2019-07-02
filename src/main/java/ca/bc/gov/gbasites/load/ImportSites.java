@@ -76,6 +76,7 @@ import com.revolsys.swing.layout.GroupLayouts;
 import com.revolsys.swing.table.counts.LabelCountMapTableModel;
 import com.revolsys.transaction.Propagation;
 import com.revolsys.transaction.Transaction;
+import com.revolsys.util.Cancellable;
 import com.revolsys.util.Counter;
 import com.revolsys.util.Property;
 
@@ -124,6 +125,8 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     "SitePointByProvider", "_SITE_POINT", ".tsv");
 
   public static final Path SITES_DIRECTORY = GbaController.getDataDirectory("Sites");
+
+  public static final Path SITES_TEMP_DIRECTORY = SITES_DIRECTORY.resolve("Temp");
 
   public static final Map<String, String> siteTypeByBuildingType = new LinkedHashMap<>();
 
@@ -228,6 +231,11 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
   public static void main(final String[] args) {
     initializeService();
     start(ImportSites.class);
+  }
+
+  public static AtomicPathUpdator newPathUpdator(final Cancellable cancellable,
+    final Path directory, final String fileName) {
+    return new AtomicPathUpdator(SITES_TEMP_DIRECTORY, cancellable, directory, fileName);
   }
 
   private final CheckBox addressBcConvertCheckbox = new CheckBox("addressBcConvert", true);
@@ -662,7 +670,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   private void writeFgdb() {
     try (
-      AtomicPathUpdator pathUpdator = new AtomicPathUpdator(this, SITES_DIRECTORY,
+      AtomicPathUpdator pathUpdator = ImportSites.newPathUpdator(this, SITES_DIRECTORY,
         "SITE_POINT.gdb");
       FileGdbRecordStore recordStore = FileGdbRecordStoreFactory
         .newRecordStore(pathUpdator.getPath());) {

@@ -163,7 +163,7 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
     final String suffix) {
     final String baseName = getPartnerOrganizationFileName();
     final String fileName = baseName + suffix;
-    return new AtomicPathUpdator(this, directory, fileName);
+    return ImportSites.newPathUpdator(this, directory, fileName);
   }
 
   protected StatisticsDialog getDialog() {
