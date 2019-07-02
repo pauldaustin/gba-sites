@@ -21,6 +21,7 @@ import org.jeometry.common.date.Dates;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gbasites.controller.GbaSiteController;
 import ca.bc.gov.gbasites.load.ImportSites;
 
 import com.revolsys.beans.Classes;
@@ -112,9 +113,9 @@ public class GbaSiteToolsMain extends BaseMain {
     final String dateString = Dates.format("yyyyMMdd_HHmmss", new Date(time));
     final File logFile = logDirectory.resolve("gba_tools_" + dateString + ".log").toFile();
     try {
-      LogAppender.addRootFileAppender(logFile, "%d\t%p\t%c\t%m%n", false, "ca.bc.gov.gba", //
+      LogAppender.addRootFileAppender(logFile, "%d\t%p\t%c\t%m%n", false, "ca.bc.gov.gbasites", //
         "Starting application: " + " [" + GbaController.getEnvironment() + "] (v "
-          + GbaController.getVersion() + ")", //
+          + GbaSiteController.getVersion() + ")", //
         "User=" + GbaController.getUsername(), //
         "Host=" + InetAddress.getLocalHost() //
       );
@@ -127,7 +128,7 @@ public class GbaSiteToolsMain extends BaseMain {
   protected void runDo() throws Throwable {
     super.runDo();
     final String title = "GBA Site Tools [" + GbaController.getEnvironment() + "] (v "
-      + GbaController.getVersion() + ")";
+      + GbaSiteController.getVersion() + ")";
     this.frame = new JFrame(title);
     this.frame
       .setIconImages(Arrays.asList(Icons.getImage("gba_icon_32"), Icons.getImage("gba_icon_16")));
