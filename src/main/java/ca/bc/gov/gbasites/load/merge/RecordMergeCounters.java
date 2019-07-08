@@ -1,8 +1,13 @@
 package ca.bc.gov.gbasites.load.merge;
 
+import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
+import ca.bc.gov.gbasites.load.provider.addressbc.AddressBC;
+import ca.bc.gov.gbasites.load.provider.geobc.GeoBC;
+import ca.bc.gov.gbasites.model.type.SitePoint;
 
+import com.revolsys.record.Record;
 import com.revolsys.swing.table.counts.LabelCountMapTableModel;
 import com.revolsys.util.Counter;
 import com.revolsys.util.count.TotalLabelCounters;
@@ -35,7 +40,7 @@ public class RecordMergeCounters {
       MERGE_POINT, //
       MERGE_UNIT);
 
-    if ("Address BC".equals(categoryName)) {
+    if (AddressBC.NAME.equals(categoryName)) {
       counters.addCountNameColumns(MATCH_ADDRESS, MATCH_POINT, MATCH_UNIT);
     }
 
@@ -44,7 +49,7 @@ public class RecordMergeCounters {
       .subtractCounters(counters.getLabelCountMap(MERGE_POINT)) //
       .subtractCounters(counters.getLabelCountMap(MERGE_UNIT)) //
     ;
-    if ("Address BC".equals(categoryName)) {
+    if (AddressBC.NAME.equals(categoryName)) {
       totalColumn //
         .subtractCounters(counters.getLabelCountMap(MATCH_ADDRESS))//
         .subtractCounters(counters.getLabelCountMap(MATCH_POINT))//
@@ -58,7 +63,7 @@ public class RecordMergeCounters {
 
   public Counter duplicate;
 
-  private final boolean isAddressBc;
+  private final PartnerOrganization partnerOrganization;
 
   public Counter matchAddress;
 
@@ -72,10 +77,15 @@ public class RecordMergeCounters {
 
   public Counter read;
 
-  public RecordMergeCounters(final LabelCountMapTableModel counters, final boolean isAddressBc) {
+  public RecordMergeCounters(final LabelCountMapTableModel counters,
+    final PartnerOrganization partnerOrganization) {
     super();
     this.counters = counters;
-    this.isAddressBc = isAddressBc;
+    this.partnerOrganization = partnerOrganization;
+  }
+
+  public PartnerOrganization getPartnerOrganization() {
+    return this.partnerOrganization;
   }
 
   public void init(final String localityName) {
@@ -83,11 +93,20 @@ public class RecordMergeCounters {
     this.duplicate = this.counters.getCounter(localityName, DUPLICATE);
     this.mergePoint = this.counters.getCounter(localityName, MERGE_POINT);
     this.mergeUnit = this.counters.getCounter(localityName, MERGE_UNIT);
-    if (this.isAddressBc) {
+    if (this.partnerOrganization == AddressBC.PARTNER_ORGANIZATION) {
       this.matchAddress = this.counters.getCounter(localityName, MATCH_ADDRESS);
       this.matchPoint = this.counters.getCounter(localityName, MATCH_POINT);
       this.matchUnit = this.counters.getCounter(localityName, MATCH_UNIT);
     }
   }
 
+  public boolean isCreatePartnerOrg(final Record record) {
+    final String organizationName = record.getString(SitePoint.CREATE_PARTNER_ORG);
+    if (this.partnerOrganization == null) {
+      return !(organizationName.equals(GeoBC.PARTNER_ORGANIZATION_NAME)
+        || organizationName.equals(AddressBC.PROVIDER_ICI_SOCIETY));
+    } else {
+      return this.partnerOrganization.equalsName(organizationName);
+    }
+  }
 }

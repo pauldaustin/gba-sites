@@ -18,6 +18,7 @@ import ca.bc.gov.gba.model.BoundaryCache;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
+import ca.bc.gov.gbasites.load.provider.geobc.GeoBC;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.model.type.code.CommunityPoly;
@@ -189,7 +190,8 @@ public class MergeEmergencyManagementSites implements SitePoint {
           id, plGroup, plType
         });
       }
-      final Identifier localityId = this.localityCache.setBoundaryIdAndName(site, point, LOCALITY_NAME);
+      final Identifier localityId = this.localityCache.setBoundaryIdAndName(site, point,
+        LOCALITY_NAME);
       this.communityCache.setBoundaryIdAndName(site, point, COMMUNITY_NAME);
       this.regionalDistrictCache.setBoundaryIdAndName(site, point, REGIONAL_DISTRICT_NAME);
 
@@ -277,9 +279,9 @@ public class MergeEmergencyManagementSites implements SitePoint {
       site.setValue(USE_SITE_NAME_IN_ADDRESS_IND, useSiteNameInAddress);
       site.setValue(FEATURE_STATUS_CODE, FeatureStatus.ACTIVE);
       site.setValue(ADDRESS_COMMENT, addressComment);
-      site.setValue(CREATE_PARTNER_ORG, "GeoBC");
-      site.setValue(MODIFY_PARTNER_ORG, "GeoBC");
-      site.setValue(CUSTODIAN_PARTNER_ORG, "GeoBC");
+      site.setValue(CREATE_PARTNER_ORG, GeoBC.PARTNER_ORGANIZATION_NAME);
+      site.setValue(MODIFY_PARTNER_ORG, GeoBC.PARTNER_ORGANIZATION_NAME);
+      site.setValue(CUSTODIAN_PARTNER_ORG, GeoBC.PARTNER_ORGANIZATION_NAME);
       site.setValue(OPEN_DATA_IND, "N");
 
       if (localityId == null) {

@@ -131,14 +131,14 @@ public class RecordsForCivicNumberSuffix {
    * @param addressBc
    * @param counters
    */
-  protected void mergeFullAddress(final boolean addressBc, final RecordMergeCounters counters) {
+  protected void mergeFullAddress(final RecordMergeCounters counters) {
     for (int i = 0; i < this.records.size(); i++) {
       final Record record1 = this.records.get(i);
       for (int j = this.records.size() - 1; j > i; j--) {
         final Record record2 = this.records.get(j);
         if (record2.equalValue(record1, SitePoint.CREATE_PARTNER_ORG)) {
           if (record1.equalValue(record2, SitePoint.FULL_ADDRESS)) {
-            if (SitePointMerger.isAddressBc(record1) == addressBc) {
+            if (counters.isCreatePartnerOrg(record1)) {
               if (SitePointMerger.setMergedPoint(record1, record2)) {
                 counters.mergeUnit.add();
               } else {

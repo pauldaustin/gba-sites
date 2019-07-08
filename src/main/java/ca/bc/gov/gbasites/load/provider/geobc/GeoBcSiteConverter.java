@@ -1,79 +1,110 @@
-package ca.bc.gov.gbasites.load.merge;
+package ca.bc.gov.gbasites.load.provider.geobc;
 
 import java.nio.file.Path;
+import java.util.List;
 
-import org.jeometry.common.data.identifier.Identifier;
+import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
-import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
-import ca.bc.gov.gbasites.load.common.PartnerOrganizationFiles;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
-import ca.bc.gov.gbasites.load.provider.addressbc.AddressBc;
+import ca.bc.gov.gbasites.load.provider.addressbc.AddressBC;
 import ca.bc.gov.gbasites.load.provider.addressbc.AddressBcSite;
 import ca.bc.gov.gbasites.load.provider.addressbc.AddressBcSiteConverter;
 
 import com.revolsys.collection.range.RangeSet;
-import com.revolsys.gis.esri.gdb.file.FileGdbRecordStore;
-import com.revolsys.gis.esri.gdb.file.FileGdbRecordStoreFactory;
+import com.revolsys.parallel.process.ProcessNetwork;
 import com.revolsys.record.Record;
+import com.revolsys.record.RecordLog;
 import com.revolsys.record.io.RecordReader;
-import com.revolsys.record.query.Query;
 import com.revolsys.record.schema.RecordDefinition;
-import com.revolsys.util.Counter;
 import com.revolsys.util.Debug;
+import com.revolsys.util.Strings;
 
-public class LoadSupplementalAddress extends AddressBcSiteConverter {
+public class GeoBcSiteConverter extends AddressBcSiteConverter {
 
-  private static final Path GEOBC_DIRECTORY = ImportSites.SITES_DIRECTORY.resolve("GEOBC");
+  public static void convertAll(final StatisticsDialog dialog) {
 
-  private final FileGdbRecordStore recordStore;
+    final List<PartnerOrganization> partnerOrganizations = ImportSites.SOURCE_BY_PROVIDER
+      .listPartnerOrganizations(GeoBC.DIRECTORY, GeoBC.FILE_SUFFIX);
 
-  private final Counter readCounter;
+    if (!partnerOrganizations.isEmpty()) {
 
-  private final Counter convertedCounter;
+      final RecordDefinition recordDefinition;
+      {
+        final PartnerOrganization partnerOrganization = partnerOrganizations.get(0);
+        final Path firstFile = ImportSites.SOURCE_BY_PROVIDER.getFilePath(GeoBC.DIRECTORY,
+          partnerOrganization, GeoBC.FILE_SUFFIX);
+        try (
+          RecordReader reader = RecordReader.newRecordReader(firstFile)) {
+          recordDefinition = reader.getRecordDefinition();
+        }
 
-  private final Counter ignoreCounter;
+      }
+      try (
+        RecordLog allErrorLog = newAllRecordLog(GeoBC.DIRECTORY, recordDefinition, "ERROR");
+        RecordLog allWarningLog = newAllRecordLog(GeoBC.DIRECTORY, recordDefinition, "WARNING");) {
 
-  public LoadSupplementalAddress(final StatisticsDialog dialog) {
-    super(dialog, new PartnerOrganization(Identifier.newIdentifier(3), "GeoBC", "GeoBC"), null,
-      null);
-    this.recordStore = FileGdbRecordStoreFactory
-      .newRecordStore(GEOBC_DIRECTORY.resolve("Supplemental_Address.gdb"));
-    this.recordStore.initialize();
-    setCountPrefix("GEOBC ");
-
-    this.createModifyPartnerOrganization = AddressBc.getAbcPartnerOrganization();
-    this.readCounter = dialog.getCounter("GEOBC", "/SUPPLEMENTAL_ADDRESS", BatchUpdateDialog.READ);
-    this.convertedCounter = dialog.getCounter("GEOBC", "/SUPPLEMENTAL_ADDRESS", "Converted");
-    this.ignoreCounter = dialog.getCounter("GEOBC", "/SUPPLEMENTAL_ADDRESS",
-      BatchUpdateDialog.IGNORED);
+        final ProcessNetwork processNetwork = new ProcessNetwork();
+        for (int i = 0; i < 8; i++) {
+          processNetwork.addProcess(GeoBC.NAME + " Convert " + (i + 1), () -> {
+            while (!dialog.isCancelled()) {
+              PartnerOrganization partnerOrganization;
+              synchronized (partnerOrganizations) {
+                if (partnerOrganizations.isEmpty()) {
+                  return;
+                }
+                partnerOrganization = partnerOrganizations.remove(0);
+              }
+              try {
+                final GeoBcSiteConverter converter = new GeoBcSiteConverter(dialog,
+                  partnerOrganization, allErrorLog, allWarningLog);
+                converter.convertSourceRecords(true);
+              } catch (final Exception e) {
+                Logs.error(GeoBcSiteConverter.class,
+                  GeoBC.NAME + ": Error converting for: " + partnerOrganization, e);
+              }
+            }
+          });
+          ;
+        }
+        processNetwork.startAndWait();
+      }
+    }
   }
 
-  @Override
-  public void close() {
-    super.close();
-    this.recordStore.close();
+  public static String getCleanStringIntern(final Record record, final String fieldName) {
+    String value = record.getString(fieldName);
+    value = Strings.cleanWhitespace(value);
+    if (value != null) {
+      value = value.toUpperCase();
+      value = value.intern();
+    }
+    return value;
+  }
+
+  public static RecordLog newAllRecordLog(final Path directory,
+    final RecordDefinition recordDefinition, final String suffix) {
+    final Path allErrorFile = directory.resolve("ADDRESS_BC_CONVERT_" + suffix + ".tsv");
+    return new RecordLog(allErrorFile, recordDefinition, true);
+  }
+
+  public GeoBcSiteConverter(final StatisticsDialog dialog,
+    final PartnerOrganization partnerOrganization, final RecordLog allErrorLog,
+    final RecordLog allWarningLog) {
+    super(dialog, partnerOrganization, allErrorLog, allWarningLog, GeoBC.DIRECTORY,
+      GeoBC.FILE_SUFFIX, GeoBC.COUNT_PREFIX);
+    this.createModifyPartnerOrganization = GeoBC.PARTNER_ORGANIZATION;
   }
 
   @Override
   protected SitePointProviderRecord convertRecordDo(final Record sourceRecord) {
-    this.readCounter.add();
-    try {
-      final SitePointProviderRecord convertedRecord = super.convertRecordDo(sourceRecord);
-      if (convertedRecord == null) {
-        super.convertRecordDo(sourceRecord);
-        Debug.noOp();
-      } else {
-        this.convertedCounter.add();
-      }
-      return convertedRecord;
-    } catch (final IgnoreSiteException e) {
-      this.ignoreCounter.add();
-      throw e;
+    final SitePointProviderRecord convertedRecord = super.convertRecordDo(sourceRecord);
+    if (convertedRecord == null) {
+      super.convertRecordDo(sourceRecord);
     }
+    return convertedRecord;
   }
 
   protected void fixStreetNumber(final AddressBcSite sourceSite, final String streetNumberPart) {
@@ -115,23 +146,6 @@ public class LoadSupplementalAddress extends AddressBcSiteConverter {
   }
 
   @Override
-  protected PartnerOrganizationFiles newPartnerOrganizationFiles(final StatisticsDialog dialog,
-    final PartnerOrganization partnerOrganization) {
-    return new PartnerOrganizationFiles(dialog, partnerOrganization, GEOBC_DIRECTORY, "_GEOBC");
-  }
-
-  @Override
-  protected RecordReader newSourceRecordReader(final RecordDefinition providerRecordDefinition) {
-    final Query query = new Query("/SUPPLEMENTAL_ADDRESS");
-    query.setCancellable(this.dialog);
-    return this.recordStore.getRecords(query);
-  }
-
-  @Override
-  protected void postConvertRecordsWriteSitePoints() {
-  }
-
-  @Override
   public void providerFix(final AddressBcSite sourceSite) {
     String fullAddress = sourceSite.getFullAddress();
     final String streetType = sourceSite.nameSuffixCode;
@@ -164,7 +178,7 @@ public class LoadSupplementalAddress extends AddressBcSiteConverter {
     if (fullAddress != null) {
       final int lastCommaSpace = fullAddress.lastIndexOf(", ");
       if (lastCommaSpace != -1) {
-        final String geographicDomain = sourceSite.getString(AddressBc.GEOGRAPHIC_DOMAIN);
+        final String geographicDomain = sourceSite.getString(AddressBC.GEOGRAPHIC_DOMAIN);
         final String lastPart = fullAddress.substring(lastCommaSpace + 2);
         if (lastPart.startsWith("PORT ALBERNI") || lastPart.equalsIgnoreCase("UCLUELET")
           || lastPart.equalsIgnoreCase("TOFINO") || lastPart.equalsIgnoreCase("SICAMOUS")

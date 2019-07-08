@@ -252,8 +252,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
     final String unitType = getUpperString(sourceRecord, this.unitTypeFieldName);
     if (Property.hasValue(sourceCivicNumber)) {
       if (SitePointProviderRecord.IGNORE_CIVIC_NUMBERS.contains(sourceCivicNumber)) {
-        addError(sourceRecord, "Ignore " + this.civicNumberFieldName + " is not valid");
-        return null;
+        throw IgnoreSiteException.error("Ignore " + this.civicNumberFieldName + " is not valid");
       } else {
         sitePoint.setCivicNumber(sourceCivicNumber, Property.hasValue(this.unitFieldName),
           this.civicNumberIncludesUnitPrefix);
@@ -320,8 +319,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
 
     boolean unitDescriptorWithNoCivicNumber = false;
     if (Property.isEmpty(structuredName)) {
-      addWarning(sourceRecord, IGNORE_STREET_NAME_NOT_SPECIFIED);
-      return null;
+      throw IgnoreSiteException.warning(IGNORE_STREET_NAME_NOT_SPECIFIED);
     } else {
       final Integer civicNumber = sitePoint.getCivicNumber();
       if ((civicNumber == null || this.useZeroForNull && civicNumber == 0)
@@ -334,7 +332,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
       }
     }
     if (!setStructuredName(sourceRecord, sitePoint, 0, structuredName, originalStreetName)) {
-      return null;
+      throw IgnoreSiteException.warning("STRUCTURED_NAME ignored");
     }
     if (unitDescriptorWithNoCivicNumber) {
       throw IgnoreSiteException.error("Ignore has UNIT_DESCRIPTOR but no valid CIVIC_NUMBER");

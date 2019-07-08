@@ -236,7 +236,7 @@ public class SiteConverterCKRD extends AbstractSiteConverter {
       sitePoint.setValue(CIVIC_NUMBER_SUFFIX, civicNumberSuffix);
 
       if (!setStructuredName(sourceRecord, sitePoint, 0, structuredName, originalStreetName)) {
-        return null;
+        throw IgnoreSiteException.warning("STRUCTURED_NAME ignored");
       }
       SitePoint.updateFullAddress(sitePoint);
       setCustodianSiteId(sitePoint, sourceRecord);

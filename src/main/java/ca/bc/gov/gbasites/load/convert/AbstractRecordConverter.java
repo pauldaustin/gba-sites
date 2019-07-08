@@ -10,6 +10,7 @@ import ca.bc.gov.gba.model.type.code.PartnerOrganizationProxy;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
+import ca.bc.gov.gbasites.load.common.DirectorySuffixAndExtension;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.PartnerOrganizationFiles;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
@@ -22,12 +23,10 @@ import com.revolsys.record.Record;
 import com.revolsys.record.RecordLog;
 import com.revolsys.record.code.CodeTable;
 import com.revolsys.record.io.RecordReader;
-import com.revolsys.record.io.RecordWriter;
 import com.revolsys.record.schema.FieldDefinition;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.util.Cancellable;
 import com.revolsys.util.Counter;
-import com.revolsys.util.Debug;
 
 public abstract class AbstractRecordConverter<R extends Record> extends BaseObjectWithProperties
   implements Cancellable, MapSerializer, PartnerOrganizationProxy {
@@ -48,7 +47,9 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
 
   protected RecordLog errorLog;
 
-  protected AtomicPathUpdator errorPathUpdator;
+  protected RecordLog ignoreLog;
+
+  protected RecordLog warningLog;
 
   protected String fileSuffix = "";
 
@@ -65,21 +66,7 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
   public void addError(final Record record, final String message) {
     addErrorCount(message);
 
-    if (this.errorLog == null) {
-      this.errorPathUpdator = this.partnerOrganizationFiles
-        .newPathUpdator(ImportSites.ERROR_BY_PROVIDER);
-      final Path dataProviderErrorFile = this.errorPathUpdator.getPath();
-      this.errorLog = new RecordLog(true);
-      final RecordDefinition logRecordDefinition = this.errorLog.getLogRecordDefinition(record);
-      final RecordWriter errorWriter = RecordWriter.newRecordWriter(logRecordDefinition,
-        dataProviderErrorFile);
-      this.errorLog.setWriter(errorWriter);
-    }
-    Geometry geometry = record.getGeometry();
-    if (geometry != null) {
-      geometry = geometry.getPointWithin();
-    }
-    this.errorLog.error(this.localityName, message, record, geometry);
+    this.errorLog = addRecordLog(this.errorLog, ImportSites.ERROR_BY_PROVIDER, record, message);
   }
 
   protected void addErrorCount(final String message) {
@@ -87,48 +74,81 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
     this.dialog.addLabelCount(BatchUpdateDialog.ERROR, message, BatchUpdateDialog.ERROR);
   }
 
+  public void addIgnore(final Record record, final String message) {
+    this.ignoreCounter.add();
+    this.dialog.addLabelCount(BatchUpdateDialog.IGNORED, message, BatchUpdateDialog.IGNORED);
+    this.ignoreLog = addRecordLog(this.ignoreLog, ImportSites.IGNORE_BY_PROVIDER, record, message);
+  }
+
   protected void addIgnoreCount() {
     this.ignoreCounter.add();
+  }
+
+  private RecordLog addRecordLog(RecordLog recordLog, final DirectorySuffixAndExtension fileType,
+    final Record record, final String message) {
+    if (recordLog == null) {
+      final AtomicPathUpdator pathUpdator = this.partnerOrganizationFiles.newPathUpdator(fileType);
+      recordLog = new RecordLog(pathUpdator, record);
+    }
+    Geometry geometry = record.getGeometry();
+    if (geometry != null) {
+      geometry = geometry.getPointWithin();
+    }
+    recordLog.error(this.localityName, message, record, geometry);
+    return recordLog;
   }
 
   public void addWarning(final Record record, final String message) {
     this.warningCounter.add();
     this.dialog.addLabelCount(ProviderSitePointConverter.WARNING, message,
       ProviderSitePointConverter.WARNING);
+    this.warningLog = addRecordLog(this.warningLog, ImportSites.WARNING_BY_PROVIDER, record,
+      message);
+
   }
 
   public void addWarning(final String message) {
     addWarning(this.sourceRecord, message);
   }
 
+  @Override
+  public void close() {
+    super.close();
+    if (this.errorLog != null) {
+      this.errorLog.close();
+      this.errorLog = null;
+    }
+    if (this.warningLog != null) {
+      this.warningLog.close();
+      this.warningLog = null;
+    }
+    if (this.ignoreLog != null) {
+      this.ignoreLog.close();
+      this.ignoreLog = null;
+    }
+  }
+
   protected R convertRecord(final Record sourceRecord) {
     this.localityName = null;
     this.sourceRecord = sourceRecord;
-    R record = null;
     try {
-      record = convertRecordDo(sourceRecord);
+      final R record = convertRecordDo(sourceRecord);
       if (record == null) {
-        Debug.noOp();
+        addIgnore(sourceRecord, "Converter returned null");
+      } else {
+        this.convertCounter.add();
+        return record;
       }
     } catch (final IgnoreSiteException e) {
       final String countName = e.getCountName();
-      if (e.isError()) {
-        addError(sourceRecord, countName);
-      } else {
-        addWarning(sourceRecord, countName);
-      }
+      addIgnore(sourceRecord, countName);
     } catch (final NullPointerException e) {
       Logs.error(this, "Null pointer", e);
-      addError(sourceRecord, "Null Pointer");
+      addIgnore(sourceRecord, "Null Pointer");
     } catch (final Exception e) {
-      addError(sourceRecord, e.getMessage());
+      addIgnore(sourceRecord, e.getMessage());
     }
-    if (record == null) {
-      this.ignoreCounter.add();
-    } else {
-      this.convertCounter.add();
-    }
-    return record;
+    return null;
   }
 
   protected abstract R convertRecordDo(Record sourceRecord);

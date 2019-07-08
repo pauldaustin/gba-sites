@@ -65,13 +65,11 @@ public class SiteConverterAddress extends AbstractSiteConverter {
       String structuredName = originalStretName;
       structuredName = structuredName.replace(" (ACC RTE)", "");
       if (Property.isEmpty(structuredName)) {
-        addWarning(sourceRecord, AbstractSiteConverter.IGNORE_STREET_NAME_NOT_SPECIFIED);
-        return null;
+        throw IgnoreSiteException.warning(AbstractSiteConverter.IGNORE_STREET_NAME_NOT_SPECIFIED);
       } else if ((civicNumber == null || civicNumber == 0) && (!Property.hasValue(unitDescriptor)
         || IGNORE_UNIT_DESCRIPTORS_WITHOUT_CIVIC_NUMBER.contains(unitDescriptor))) {
         final String message = "Ignore CIVIC_NUMBER not specified";
-        addWarning(sourceRecord, message);
-        return null;
+        throw IgnoreSiteException.warning(message);
       }
       sitePoint.setValue(CUSTODIAN_FULL_ADDRESS, fullAddress);
       sitePoint.setValue(UNIT_DESCRIPTOR, unitDescriptor);
@@ -79,7 +77,7 @@ public class SiteConverterAddress extends AbstractSiteConverter {
       sitePoint.setValue(CIVIC_NUMBER_SUFFIX, civicNumberSuffix);
 
       if (!setStructuredName(sourceRecord, sitePoint, 0, structuredName, structuredName)) {
-        return null;
+        throw IgnoreSiteException.warning("STRUCTURED_NAME ignored");
       }
       setCustodianSiteId(sitePoint, sourceRecord);
       return sitePoint;

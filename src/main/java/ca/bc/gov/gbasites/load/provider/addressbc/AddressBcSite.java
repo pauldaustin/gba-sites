@@ -27,7 +27,7 @@ import com.revolsys.util.Emptyable;
 import com.revolsys.util.Property;
 import com.revolsys.util.Strings;
 
-public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePoint {
+public class AddressBcSite extends DelegatingRecord implements AddressBC, SitePoint {
   private static final String FULL_ADDRESS_HAS_EXTRA_CIVIC_NUMBER_SUFFIX = "FULL_ADDRESS has extra CIVIC_NUMBER_SUFFIX";
 
   private static final String FULL_ADDRESS_ENDS_WITH_LOCALITY_BC_POSTAL_CODE = "FULL_ADDRESS ends with '[LOCALITY] BC [POSTAL_CODE]'";
@@ -138,7 +138,7 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
     this.converter = converter;
     this.unitNumber = getValue(UNIT_DESCRIPTOR);
 
-    this.fullAddress = getValueCleanIntern(AddressBc.FULL_ADDRESS);
+    this.fullAddress = getValueCleanIntern(AddressBC.FULL_ADDRESS);
     this.streetNumberPrefix = getValueCleanIntern(STREET_NUMBER_PREFIX);
     if (this.streetNumberPrefix != null) {
       this.streetNumberPrefix = this.streetNumberPrefix.replace("#", "");
@@ -243,7 +243,7 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
 
   private void fixFullAddress(final String localityName) {
 
-    final String geographicDomain = this.getValue(AddressBc.GEOGRAPHIC_DOMAIN);
+    final String geographicDomain = this.getValue(AddressBC.GEOGRAPHIC_DOMAIN);
     if (this.addressParts.endsWith(", BC")) {
       if (this.addressParts.endsWith(", " + geographicDomain + ", BC")) {
         this.addressParts = this.addressParts.substring(0,
@@ -1465,7 +1465,7 @@ public class AddressBcSite extends DelegatingRecord implements AddressBc, SitePo
   }
 
   public String getOriginalFullAddress() {
-    return getValue(AddressBc.FULL_ADDRESS);
+    return getValue(AddressBC.FULL_ADDRESS);
   }
 
   public Point getPoint() {

@@ -8,11 +8,17 @@ import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
-public interface AddressBc {
+public interface AddressBC {
 
-  public static final String ICI_SOCIETY = "ICI Society";
+  String NAME = "AddressBC";
 
-  Path DIRECTORY = SitePoint.SITES_DIRECTORY.resolve("AddressBC");
+  String ICI_SOCIETY = "ICI Society";
+
+  PartnerOrganization PARTNER_ORGANIZATION = GbaSiteDatabase.newPartnerOrganization(ICI_SOCIETY);
+
+  String COUNT_PREFIX = "A ";
+
+  Path DIRECTORY = SitePoint.SITES_DIRECTORY.resolve(NAME);
 
   String ADDRESS_POINT_TYPE = "ADDRESS_POINT_TYPE";
 
@@ -64,15 +70,8 @@ public interface AddressBc {
 
   String UNIT_TYPE = "UNIT_TYPE";
 
-  Path ADDRESS_BC_DIRECTORY = SitePoint.SITES_DIRECTORY //
-    .resolve("AddressBc");
-
   String FILE_SUFFIX = "_ABC";
 
   String PROVIDER_ICI_SOCIETY = "Provider - ICI Society";
-
-  static PartnerOrganization getAbcPartnerOrganization() {
-    return GbaSiteDatabase.newPartnerOrganization(ICI_SOCIETY);
-  }
 
 }

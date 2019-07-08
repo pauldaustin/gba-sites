@@ -47,7 +47,7 @@ import com.revolsys.util.Property;
 
 public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
-  private static final String STATISTICS_NAME = "ABC Source";
+  private static final String STATISTICS_NAME = AddressBC.COUNT_PREFIX + "Source";
 
   public static void downloadAddressBc(final Path sourceDirectory) {
     final String url = "ftp://geoshare.icisociety.ca/Addresses/ABC.csv.zip";
@@ -63,29 +63,21 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     }
   }
 
-  public static Path split(final StatisticsDialog dialog, final boolean download,
+  public static void split(final StatisticsDialog dialog, final boolean download,
     final boolean split) {
-    final Path sourceDirectory = SitePoint.SITES_DIRECTORY //
-      .resolve("AddressBc")//
+    final Path sourceDirectory = AddressBC.DIRECTORY //
       .resolve("Source") //
     ;
 
     if (!dialog.isCancelled() && (download || !Files.exists(sourceDirectory))) {
       downloadAddressBc(sourceDirectory);
     }
-    final Path sourceByProviderDirectory = ImportSites.SOURCE_BY_PROVIDER
-      .newDirectoryPath(AddressBc.ADDRESS_BC_DIRECTORY) //
-    ;
-    Paths.createDirectories(sourceByProviderDirectory);
-    if (!dialog.isCancelled() && (split || !Paths.exists(sourceByProviderDirectory))) {
-      new AddressBcSplitByProvider(dialog, sourceDirectory, sourceByProviderDirectory).run();
+    if (split) {
+      new AddressBcSplitByProvider(dialog, AddressBC.DIRECTORY).run();
     }
-    return sourceByProviderDirectory;
   }
 
-  private final Path sourceDirectory;
-
-  private final Path sourceByProviderDirectory;
+  protected final Path sourceDirectory;
 
   private final Map<String, RangeSet> unitDescriptorsById = new HashMap<>();
 
@@ -107,12 +99,26 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
   private final Path directory;
 
-  public AddressBcSplitByProvider(final StatisticsDialog dialog, final Path sourceDirectory,
-    final Path sourceByProviderDirectory) {
+  protected String statisticsName = STATISTICS_NAME;
+
+  private final Path baseDirectory;
+
+  protected String fileSuffix = AddressBC.FILE_SUFFIX;
+
+  protected String orgFileName = "ADDRESS_BC_PARTNER_ORGANIZATION.xlsx";
+
+  public AddressBcSplitByProvider(final StatisticsDialog dialog, final Path baseDirectory) {
     this.dialog = dialog;
-    this.directory = sourceByProviderDirectory;
-    this.sourceDirectory = sourceDirectory;
-    this.sourceByProviderDirectory = sourceByProviderDirectory;
+    this.baseDirectory = baseDirectory;
+    this.directory = ImportSites.SOURCE_BY_PROVIDER.newDirectoryPath(baseDirectory);
+    this.sourceDirectory = baseDirectory.resolve("Source");
+  }
+
+  protected void addFields(final RecordDefinitionImpl recordDefinitionImpl) {
+    recordDefinitionImpl.addField(UNIT_DESCRIPTOR, DataTypes.STRING);
+    recordDefinitionImpl.addField(AddressBC.BUILDING_NAME, DataTypes.STRING);
+    recordDefinitionImpl.addField(AddressBC.BUILDING_TYPE, DataTypes.STRING);
+    recordDefinitionImpl.addField(AddressBC.POSTAL_CODE, DataTypes.STRING);
   }
 
   private void addWriter(final String dataProvider, final SplitByProviderWriter providerWriter) {
@@ -147,8 +153,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
   }
 
   private void loadConfig() {
-    final Path file = ProviderSitePointConverter.SITE_CONFIG_DIRECTORY
-      .resolve("ADDRESS_BC_PARTNER_ORGANIZATION.xlsx");
+    final Path file = ProviderSitePointConverter.SITE_CONFIG_DIRECTORY.resolve(this.orgFileName);
     try (
       RecordReader reader = RecordReader.newRecordReader(file)) {
       for (final Record record : reader) {
@@ -157,6 +162,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
           final String locality = record.getString("Locality");
           final String regionalDistrict = record.getString("Regional District");
           final String provider = record.getString("Provider");
+          final String other = record.getString("Other");
           String providerName = null;
           if (Property.hasValue(locality)) {
             if (Property.hasValue(regionalDistrict) || Property.hasValue(provider)) {
@@ -180,9 +186,11 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
             }
           } else if (Property.hasValue(provider)) {
             providerName = provider;
+          } else if (Property.hasValue(other)) {
+            providerName = other;
           } else {
             Logs.error(AddressBcSplitByProvider.class,
-              "Must have one of Locality, Regional District and Provider\n" + record);
+              "Must have one of Locality, Regional District, Provider, or Other\n" + record);
           }
           if (providerName != null) {
             SplitByProviderWriter writer = this.writerByProvider.get(providerName.toUpperCase());
@@ -239,9 +247,9 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     try (
       Reader<Record> reader = RecordReader.newRecordReader(file)) {
       for (final Record record : reader) {
-        final String civicId = record.getValue(AddressBc.CIVIC_ID);
+        final String civicId = record.getValue(AddressBC.CIVIC_ID);
 
-        String postalCode = record.getValue(AddressBc.POSTAL_CODE);
+        String postalCode = record.getValue(AddressBC.POSTAL_CODE);
         if (Property.hasValue(postalCode)) {
           postalCode = postalCode.toUpperCase();
           if (postalCodePattern.matcher(postalCode).matches()) {
@@ -250,12 +258,12 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
             }
             this.postalCodeById.put(civicId, postalCode);
           } else {
-            writeExtraDataWarning("ABC_EXTENDED_ADDRESS.csv", civicId, AddressBc.POSTAL_CODE,
+            writeExtraDataWarning("ABC_EXTENDED_ADDRESS.csv", civicId, AddressBC.POSTAL_CODE,
               postalCode);
           }
         }
 
-        String buildingType = record.getValue(AddressBc.BUILDING_TYPE);
+        String buildingType = record.getValue(AddressBC.BUILDING_TYPE);
         if (!Property.hasValue(buildingType)) {
           final String addressNotes = record.getValue("ADDRESS_NOTES");
           if (Property.hasValue(addressNotes)) {
@@ -288,7 +296,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
           }
         }
-        final String buildingName = record.getValue(AddressBc.BUILDING_NAME);
+        final String buildingName = record.getValue(AddressBC.BUILDING_NAME);
         if (Property.hasValue(buildingName)) {
           this.buildingNameById.put(civicId, buildingName);
         }
@@ -296,7 +304,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
       }
     }
     for (final String buildingType : newBuildingTypes) {
-      writeExtraDataWarning("ABC_EXTENDED_ADDRESS.csv", null, AddressBc.BUILDING_TYPE,
+      writeExtraDataWarning("ABC_EXTENDED_ADDRESS.csv", null, AddressBC.BUILDING_TYPE,
         buildingType);
     }
   }
@@ -312,9 +320,9 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     try (
       Reader<Record> reader = RecordReader.newRecordReader(file)) {
       for (final Record record : reader) {
-        final String civicId = record.getValue(AddressBc.CIVIC_ID);
-        final String unitNumber = record.getString(AddressBc.UNIT_NUMBER, "").trim();
-        final String unitNumberSuffix = record.getString(AddressBc.UNIT_NUMBER_SUFFIX, "").trim();
+        final String civicId = record.getValue(AddressBC.CIVIC_ID);
+        final String unitNumber = record.getString(AddressBC.UNIT_NUMBER, "").trim();
+        final String unitNumberSuffix = record.getString(AddressBC.UNIT_NUMBER_SUFFIX, "").trim();
         String unitDescriptor;
         if (ignoreUnitNumberSuffixes.contains(unitNumberSuffix) || unitNumberSuffix.length() == 0) {
           unitDescriptor = unitNumber;
@@ -390,7 +398,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
                     range.add(unitDescriptor.replaceAll("[ \\-]", ""));
                   } else {
                     range.add(unitDescriptor);
-                    writeExtraDataWarning("ABC_SUB_ADDRESS.csv", civicId, AddressBc.UNIT_NUMBER,
+                    writeExtraDataWarning("ABC_SUB_ADDRESS.csv", civicId, AddressBC.UNIT_NUMBER,
                       unitDescriptor);
                   }
                 }
@@ -407,9 +415,9 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     final PartnerOrganization partnerOrganization = GbaSiteDatabase
       .newPartnerOrganization(dataProvider);
     final PartnerOrganizationFiles partnerOrganizationFiles = new PartnerOrganizationFiles(
-      this.dialog, partnerOrganization, AddressBc.ADDRESS_BC_DIRECTORY, AddressBc.FILE_SUFFIX);
+      this.dialog, partnerOrganization, this.baseDirectory, this.fileSuffix);
     final Counter counter = this.dialog.getCounter("Provider",
-      partnerOrganization.getPartnerOrganizationName(), STATISTICS_NAME);
+      partnerOrganization.getPartnerOrganizationName(), this.statisticsName);
 
     providerWriter = new SplitByProviderWriter(this.dialog, dataProvider, counter,
       partnerOrganizationFiles, this.recordDefinition);
@@ -418,19 +426,58 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     return providerWriter;
   }
 
-  public void run() {
-    loadExtendedAddress();
-    loadSubAddress();
+  protected RecordReader newRecordReader() {
+    final MapEx readerProperties = new LinkedHashMapEx();
+    readerProperties.put("pointXFieldName", "X_COORD");
+    readerProperties.put("pointYFieldName", "Y_COORD");
+    readerProperties.put("geometryFactory", Gba.GEOMETRY_FACTORY_2D);
+    final Path sourceFile = this.sourceDirectory.resolve("ABC_CIVIC_ADDRESS.csv");
+    return RecordReader.newRecordReader(sourceFile, readerProperties);
+  }
 
-    splitRecordsByProvider();
-
+  protected void postRun() {
     if (this.extraDataWriter != null) {
       this.extraDataWriter.close();
     }
   }
 
+  protected void preRun() {
+    loadExtendedAddress();
+    loadSubAddress();
+  }
+
+  protected void preWriteRecord(final Record sourceRecord) {
+    setUnitNumber(sourceRecord);
+
+    final Object civicId = sourceRecord.get(AddressBC.CIVIC_ID);
+    final String buildingName = this.buildingNameById.get(civicId);
+    if (buildingName != null) {
+      sourceRecord.put(AddressBC.BUILDING_NAME, buildingName);
+    }
+    final String buildingType = this.buildingTypeById.get(civicId);
+    if (buildingType != null) {
+      sourceRecord.put(AddressBC.BUILDING_TYPE, buildingType);
+    }
+    final String postalCode = this.postalCodeById.remove(civicId);
+    if (postalCode != null) {
+      sourceRecord.put(AddressBC.POSTAL_CODE, postalCode);
+    }
+  }
+
+  public void run() {
+    Paths.createDirectories(this.directory);
+    if (!this.dialog.isCancelled()) {
+
+      preRun();
+
+      splitRecordsByProvider();
+
+      postRun();
+    }
+  }
+
   private void setUnitNumber(final Record sourceRecord) {
-    final String civicId = sourceRecord.getString(AddressBc.CIVIC_ID);
+    final String civicId = sourceRecord.getString(AddressBC.CIVIC_ID);
     final RangeSet range = this.unitDescriptorsById.get(civicId);
     if (range != null) {
       sourceRecord.setValue(UNIT_DESCRIPTOR, range.toString());
@@ -439,42 +486,19 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
   private void splitRecordsByProvider() {
     try {
-      final Map<String, Object> readerProperties = new HashMap<>();
-      readerProperties.put("pointXFieldName", "X_COORD");
-      readerProperties.put("pointYFieldName", "Y_COORD");
-      readerProperties.put("geometryFactory", Gba.GEOMETRY_FACTORY_2D);
-      final Path sourceFile = this.sourceDirectory.resolve("ABC_CIVIC_ADDRESS.csv");
       try (
-        RecordReader sourceReader = RecordReader.newRecordReader(sourceFile)) {
-        sourceReader.setProperties(readerProperties);
+        RecordReader sourceReader = newRecordReader()) {
 
         final RecordDefinitionImpl recordDefinitionImpl = (RecordDefinitionImpl)sourceReader
           .getRecordDefinition();
-        recordDefinitionImpl.addField(UNIT_DESCRIPTOR, DataTypes.STRING);
-        recordDefinitionImpl.addField(AddressBc.BUILDING_NAME, DataTypes.STRING);
-        recordDefinitionImpl.addField(AddressBc.BUILDING_TYPE, DataTypes.STRING);
-        recordDefinitionImpl.addField(AddressBc.POSTAL_CODE, DataTypes.STRING);
+        addFields(recordDefinitionImpl);
         this.recordDefinition = recordDefinitionImpl;
         loadConfig();
         if (!isCancelled()) {
 
           for (final Record sourceRecord : cancellable(sourceReader)) {
 
-            setUnitNumber(sourceRecord);
-
-            final Object civicId = sourceRecord.get(AddressBc.CIVIC_ID);
-            final String buildingName = this.buildingNameById.get(civicId);
-            if (buildingName != null) {
-              sourceRecord.put(AddressBc.BUILDING_NAME, buildingName);
-            }
-            final String buildingType = this.buildingTypeById.get(civicId);
-            if (buildingType != null) {
-              sourceRecord.put(AddressBc.BUILDING_TYPE, buildingType);
-            }
-            final String postalCode = this.postalCodeById.remove(civicId);
-            if (postalCode != null) {
-              sourceRecord.put(AddressBc.POSTAL_CODE, postalCode);
-            }
+            preWriteRecord(sourceRecord);
             writeRecord(sourceRecord);
           }
         }
@@ -493,17 +517,18 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     if (this.extraDataWriter == null) {
       this.extraDataWriter = Tsv
         .plainWriter(this.directory.getParent().resolve("EXTENDED_FIELD_WARNING.tsv"));
-      this.extraDataWriter.write("FILE_NAME", AddressBc.CIVIC_ID, "FIELD_NAME", "FIELD_VALUE");
+      this.extraDataWriter.write("FILE_NAME", AddressBC.CIVIC_ID, "FIELD_NAME", "FIELD_VALUE");
     }
     this.extraDataWriter.write(fileName, civicId, fieldName, fieldValue);
   }
 
   private void writeRecord(final Record record) {
-    String issuingAgency = record.getString(AddressBc.ISSUING_AGENCY);
+    String issuingAgency = record.getString(AddressBC.ISSUING_AGENCY);
     if (issuingAgency == null
       || "FRASER-FORT GEORGE REGIONAL DISTRICT".equalsIgnoreCase(issuingAgency)
-      || "CENTRAL OKANAGAN REGIONAL DISTRICT".equalsIgnoreCase(issuingAgency)) {
-      issuingAgency = record.getString(AddressBc.LOCALITY);
+      || "CENTRAL OKANAGAN REGIONAL DISTRICT".equalsIgnoreCase(issuingAgency)
+      || "FROM FIRST NATION".equalsIgnoreCase(issuingAgency)) {
+      issuingAgency = record.getString(AddressBC.LOCALITY);
       if (issuingAgency == null) {
         issuingAgency = "Unknown";
       }

@@ -9,11 +9,10 @@ import java.util.function.Consumer;
 import org.jeometry.common.logging.Logs;
 import org.jeometry.common.number.Integers;
 
-import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
+import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.PartnerOrganizationFiles;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
 import ca.bc.gov.gbasites.load.convert.AbstractSiteConverter;
@@ -36,18 +35,18 @@ import com.revolsys.util.Strings;
 
 public class AddressBcSiteConverter extends AbstractSiteConverter {
 
-  public static void convertAll(final StatisticsDialog dialog, final boolean convert) {
+  public static void convertAll(final StatisticsDialog dialog) {
 
     final List<PartnerOrganization> partnerOrganizations = ImportSites.SOURCE_BY_PROVIDER
-      .listPartnerOrganizations(AddressBc.ADDRESS_BC_DIRECTORY, AddressBc.FILE_SUFFIX);
+      .listPartnerOrganizations(AddressBC.DIRECTORY, AddressBC.FILE_SUFFIX);
 
     if (!partnerOrganizations.isEmpty()) {
 
       final RecordDefinition recordDefinition;
       {
         final PartnerOrganization partnerOrganization = partnerOrganizations.get(0);
-        final Path firstFile = ImportSites.SOURCE_BY_PROVIDER
-          .getFilePath(AddressBc.ADDRESS_BC_DIRECTORY, partnerOrganization, AddressBc.FILE_SUFFIX);
+        final Path firstFile = ImportSites.SOURCE_BY_PROVIDER.getFilePath(AddressBC.DIRECTORY,
+          partnerOrganization, AddressBC.FILE_SUFFIX);
         try (
           RecordReader reader = RecordReader.newRecordReader(firstFile)) {
           recordDefinition = reader.getRecordDefinition();
@@ -55,20 +54,13 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
 
       }
       try (
-        RecordLog allErrorLog = newAllRecordLog(AddressBc.ADDRESS_BC_DIRECTORY, recordDefinition,
-          "ERROR");
-        RecordLog allWarningLog = newAllRecordLog(AddressBc.ADDRESS_BC_DIRECTORY, recordDefinition,
+        RecordLog allErrorLog = newAllRecordLog(AddressBC.DIRECTORY, recordDefinition, "ERROR");
+        RecordLog allWarningLog = newAllRecordLog(AddressBC.DIRECTORY, recordDefinition,
           "WARNING");) {
-        final StructuredNames structuredNames = GbaController.getStructuredNames();
-        structuredNames.setLoadAll(true);
-        structuredNames.setLoadMissingCodes(false);
-        structuredNames.refresh();
-
-        AbstractSiteConverter.init();
 
         final ProcessNetwork processNetwork = new ProcessNetwork();
         for (int i = 0; i < 8; i++) {
-          processNetwork.addProcess("Address BC Convert " + (i + 1), () -> {
+          processNetwork.addProcess(AddressBC.NAME + " Convert " + (i + 1), () -> {
             while (!dialog.isCancelled()) {
               PartnerOrganization partnerOrganization;
               synchronized (partnerOrganizations) {
@@ -79,11 +71,12 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
               }
               try {
                 final AddressBcSiteConverter converter = new AddressBcSiteConverter(dialog,
-                  partnerOrganization, allErrorLog, allWarningLog);
-                converter.convertSourceRecords(convert);
+                  partnerOrganization, allErrorLog, allWarningLog, AddressBC.DIRECTORY,
+                  AddressBC.FILE_SUFFIX, AddressBC.COUNT_PREFIX);
+                converter.convertSourceRecords(true);
               } catch (final Exception e) {
                 Logs.error(AddressBcSiteConverter.class,
-                  "Error converting Address BC for " + partnerOrganization, e);
+                  AddressBC.NAME + ": Error converting for: " + partnerOrganization, e);
               }
             }
           });
@@ -120,10 +113,13 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
 
   public AddressBcSiteConverter(final StatisticsDialog dialog,
     final PartnerOrganization partnerOrganization, final RecordLog allErrorLog,
-    final RecordLog allWarningLog) {
-    setCountPrefix("ABC ");
+    final RecordLog allWarningLog, final Path baseDirectory, final String fileSuffix,
+    final String countPrefix) {
+    setCountPrefix(countPrefix);
+    this.baseDirectory = baseDirectory;
+    this.fileSuffix = fileSuffix;
 
-    this.createModifyPartnerOrganization = AddressBc.getAbcPartnerOrganization();
+    this.createModifyPartnerOrganization = AddressBC.PARTNER_ORGANIZATION;
 
     final PartnerOrganizationFiles partnerOrganizationFiles = newPartnerOrganizationFiles(dialog,
       partnerOrganization);
@@ -278,8 +274,8 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
 
   protected PartnerOrganizationFiles newPartnerOrganizationFiles(final StatisticsDialog dialog,
     final PartnerOrganization partnerOrganization) {
-    return new PartnerOrganizationFiles(dialog, partnerOrganization, AddressBc.ADDRESS_BC_DIRECTORY,
-      AddressBc.FILE_SUFFIX);
+    return new PartnerOrganizationFiles(dialog, partnerOrganization, this.baseDirectory,
+      this.fileSuffix);
   }
 
   private SitePointProviderRecord newSitePoint(final Record sourceRecord,
@@ -298,7 +294,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
       sourceSite.addWarning(message);
       return null;
     } else if (!setStructuredName(sourceSite, sitePoint, 0, structuredName, structuredName)) {
-      return null;
+      throw IgnoreSiteException.warning("STRUCTURED_NAME ignored");
     }
     final String updatedStructuredName = sitePoint.getStructuredName();
     if (updatedStructuredName != null) {
@@ -306,7 +302,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
     }
     if (Property.hasValue(sourceSite.getAliasName())) {
       if (!setStructuredName(sourceSite, sitePoint, 1, sourceSite.getAliasName(), structuredName)) {
-        return null;
+        throw IgnoreSiteException.warning("STRUCTURED_NAME ignored");
       }
     }
     if (Property.hasValue(sourceSite.civicNumberSuffix)) {
@@ -348,8 +344,8 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
     sitePoint.setValue(CIVIC_NUMBER, sourceSite.getCivicNumber());
     sitePoint.setValue(CIVIC_NUMBER_SUFFIX, sourceSite.civicNumberSuffix);
     sitePoint.setValue(POSTAL_CODE, sourceSite.getString(POSTAL_CODE));
-    sitePoint.setValue(SITE_TYPE_CODE, sourceSite.getString(AddressBc.BUILDING_TYPE));
-    sitePoint.setValue(SITE_NAME_1, sourceSite.getString(AddressBc.BUILDING_NAME));
+    sitePoint.setValue(SITE_TYPE_CODE, sourceSite.getString(AddressBC.BUILDING_TYPE));
+    sitePoint.setValue(SITE_NAME_1, sourceSite.getString(AddressBC.BUILDING_NAME));
 
     if (Property.hasValue(sourceSite.civicNumberRange)) {
       sitePoint.setValue(CIVIC_NUMBER_RANGE, sourceSite.civicNumberRange.replace('-', '~'));
@@ -363,13 +359,8 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
     if (!sourceSite.extendedData.isEmpty()) {
       sitePoint.setValue(EXTENDED_DATA, Json.toString(sourceSite.extendedData));
     }
-    // SitePoint.updateCustodianSiteId("addressBc", sitePoint);
+    // SitePoint.updateCustodianSiteId("AddressBc", sitePoint);
     return sitePoint;
-  }
-
-  @Override
-  protected void postConvertRecordsWriteLocality(final String localityName,
-    final List<Record> localityRecords) {
   }
 
   public void providerFix(final AddressBcSite sourceSite) {

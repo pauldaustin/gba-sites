@@ -17,7 +17,8 @@ import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
-import ca.bc.gov.gbasites.load.provider.addressbc.AddressBc;
+import ca.bc.gov.gbasites.load.provider.addressbc.AddressBC;
+import ca.bc.gov.gbasites.load.provider.geobc.GeoBC;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.list.Lists;
@@ -65,7 +66,7 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
   }
 
   public static boolean isAddressBc(final String organizationName) {
-    return organizationName.equals(AddressBc.PROVIDER_ICI_SOCIETY);
+    return organizationName.equals(AddressBC.PROVIDER_ICI_SOCIETY);
   }
 
   private static void mergeUnitDescriptors(final Record record1, final Record record2) {
@@ -199,6 +200,8 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
 
   private final RecordMergeCounters countersProvider;
 
+  private final RecordMergeCounters countersGeoBc;
+
   private RecordWriter writer;
 
   private RecordWriter writerDelete;
@@ -218,9 +221,11 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
   public SitePointMerger(final ImportSites dialog) {
     super(dialog);
     this.countersProvider = new RecordMergeCounters(
-      this.dialog.getLabelCountTableModel(ImportSites.PROVIDERS), false);
+      this.dialog.getLabelCountTableModel(ImportSites.PROVIDERS), null);
+    this.countersGeoBc = new RecordMergeCounters(this.dialog.getLabelCountTableModel(GeoBC.NAME),
+      GeoBC.PARTNER_ORGANIZATION);
     this.countersAddressBc = new RecordMergeCounters(
-      this.dialog.getLabelCountTableModel("Address BC"), true);
+      this.dialog.getLabelCountTableModel(AddressBC.NAME), AddressBC.PARTNER_ORGANIZATION);
 
   }
 
@@ -271,6 +276,7 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
     this.counterMergedWrite = getCounter(ImportSites.MERGED_WRITE);
 
     this.countersProvider.init(this.localityName);
+    this.countersGeoBc.init(this.localityName);
     this.countersAddressBc.init(this.localityName);
 
   }
@@ -290,8 +296,10 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
 
     loadLocalityProviderSitePoints(records, null, ProviderSitePointConverter.PROVIDER_DIRECTORY,
       this.countersProvider);
-    loadLocalityProviderSitePoints(records, AddressBc.getAbcPartnerOrganization(),
-      AddressBc.ADDRESS_BC_DIRECTORY, this.countersAddressBc);
+    loadLocalityProviderSitePoints(records, GeoBC.PARTNER_ORGANIZATION, GeoBC.DIRECTORY,
+      this.countersGeoBc);
+    loadLocalityProviderSitePoints(records, AddressBC.PARTNER_ORGANIZATION, AddressBC.DIRECTORY,
+      this.countersAddressBc);
 
     return records;
   }
@@ -363,8 +371,9 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
   private void merge04CivicNumberSuffix(final Integer civicNumber, final String civicNumberSuffix,
     final String streetName, final RecordsForCivicNumberSuffix gbaRecordsForSuffix,
     final RecordsForCivicNumberSuffix providerRecordsForSuffix) {
-    providerRecordsForSuffix.mergeFullAddress(false, this.countersProvider);
-    providerRecordsForSuffix.mergeFullAddress(true, this.countersAddressBc);
+    providerRecordsForSuffix.mergeFullAddress(this.countersProvider);
+    providerRecordsForSuffix.mergeFullAddress(this.countersGeoBc);
+    providerRecordsForSuffix.mergeFullAddress(this.countersAddressBc);
 
     merge05MatchGbaRecords(gbaRecordsForSuffix, providerRecordsForSuffix);
   }

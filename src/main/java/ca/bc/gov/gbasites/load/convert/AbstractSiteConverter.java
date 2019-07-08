@@ -244,13 +244,6 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
   public void close() {
     super.close();
     this.nameDifferentByLocality.clear();
-    if (this.errorLog != null) {
-      this.errorLog.close();
-      this.errorPathUpdator.close();
-      this.errorLog = null;
-      this.errorPathUpdator = null;
-    }
-
     if (this.nameDifferentWriter != null) {
       this.nameDifferentWriter.close();
       this.nameDifferentPathUpdator.close();
@@ -285,7 +278,9 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
           }
         }
         final SitePointProviderRecord sitePoint = convertRecordSite(sourceRecord, point);
-        if (sitePoint != null) {
+        if (sitePoint == null) {
+          return null;
+        } else {
           sitePoint.setValue(OPEN_DATA_IND, this.openDataInd);
           sitePoint.setValue(LOCALITY_ID, this.localityId);
           sitePoint.setValue(LOCALITY_NAME, this.localityName);
@@ -299,7 +294,6 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
         }
       }
     }
-    return null;
   }
 
   public abstract SitePointProviderRecord convertRecordSite(Record sourceRecord, Point sourcePoint);

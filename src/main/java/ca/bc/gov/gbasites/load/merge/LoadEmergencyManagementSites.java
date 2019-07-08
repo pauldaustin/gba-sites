@@ -19,6 +19,7 @@ import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
+import ca.bc.gov.gbasites.load.provider.geobc.GeoBC;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.model.type.code.CommunityPoly;
@@ -281,9 +282,9 @@ public class LoadEmergencyManagementSites implements SitePoint {
       site.setValue(USE_SITE_NAME_IN_ADDRESS_IND, useSiteNameInAddress);
       site.setValue(FEATURE_STATUS_CODE, FeatureStatus.ACTIVE);
       site.setValue(ADDRESS_COMMENT, addressComment);
-      site.setValue(CREATE_PARTNER_ORG, "GeoBC");
-      site.setValue(MODIFY_PARTNER_ORG, "GeoBC");
-      site.setValue(CUSTODIAN_PARTNER_ORG, "GeoBC");
+      site.setValue(CREATE_PARTNER_ORG, GeoBC.PARTNER_ORGANIZATION_NAME);
+      site.setValue(MODIFY_PARTNER_ORG, GeoBC.PARTNER_ORGANIZATION_NAME);
+      site.setValue(CUSTODIAN_PARTNER_ORG, GeoBC.PARTNER_ORGANIZATION_NAME);
       site.setValue(OPEN_DATA_IND, "N");
 
       if (localityId == null) {
