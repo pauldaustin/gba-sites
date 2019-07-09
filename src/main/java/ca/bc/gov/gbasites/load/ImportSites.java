@@ -50,6 +50,7 @@ import ca.bc.gov.gbasites.load.readsource.SourceReaderFile;
 import ca.bc.gov.gbasites.load.readsource.SourceReaderFileGdb;
 import ca.bc.gov.gbasites.load.readsource.SourceReaderJoin;
 import ca.bc.gov.gbasites.load.readsource.SourceReaderMapGuide;
+import ca.bc.gov.gbasites.load.write.WriteFgdbAll;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 
@@ -90,8 +91,6 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   public static final String PROVIDERS = "Providers";
 
-  private static final String EM_READ = "EM READ";
-
   public static StatisticsDialog dialog;
 
   public static final DirectorySuffixAndExtension ERROR_BY_PROVIDER = new DirectorySuffixAndExtension(
@@ -102,8 +101,6 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   public static final DirectorySuffixAndExtension WARNING_BY_PROVIDER = new DirectorySuffixAndExtension(
     "WarningByProvider", "_WARNING", ".tsv");
-
-  private static final String FGDB_WRITE = "FGDB Write";
 
   public static final Path LOCALITY_DIRECTORY = GbaController.getDataDirectory("Sites/Locality");
 
@@ -162,6 +159,16 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     } catch (final IOException e) {
       Logs.error(GbaController.class, "Unable to remove temporary files from: " + directory, e);
     }
+  }
+
+  public static RecordDefinitionImpl getSitePointFgdbRecordDefinition() {
+    RecordDefinitionImpl recordDefinition = getSitePointTsvRecordDefinition();
+    recordDefinition = new RecordDefinitionImpl(recordDefinition);
+    for (final FieldDefinition field : recordDefinition.getFields()) {
+      field.setRequired(false);
+    }
+    recordDefinition.setIdFieldName(null);
+    return recordDefinition;
   }
 
   public static RecordDefinitionImpl getSitePointTsvRecordDefinition() {
@@ -338,6 +345,26 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     }
   }
 
+  private void action4WriteFgdb() {
+    if (!isCancelled() && this.fgdbCheckbox.isSelected()) {
+      newLabelCountTableModel("FGDB", "Locality Name", //
+        "Provider", //
+        GeoBC.NAME, //
+        AddressBC.NAME, //
+        "EM", //
+        "All", //
+        "Merged");
+      setSelectedTab("FGDB");
+      Paths.createDirectories(SITES_DIRECTORY.resolve("FGDB"));
+      final CollectionMap<String, Record, List<Record>> emergencyManagementSitesByLocality = new LoadEmergencyManagementSites()
+        .loadEmergencyManagementSites(this);
+      new ProcessNetwork() //
+        .addProcess("FGDB-Merged", () -> writeFgdbMerged(emergencyManagementSitesByLocality)) //
+        .addProcess("FGDB-ALL", new WriteFgdbAll(this, emergencyManagementSitesByLocality)) //
+        .startAndWait();
+    }
+  }
+
   private void addConverterProcesses(final String label, final ProcessNetwork processes,
     final Consumer<ProviderSitePointConverter> action) {
     if (!this.dataProvidersToProcess.isEmpty()) {
@@ -417,14 +444,12 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
         super.batchUpdate(transaction);
       }
     }
-    if (!isCancelled() && this.fgdbCheckbox.isSelected()) {
-      setSelectedTab(ProviderSitePointConverter.LOCALITY);
-      writeFgdb();
-    }
+    action4WriteFgdb();
 
     if (!isCancelled()) {
-      writeCounts("PROVIDER_COUNTS.xlsx", PROVIDER);
-      writeCounts("LOCALITY_COUNTS.xlsx", "Locality");
+      final Path countsDirectory = SITES_DIRECTORY.resolve("Counts");
+      Paths.createDirectories(countsDirectory);
+      writeCounts(countsDirectory, "xlsx");
     }
     return !isCancelled();
   }
@@ -660,10 +685,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
       UPDATED, //
       DELETED, //
       TO_DELETE, //
-      MERGED_WRITE, //
-
-      EM_READ, //
-      FGDB_WRITE //
+      MERGED_WRITE //
     );
 
     final LabelCountMapTableModel providersCounters = RecordMergeCounters.addProviderCounts(this,
@@ -714,71 +736,42 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     }
   }
 
-  private void writeCounts(final String fileName, final String category) {
-    final Path providerCountsPath = SITES_DIRECTORY.resolve(fileName);
-    final LabelCountMapTableModel providerCounts = this.getLabelCountTableModel(category);
-    providerCounts.writeCounts(providerCountsPath);
-  }
-
-  private void writeFgdb() {
+  private void writeFgdbMerged(
+    final CollectionMap<String, Record, List<Record>> emergencyManagementSitesByLocality) {
     try (
-      AtomicPathUpdator pathUpdator = ImportSites.newPathUpdator(this, SITES_DIRECTORY,
-        "SITE_POINT.gdb");
+      AtomicPathUpdator pathUpdator = ImportSites.newPathUpdator(this,
+        SITES_DIRECTORY.resolve("FGDB"), "SITE_POINT.gdb");
       FileGdbRecordStore recordStore = FileGdbRecordStoreFactory
         .newRecordStore(pathUpdator.getPath());) {
-      RecordDefinitionImpl recordDefinition = getSitePointTsvRecordDefinition();
-      recordDefinition = new RecordDefinitionImpl(recordDefinition);
-      for (final FieldDefinition field : recordDefinition.getFields()) {
-        field.setRequired(false);
-      }
-      recordDefinition.setIdFieldName(null);
-      recordDefinition = recordStore.getRecordDefinition(recordDefinition);
+      final RecordDefinitionImpl recordDefinition = getSitePointFgdbRecordDefinition();
       try (
         FileGdbWriter writer = recordStore.newRecordWriter(recordDefinition)) {
-
-        final CollectionMap<String, Record, List<Record>> emergencyManagementSitesByLocality = CollectionMap
-          .hashArray();
 
         final Collection<String> localityNames = GbaController.getLocalities().getBoundaryNames();
         for (final String localityName : cancellable(localityNames)) {
           final String localityFileName = BatchUpdateDialog.toFileName(localityName);
-          final Counter writeCounter = getCounter("Locality", localityName, FGDB_WRITE);
+          final Counter writeCounter = getCounter("FGDB", localityName, "Merged");
 
-          writeFgdbLocalityRecords(writer, emergencyManagementSitesByLocality, localityName,
-            writeCounter, EM_READ);
+          final List<Record> records = emergencyManagementSitesByLocality.getOrEmpty(localityName);
+          if (!records.isEmpty()) {
+            for (final Record record : records) {
+              writer.writeNewRecord(record);
+              writeCounter.add();
+            }
+          }
 
           final Path localityFile = SITE_POINT.getLocalityFilePath(SITES_DIRECTORY,
             localityFileName);
           try (
             RecordReader reader = RecordReader.newRecordReader(localityFile)) {
             for (final Record record : cancellable(reader)) {
-              final Record writeRecord = writer.newRecord(record);
-              writer.write(writeRecord);
+              writer.writeNewRecord(record);
               writeCounter.add();
             }
           }
         }
       }
-    }
-  }
-
-  protected void writeFgdbLocalityRecords(final FileGdbWriter writer,
-    final CollectionMap<String, Record, List<Record>> recordsByLocalityName,
-    final String localityName, final Counter writeCounter, final String readCountName) {
-    final List<Record> records = recordsByLocalityName.getOrEmpty(localityName);
-    writeFgdbLocalityRecords(writer, localityName, writeCounter, readCountName, records);
-  }
-
-  protected void writeFgdbLocalityRecords(final FileGdbWriter writer, final String localityName,
-    final Counter writeCounter, final String readCountName, final List<Record> records) {
-    if (!records.isEmpty()) {
-      final Counter counter = getCounter("Locality", localityName, readCountName);
-      for (final Record record : records) {
-        counter.add();
-        final Record writeRecord = writer.newRecord(record);
-        writer.write(writeRecord);
-        writeCounter.add();
-      }
+      recordStore.compactGeodatabase();
     }
   }
 
