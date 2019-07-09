@@ -163,6 +163,12 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
     return this.partnerOrganizationFiles.getPartnerOrganization();
   }
 
+  protected void initFromParent(final AbstractSiteConverter parent) {
+    this.errorLog = parent.errorLog;
+    this.warningLog = parent.warningLog;
+    this.ignoreLog = parent.ignoreLog;
+  }
+
   @Override
   public boolean isCancelled() {
     return this.dialog.isCancelled();

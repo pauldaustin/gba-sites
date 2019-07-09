@@ -154,7 +154,7 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
 
   private AtomicPathUpdator nameDifferentPathUpdator;
 
-  private final Map<String, Set<String>> nameDifferentByLocality = new TreeMap<>();
+  private Map<String, Set<String>> nameDifferentByLocality = new TreeMap<>();
 
   // private final Map<String, List<Record>> recordsByLocalityName = new
   // TreeMap<>();
@@ -627,6 +627,14 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
       final Geometry geometry = sourceGeometry.convertGeometry(Gba.GEOMETRY_FACTORY_2D);
       return geometry.newValidGeometry();
     }
+  }
+
+  @Override
+  protected void initFromParent(final AbstractSiteConverter parent) {
+    super.initFromParent(parent);
+    this.nameDifferentPathUpdator = parent.nameDifferentPathUpdator;
+    this.nameDifferentWriter = parent.nameDifferentWriter;
+    this.nameDifferentByLocality = parent.nameDifferentByLocality;
   }
 
   public SitePointProviderRecord newSitePoint(final AbstractSiteConverter siteConverter,

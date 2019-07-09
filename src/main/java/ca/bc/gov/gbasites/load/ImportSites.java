@@ -418,6 +418,10 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   @Override
   protected boolean batchUpdate(final Transaction transaction) {
+    try {
+      Paths.deleteDirectories(SITES_TEMP_DIRECTORY);
+    } catch (final Exception e) {
+    }
     Paths.createDirectories(SITES_TEMP_DIRECTORY);
     for (final String directory : Arrays.asList(AddressBC.NAME, PROVIDER, GeoBC.NAME)) {
       final Path baseDirectory = SITES_DIRECTORY.resolve(directory);

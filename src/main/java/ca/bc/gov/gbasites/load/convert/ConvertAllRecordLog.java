@@ -2,6 +2,8 @@ package ca.bc.gov.gbasites.load.convert;
 
 import java.nio.file.Path;
 
+import ca.bc.gov.gbasites.load.ImportSites;
+
 import com.revolsys.geometry.model.Geometry;
 import com.revolsys.geometry.model.Punctual;
 import com.revolsys.io.BaseCloseable;
@@ -62,8 +64,8 @@ public class ConvertAllRecordLog implements BaseCloseable {
       geometry = geometry.getPointWithin();
     }
     if (recordLog == null) {
-      final AtomicPathUpdator pathUpdator = new AtomicPathUpdator(this.directory,
-        filePrefix + this.fileSufix + ".tsv");
+      final AtomicPathUpdator pathUpdator = ImportSites.newPathUpdator(ImportSites.dialog,
+        this.directory, filePrefix + this.fileSufix + ".tsv");
       recordLog = new RecordLog(pathUpdator, record, FIELD_NAMES);
     }
     recordLog.log(message, record, geometry, partnerOrganizationName, localityName);

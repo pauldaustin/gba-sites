@@ -439,9 +439,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
   @Override
   protected void setRecordDefinition(final RecordDefinition recordDefinition) {
     super.setRecordDefinition(recordDefinition);
-    this.siteConverterAddress.errorLog = this.errorLog;
-    this.siteConverterAddress.warningLog = this.warningLog;
-    this.siteConverterAddress.ignoreLog = this.ignoreLog;
+    this.siteConverterAddress.initFromParent(this);
   }
 
   public void setStreetDirPrefixFieldName(final String streetDirPrefixFieldName) {
