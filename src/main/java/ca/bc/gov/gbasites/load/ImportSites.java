@@ -309,7 +309,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   private void action2Convert() {
     final Consumer<ProviderSitePointConverter> providerAction = converter -> {
-      converter.convertData(this, true);
+      converter.convertData(this);
     };
 
     final boolean convert = this.providerConvertCheckbox.isSelected();

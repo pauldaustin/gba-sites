@@ -9,6 +9,7 @@ import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
+import ca.bc.gov.gbasites.load.convert.ConvertAllRecordLog;
 import ca.bc.gov.gbasites.load.provider.addressbc.AddressBC;
 import ca.bc.gov.gbasites.load.provider.addressbc.AddressBcSite;
 import ca.bc.gov.gbasites.load.provider.addressbc.AddressBcSiteConverter;
@@ -17,7 +18,6 @@ import com.revolsys.collection.range.RangeSet;
 import com.revolsys.parallel.process.ProcessNetwork;
 import com.revolsys.record.Record;
 import com.revolsys.record.RecordLog;
-import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.util.Debug;
 import com.revolsys.util.Strings;
@@ -31,20 +31,8 @@ public class GeoBcSiteConverter extends AddressBcSiteConverter {
 
     if (!partnerOrganizations.isEmpty()) {
 
-      final RecordDefinition recordDefinition;
-      {
-        final PartnerOrganization partnerOrganization = partnerOrganizations.get(0);
-        final Path firstFile = ImportSites.SOURCE_BY_PROVIDER.getFilePath(GeoBC.DIRECTORY,
-          partnerOrganization, GeoBC.FILE_SUFFIX);
-        try (
-          RecordReader reader = RecordReader.newRecordReader(firstFile)) {
-          recordDefinition = reader.getRecordDefinition();
-        }
-
-      }
       try (
-        RecordLog allErrorLog = newAllRecordLog(GeoBC.DIRECTORY, recordDefinition, "ERROR");
-        RecordLog allWarningLog = newAllRecordLog(GeoBC.DIRECTORY, recordDefinition, "WARNING");) {
+        ConvertAllRecordLog allLog = new ConvertAllRecordLog(GeoBC.DIRECTORY, GeoBC.FILE_SUFFIX)) {
 
         final ProcessNetwork processNetwork = new ProcessNetwork();
         for (int i = 0; i < 8; i++) {
@@ -59,8 +47,8 @@ public class GeoBcSiteConverter extends AddressBcSiteConverter {
               }
               try {
                 final GeoBcSiteConverter converter = new GeoBcSiteConverter(dialog,
-                  partnerOrganization, allErrorLog, allWarningLog);
-                converter.convertSourceRecords(true);
+                  partnerOrganization, allLog);
+                converter.convertSourceRecords();
               } catch (final Exception e) {
                 Logs.error(GeoBcSiteConverter.class,
                   GeoBC.NAME + ": Error converting for: " + partnerOrganization, e);
@@ -91,10 +79,9 @@ public class GeoBcSiteConverter extends AddressBcSiteConverter {
   }
 
   public GeoBcSiteConverter(final StatisticsDialog dialog,
-    final PartnerOrganization partnerOrganization, final RecordLog allErrorLog,
-    final RecordLog allWarningLog) {
-    super(dialog, partnerOrganization, allErrorLog, allWarningLog, GeoBC.DIRECTORY,
-      GeoBC.FILE_SUFFIX, GeoBC.COUNT_PREFIX);
+    final PartnerOrganization partnerOrganization, final ConvertAllRecordLog allLog) {
+    super(dialog, partnerOrganization, allLog, GeoBC.DIRECTORY, GeoBC.FILE_SUFFIX,
+      GeoBC.COUNT_PREFIX);
     this.createModifyPartnerOrganization = GeoBC.PARTNER_ORGANIZATION;
   }
 

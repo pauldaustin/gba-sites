@@ -16,6 +16,7 @@ import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.PartnerOrganizationFiles;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
 import ca.bc.gov.gbasites.load.convert.AbstractSiteConverter;
+import ca.bc.gov.gbasites.load.convert.ConvertAllRecordLog;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.code.FeatureStatus;
 
@@ -25,7 +26,6 @@ import com.revolsys.geometry.model.Point;
 import com.revolsys.parallel.process.ProcessNetwork;
 import com.revolsys.record.Record;
 import com.revolsys.record.RecordLog;
-import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.io.RecordWriter;
 import com.revolsys.record.io.format.json.Json;
 import com.revolsys.record.schema.RecordDefinition;
@@ -41,22 +41,9 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
       .listPartnerOrganizations(AddressBC.DIRECTORY, AddressBC.FILE_SUFFIX);
 
     if (!partnerOrganizations.isEmpty()) {
-
-      final RecordDefinition recordDefinition;
-      {
-        final PartnerOrganization partnerOrganization = partnerOrganizations.get(0);
-        final Path firstFile = ImportSites.SOURCE_BY_PROVIDER.getFilePath(AddressBC.DIRECTORY,
-          partnerOrganization, AddressBC.FILE_SUFFIX);
-        try (
-          RecordReader reader = RecordReader.newRecordReader(firstFile)) {
-          recordDefinition = reader.getRecordDefinition();
-        }
-
-      }
       try (
-        RecordLog allErrorLog = newAllRecordLog(AddressBC.DIRECTORY, recordDefinition, "ERROR");
-        RecordLog allWarningLog = newAllRecordLog(AddressBC.DIRECTORY, recordDefinition,
-          "WARNING");) {
+        ConvertAllRecordLog allLog = new ConvertAllRecordLog(AddressBC.DIRECTORY,
+          AddressBC.FILE_SUFFIX)) {
 
         final ProcessNetwork processNetwork = new ProcessNetwork();
         for (int i = 0; i < 8; i++) {
@@ -71,9 +58,9 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
               }
               try {
                 final AddressBcSiteConverter converter = new AddressBcSiteConverter(dialog,
-                  partnerOrganization, allErrorLog, allWarningLog, AddressBC.DIRECTORY,
-                  AddressBC.FILE_SUFFIX, AddressBC.COUNT_PREFIX);
-                converter.convertSourceRecords(true);
+                  partnerOrganization, allLog, AddressBC.DIRECTORY, AddressBC.FILE_SUFFIX,
+                  AddressBC.COUNT_PREFIX);
+                converter.convertSourceRecords();
               } catch (final Exception e) {
                 Logs.error(AddressBcSiteConverter.class,
                   AddressBC.NAME + ": Error converting for: " + partnerOrganization, e);
@@ -107,14 +94,11 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
 
   private RecordWriter sitePointWriter;
 
-  private final RecordLog allErrorLog;
-
-  private final RecordLog allWarningLog;
+  private final ConvertAllRecordLog allLog;
 
   public AddressBcSiteConverter(final StatisticsDialog dialog,
-    final PartnerOrganization partnerOrganization, final RecordLog allErrorLog,
-    final RecordLog allWarningLog, final Path baseDirectory, final String fileSuffix,
-    final String countPrefix) {
+    final PartnerOrganization partnerOrganization, final ConvertAllRecordLog allLog,
+    final Path baseDirectory, final String fileSuffix, final String countPrefix) {
     setCountPrefix(countPrefix);
     this.baseDirectory = baseDirectory;
     this.fileSuffix = fileSuffix;
@@ -138,8 +122,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
     this.fixesByProvider.put("Revelstoke", this::fixRevelstoke);
     this.fixesByProvider.put("Summerland", this::fixSummerland);
 
-    this.allErrorLog = allErrorLog;
-    this.allWarningLog = allWarningLog;
+    this.allLog = allLog;
     this.ignoreNames.clear();
   }
 
@@ -147,19 +130,19 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
   public void addError(final Record record, final String message) {
     super.addError(record, message);
 
-    final Point point = record.getGeometry();
-    if (this.allErrorLog != null) {
-      this.allErrorLog.error(getPartnerOrganizationName(), message, record, point);
-    }
+    this.allLog.error(getPartnerOrganizationName(), this.localityName, record, message);
+  }
+
+  @Override
+  public void addIgnore(final Record record, final String message) {
+    super.addIgnore(record, message);
+    this.allLog.ignore(getPartnerOrganizationName(), this.localityName, record, message);
   }
 
   @Override
   public void addWarning(final Record record, final String message) {
     super.addWarning(record, message);
-    final Point point = record.getGeometry();
-    if (this.allWarningLog != null) {
-      this.allWarningLog.error(getPartnerOrganizationName(), message, record, point);
-    }
+    this.allLog.warning(getPartnerOrganizationName(), this.localityName, record, message);
   }
 
   @Override

@@ -35,15 +35,9 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
 
   protected Counter convertCounter;
 
-  protected Counter ignoreCounter;
-
   protected String countPrefix = "";
 
   protected StatisticsDialog dialog;
-
-  private Counter errorCounter;
-
-  private Counter warningCounter;
 
   protected RecordLog errorLog;
 
@@ -64,46 +58,19 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
   protected Identifier localityId;
 
   public void addError(final Record record, final String message) {
-    addErrorCount(message);
-
-    this.errorLog = addRecordLog(this.errorLog, ImportSites.ERROR_BY_PROVIDER, record, message);
-  }
-
-  protected void addErrorCount(final String message) {
-    this.errorCounter.add();
     this.dialog.addLabelCount(BatchUpdateDialog.ERROR, message, BatchUpdateDialog.ERROR);
+    log(this.errorLog, record, message);
   }
 
   public void addIgnore(final Record record, final String message) {
-    this.ignoreCounter.add();
     this.dialog.addLabelCount(BatchUpdateDialog.IGNORED, message, BatchUpdateDialog.IGNORED);
-    this.ignoreLog = addRecordLog(this.ignoreLog, ImportSites.IGNORE_BY_PROVIDER, record, message);
-  }
-
-  protected void addIgnoreCount() {
-    this.ignoreCounter.add();
-  }
-
-  private RecordLog addRecordLog(RecordLog recordLog, final DirectorySuffixAndExtension fileType,
-    final Record record, final String message) {
-    if (recordLog == null) {
-      final AtomicPathUpdator pathUpdator = this.partnerOrganizationFiles.newPathUpdator(fileType);
-      recordLog = new RecordLog(pathUpdator, record);
-    }
-    Geometry geometry = record.getGeometry();
-    if (geometry != null) {
-      geometry = geometry.getPointWithin();
-    }
-    recordLog.error(this.localityName, message, record, geometry);
-    return recordLog;
+    log(this.ignoreLog, record, message);
   }
 
   public void addWarning(final Record record, final String message) {
-    this.warningCounter.add();
     this.dialog.addLabelCount(ProviderSitePointConverter.WARNING, message,
       ProviderSitePointConverter.WARNING);
-    this.warningLog = addRecordLog(this.warningLog, ImportSites.WARNING_BY_PROVIDER, record,
-      message);
+    log(this.warningLog, record, message);
 
   }
 
@@ -157,7 +124,8 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
     final RecordDefinition providerRecordDefinition = null;
     try (
       RecordReader sourceReader = newSourceRecordReader(providerRecordDefinition)) {
-
+      final RecordDefinition recordDefinition = sourceReader.getRecordDefinition();
+      setRecordDefinition(recordDefinition);
       for (final Record sourceRecord : cancellable(sourceReader)) {
         final R convertedRecord = convertRecord(sourceRecord);
         if (convertedRecord != null) {
@@ -200,6 +168,24 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
     return this.dialog.isCancelled();
   }
 
+  private void log(final RecordLog recordLog, final Record record, final String message) {
+    Geometry geometry = record.getGeometry();
+    if (geometry != null) {
+      geometry = geometry.getPointWithin();
+    }
+    recordLog.error(this.localityName, message, record, geometry);
+  }
+
+  private RecordLog newRecordLog(final String countName, final DirectorySuffixAndExtension fileType,
+    final RecordDefinition recordDefinition) {
+    final AtomicPathUpdator pathUpdator = this.partnerOrganizationFiles.newPathUpdator(fileType);
+    final RecordLog recordLog = new RecordLog(pathUpdator, recordDefinition,
+      RecordLog.LOG_LOCALITY);
+    this.dialog.setCounter("Provider", this.partnerOrganizationFiles, this.countPrefix + countName,
+      recordLog.getCounter());
+    return recordLog;
+  }
+
   protected RecordReader newSourceRecordReader(final RecordDefinition providerRecordDefinition) {
     final Path sourceFile = this.partnerOrganizationFiles
       .getFilePath(ImportSites.SOURCE_BY_PROVIDER);
@@ -240,9 +226,6 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
   public void setDialog(final StatisticsDialog dialog) {
     this.dialog = dialog;
     this.convertCounter = getCounter("Converted");
-    this.errorCounter = getCounter("Error");
-    this.warningCounter = getCounter("Warning");
-    this.ignoreCounter = getCounter("Ignored");
   }
 
   public void setFileSuffix(final String fileSuffix) {
@@ -256,6 +239,12 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
     if (this.createModifyPartnerOrganization == null) {
       this.createModifyPartnerOrganization = partnerOrganizationFiles.getPartnerOrganization();
     }
+  }
+
+  protected void setRecordDefinition(final RecordDefinition recordDefinition) {
+    this.errorLog = newRecordLog("Error", ImportSites.ERROR_BY_PROVIDER, recordDefinition);
+    this.ignoreLog = newRecordLog("Ignored", ImportSites.IGNORE_BY_PROVIDER, recordDefinition);
+    this.warningLog = newRecordLog("Warning", ImportSites.WARNING_BY_PROVIDER, recordDefinition);
   }
 
   @Override

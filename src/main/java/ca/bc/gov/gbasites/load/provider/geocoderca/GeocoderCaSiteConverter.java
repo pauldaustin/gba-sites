@@ -178,9 +178,10 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
     this.allErrorLog.error(this.localityName, message, record, point);
   }
 
+  @Override
   public void addIgnore(final Record record, final String message) {
+    super.addIgnore(record, message);
     this.counts.addCount(this.localityName, "Ignored");
-    addIgnoreCount();
     final Point point = record.getGeometry();
 
     this.allIgnoreLog.error(this.localityName, message, record, point);
@@ -224,20 +225,18 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
         setLocalityName(LOCALITIES.getValue(localityId));
         final SitePointProviderRecord sitePoint = convertRecordSite(sourceRecord, point);
         if (sitePoint == null) {
-          addIgnoreCount();
+          throw IgnoreSiteException.error("Converter returned null");
         } else {
           return sitePoint;
         }
       } catch (final NullPointerException e) {
         Logs.error(ImportSites.class, "Null pointer", e);
-        addError(sourceRecord, "Null Pointer");
-        addIgnoreCount();
+        addIgnore(sourceRecord, "Null Pointer");
       } catch (final IgnoreSiteException e) {
         addIgnore(sourceRecord, e.getMessage());
       } catch (final Throwable e) {
         Logs.error(this, e);
-        addError(sourceRecord, e.getMessage());
-        addIgnoreCount();
+        addIgnore(sourceRecord, e.getMessage());
       }
     }
     return null;

@@ -180,7 +180,7 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
     setProperties(properties);
   }
 
-  public void convertData(final StatisticsDialog dialog, final boolean convert) {
+  public void convertData(final StatisticsDialog dialog) {
     if (this.converter == null) {
       Logs.error(this, "No site point converter for: " + this.partnerOrganization);
     } else {
@@ -193,7 +193,7 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
         .add("openData", this.openData) //
       ;
       final AbstractSiteConverter converter = this.converter.apply(properties);
-      converter.convertSourceRecords(convert);
+      converter.convertSourceRecords();
     }
   }
 

@@ -19,6 +19,7 @@ import ca.bc.gov.gbasites.model.type.SitePoint;
 import com.revolsys.collection.list.Lists;
 import com.revolsys.collection.map.Maps;
 import com.revolsys.collection.range.RangeSet;
+import com.revolsys.geometry.model.Geometry;
 import com.revolsys.geometry.model.Point;
 import com.revolsys.record.DelegatingRecord;
 import com.revolsys.record.Record;
@@ -1396,6 +1397,12 @@ public class AddressBcSite extends DelegatingRecord implements AddressBC, SitePo
 
   public String getFullAddress() {
     return this.fullAddress;
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public <T extends Geometry> T getGeometry() {
+    return (T)this.point;
   }
 
   public String getNewFullAddress() {

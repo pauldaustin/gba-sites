@@ -19,6 +19,7 @@ import com.revolsys.geometry.model.Point;
 import com.revolsys.predicate.Predicates;
 import com.revolsys.record.Record;
 import com.revolsys.record.query.QueryValue;
+import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.util.Debug;
 import com.revolsys.util.Property;
 import com.revolsys.util.Strings;
@@ -433,6 +434,14 @@ public class SiteConverterParts extends AbstractSiteConverter {
   public void setProperties(final Map<String, ? extends Object> properties) {
     super.setProperties(properties);
     this.siteConverterAddress.setProperties(properties);
+  }
+
+  @Override
+  protected void setRecordDefinition(final RecordDefinition recordDefinition) {
+    super.setRecordDefinition(recordDefinition);
+    this.siteConverterAddress.errorLog = this.errorLog;
+    this.siteConverterAddress.warningLog = this.warningLog;
+    this.siteConverterAddress.ignoreLog = this.ignoreLog;
   }
 
   public void setStreetDirPrefixFieldName(final String streetDirPrefixFieldName) {

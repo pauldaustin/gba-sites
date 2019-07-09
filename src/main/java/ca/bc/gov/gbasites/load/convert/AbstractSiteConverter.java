@@ -298,14 +298,13 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
 
   public abstract SitePointProviderRecord convertRecordSite(Record sourceRecord, Point sourcePoint);
 
-  public void convertSourceRecords(final boolean convert) {
+  @Override
+  public void convertSourceRecords() {
     try (
       AtomicPathUpdator pathUpdator = this.partnerOrganizationFiles
         .newPathUpdator(ImportSites.SITE_POINT_BY_PROVIDER)) {
       setPathUpdator(pathUpdator);
-      if (convert || !pathUpdator.isTargetExists()) {
-        convertSourceRecords();
-      }
+      super.convertSourceRecords();
     }
   }
 
