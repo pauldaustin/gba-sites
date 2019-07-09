@@ -775,7 +775,6 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
           }
         }
       }
-      recordStore.compactGeodatabase();
     }
   }
 

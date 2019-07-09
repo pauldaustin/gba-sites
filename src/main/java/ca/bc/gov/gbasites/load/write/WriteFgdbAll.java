@@ -22,6 +22,7 @@ import com.revolsys.gis.esri.gdb.file.FileGdbRecordStoreFactory;
 import com.revolsys.gis.esri.gdb.file.FileGdbWriter;
 import com.revolsys.io.BaseCloseable;
 import com.revolsys.io.file.AtomicPathUpdator;
+import com.revolsys.parallel.process.ProcessNetwork;
 import com.revolsys.record.Record;
 import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.schema.RecordDefinitionImpl;
@@ -46,13 +47,12 @@ public class WriteFgdbAll implements Cancellable, Runnable {
     this.emergencyManagementSitesByLocality = emergencyManagementSitesByLocality;
   }
 
-  private void close(final List<? extends BaseCloseable> closeables) {
-    for (final BaseCloseable closeable : closeables) {
-      try {
-        closeable.close();
-      } catch (final Exception e) {
-        Logs.error(this, "Error closing: " + closeable, e);
-      }
+  private void close(final List<? extends BaseCloseable> closeables, final int index) {
+    final BaseCloseable closeable = closeables.get(index);
+    try {
+      closeable.close();
+    } catch (final Exception e) {
+      Logs.error(this, "Error closing: " + closeable, e);
     }
   }
 
@@ -135,16 +135,17 @@ public class WriteFgdbAll implements Cancellable, Runnable {
         }
       }
     } finally {
-      close(this.writers);
-      for (final FileGdbRecordStore recordStore : this.recordStores) {
-        try {
-          recordStore.compactGeodatabase();
-          recordStore.close();
-        } catch (final Exception e) {
-          Logs.error(this, "Error closing: " + recordStore, e);
-        }
+      final ProcessNetwork closeProcesses = new ProcessNetwork();
+
+      for (int i = 0; i < this.writers.size(); i++) {
+        final int index = i;
+        closeProcesses.addProcess("FGDB-Close-" + i, () -> {
+          close(this.writers, index);
+          close(this.recordStores, index);
+          close(this.pathUpdators, index);
+        });
       }
-      close(this.pathUpdators);
+      closeProcesses.startAndWait();
     }
   }
 
