@@ -1,11 +1,11 @@
 package ca.bc.gov.gbasites.load.merge;
 
+import ca.bc.gov.gba.model.type.GbaType;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.provider.addressbc.AddressBC;
 import ca.bc.gov.gbasites.load.provider.geobc.GeoBC;
-import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.record.Record;
 import com.revolsys.swing.table.counts.LabelCountMapTableModel;
@@ -101,7 +101,7 @@ public class RecordMergeCounters {
   }
 
   public boolean isCreatePartnerOrg(final Record record) {
-    final String organizationName = record.getString(SitePoint.CREATE_PARTNER_ORG);
+    final String organizationName = record.getString(GbaType.CREATE_PARTNER_ORG);
     if (this.partnerOrganization == null) {
       return !(organizationName.equals(GeoBC.PARTNER_ORGANIZATION_NAME)
         || organizationName.equals(AddressBC.PROVIDER_ICI_SOCIETY));

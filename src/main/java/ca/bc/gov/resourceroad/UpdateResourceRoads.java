@@ -19,7 +19,6 @@ import ca.bc.gov.gba.model.type.code.TransportLineType;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 
-import com.revolsys.beans.Classes;
 import com.revolsys.collection.map.LinkedHashMapEx;
 import com.revolsys.collection.map.MapEx;
 import com.revolsys.collection.map.Maps;
@@ -44,7 +43,7 @@ import com.revolsys.util.Debug;
 public class UpdateResourceRoads extends BatchUpdateDialog implements TransportLine {
   private static final long serialVersionUID = 1L;
 
-  private static final String CLASS_NAME = Classes.className(UpdateResourceRoads.class);
+  private static final String CLASS_NAME = UpdateResourceRoads.class.getSimpleName();
 
   private static final String APPLICATION_STATUS_CODE = "APPLICATION_STATUS_CODE";
 

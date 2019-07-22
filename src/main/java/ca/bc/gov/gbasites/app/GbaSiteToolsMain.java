@@ -24,7 +24,6 @@ import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gbasites.controller.GbaSiteController;
 import ca.bc.gov.gbasites.load.ImportSites;
 
-import com.revolsys.beans.Classes;
 import com.revolsys.log.LogAppender;
 import com.revolsys.process.JavaProcess;
 import com.revolsys.swing.Borders;
@@ -160,8 +159,8 @@ public class GbaSiteToolsMain extends BaseMain {
   public void runProcess(final Class<?> klass, final SimpleEnableCheck enableCheck) {
     if (enableCheck.isEnabled()) {
       enableCheck.setEnabled(false);
-      Invoke.background("Launching" + Classes.className(klass), () -> {
-        final String logName = Classes.className(klass) + "-" + Dates.format("yyy-MM-dd-hh-mm-ss");
+      Invoke.background("Launching" + klass.getSimpleName(), () -> {
+        final String logName = klass.getSimpleName() + "-" + Dates.format("yyy-MM-dd-hh-mm-ss");
         final JavaProcess javaProcess = GbaController.newJavaProcess(logName);
         javaProcess.setProgramClass(klass);
         javaProcess.setCompletedAction(() -> {
