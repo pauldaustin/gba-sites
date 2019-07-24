@@ -508,7 +508,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   private void loadCodes(final PathName pathName, final Consumer<Record> action) {
     final String typeName = pathName.getName();
-    final RecordStore recordStore = GbaController.getUserRecordStore();
+    final RecordStore recordStore = GbaController.getRecordStore();
     final ClassPathResource resource = new ClassPathResource(
       "/ca/bc/gov/gba/schema/codes/" + typeName + ".tsv");
     try (

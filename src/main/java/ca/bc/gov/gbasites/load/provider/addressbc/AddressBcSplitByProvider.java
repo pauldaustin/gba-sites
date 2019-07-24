@@ -16,6 +16,7 @@ import org.jeometry.common.data.type.DataTypes;
 import org.jeometry.common.exception.Exceptions;
 import org.jeometry.common.logging.Logs;
 
+import ca.bc.gov.gba.controller.GbaConfig;
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
@@ -52,8 +53,8 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
   public static void downloadAddressBc(final Path sourceDirectory) {
     final String url = "ftp://geoshare.icisociety.ca/Addresses/ABC.csv.zip";
     try {
-      final String user = GbaController.getProperty("addressBcFtpUser");
-      final String password = GbaController.getProperty("addressBcFtpPassword");
+      final String user = GbaConfig.getProperty("addressBcFtpUser");
+      final String password = GbaConfig.getProperty("addressBcFtpPassword");
       final UrlResource resource = new UrlResource(url, user, password);
 
       Paths.createDirectories(sourceDirectory);

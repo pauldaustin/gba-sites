@@ -53,7 +53,7 @@ public class BoundaryCacheFieldRule extends AbstractRecordRule implements Clonea
 
   @Override
   protected void init(final RecordDefinition recordDefinition) {
-    final RecordStore recordStore = GbaController.getUserRecordStore();
+    final RecordStore recordStore = GbaController.getRecordStore();
     for (final String fieldName : this.boundaryFieldNames) {
       final BoundaryCache boundaryCache = (BoundaryCache)recordStore
         .getCodeTableByFieldName(fieldName);
