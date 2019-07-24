@@ -13,6 +13,7 @@ import java.util.function.Function;
 import org.jeometry.common.data.type.DataType;
 import org.jeometry.common.logging.Logs;
 
+import ca.bc.gov.gba.controller.GbaConfig;
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
@@ -58,7 +59,7 @@ public class ProviderSitePointConverter extends BaseObjectWithProperties
 
   public static final Path PROVIDER_DIRECTORY = ImportSites.SITES_DIRECTORY.resolve("Provider");
 
-  public static final Path SITE_CONFIG_DIRECTORY = GbaController.getConfigPath("Sites");
+  public static final Path SITE_CONFIG_DIRECTORY = GbaConfig.getConfigFile("Sites");
 
   static final Map<String, ProviderSitePointConverter> siteLoaderByDataProvider = new TreeMap<>();
 

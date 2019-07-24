@@ -310,7 +310,7 @@ public class MergeEmergencyManagementSites implements SitePoint {
   }
 
   private void loadEmergencyManagementSites() {
-    final RecordStore gbaRecordStore = GbaController.getUserRecordStore();
+    final RecordStore gbaRecordStore = GbaController.getRecordStore();
     final Query loadedQuery = new Query(SiteTables.SITE_POINT, Q.lessThan(SITE_ID, 100000));
     loadedQuery.setStatistics(this.dialog.getLabelCountMap(EM_SITES, BatchUpdateDialog.GBA_READ));
     loadedQuery.setCancellable(this.dialog);

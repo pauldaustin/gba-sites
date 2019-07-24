@@ -16,7 +16,7 @@ public class CommunityPoly {
   public static BoundaryCache getCommunities() {
     synchronized (CommunityPoly.class) {
       if (communities == null) {
-        final RecordStore recordStore = GbaController.getUserRecordStore();
+        final RecordStore recordStore = GbaController.getRecordStore();
         communities = recordStore.getCodeTable(COMMUNITY_POLY);
         if (communities == null) {
           communities = new BoundaryCache();
@@ -29,7 +29,7 @@ public class CommunityPoly {
   }
 
   public static synchronized void initCodeTables() {
-    final RecordStore recordStore = GbaController.getUserRecordStore();
+    final RecordStore recordStore = GbaController.getRecordStore();
     if (recordStore != null) {
       if (communities == null) {
         communities = recordStore.getCodeTable(COMMUNITY_POLY);

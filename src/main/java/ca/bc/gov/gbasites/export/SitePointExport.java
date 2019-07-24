@@ -75,7 +75,7 @@ public class SitePointExport implements SitePoint, Cancellable {
 
   private BatchUpdateDialog dialog;
 
-  private final RecordStore recordStore = GbaController.getUserRecordStore();
+  private final RecordStore recordStore = GbaController.getRecordStore();
 
   private RecordDefinition sitePointExportRecordDefinition;
 
