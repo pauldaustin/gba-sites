@@ -17,7 +17,7 @@ call :gitUpdate src\jeometry jeometry-org/jeometry master
 
 call :gitUpdate src\com.revolsys.open revolsys/com.revolsys.open master
 
-call :gitUpdate src\gba pauldaustin/ca.bc.gov.gba major
+call :gitUpdate src\gba pauldaustin/gba major
 
 call :gitUpdate src\gba-sites pauldaustin/gba-sites master
 
