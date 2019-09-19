@@ -11,3 +11,5 @@ target
 /log/
 /.factorypath
 config
+version-scripts
+jenkins/*
