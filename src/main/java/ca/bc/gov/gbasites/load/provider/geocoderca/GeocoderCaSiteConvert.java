@@ -111,8 +111,8 @@ public class GeocoderCaSiteConvert implements Cancellable {
     if (!providerFiles.isEmpty()) {
       try (
         RecordLog allErrorLog = newAllRecordLog(providerFiles, "ERROR");
-        RecordLog allWarningLog = newAllRecordLog(providerFiles, "WARNING");
-        RecordLog allIgnoreLog = newAllRecordLog(providerFiles, "IGNORE");) {
+        RecordLog allWarningLog = newAllRecordLog(providerFiles, "OVERRIDDEN");
+        RecordLog allIgnoreLog = newAllRecordLog(providerFiles, "ALLOWED_NOT_EQUAL");) {
         init();
 
         final ProcessNetwork processNetwork = new ProcessNetwork();

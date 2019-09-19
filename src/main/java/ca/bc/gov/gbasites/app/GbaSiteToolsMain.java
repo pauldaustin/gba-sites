@@ -31,7 +31,7 @@ import com.revolsys.swing.Icons;
 import com.revolsys.swing.SwingUtil;
 import com.revolsys.swing.TabbedPane;
 import com.revolsys.swing.action.RunnableAction;
-import com.revolsys.swing.action.enablecheck.SimpleEnableCheck;
+import com.revolsys.swing.action.enablecheck.BooleanEnableCheck;
 import com.revolsys.swing.component.BasePanel;
 import com.revolsys.swing.logging.Log4jTableModel;
 import com.revolsys.swing.menu.MenuFactory;
@@ -98,7 +98,7 @@ public class GbaSiteToolsMain extends BaseMain {
     Borders.titled(panel, "Tasks");
     container.add(panel);
 
-    final SimpleEnableCheck backupEnableCheck = new SimpleEnableCheck();
+    final BooleanEnableCheck backupEnableCheck = new BooleanEnableCheck();
     panel.add(RunnableAction.newButton("Import Sites", backupEnableCheck,
       () -> runProcess(ImportSites.class, backupEnableCheck)));
   }
@@ -156,7 +156,7 @@ public class GbaSiteToolsMain extends BaseMain {
     this.frame.setVisible(true);
   }
 
-  public void runProcess(final Class<?> klass, final SimpleEnableCheck enableCheck) {
+  public void runProcess(final Class<?> klass, final BooleanEnableCheck enableCheck) {
     if (enableCheck.isEnabled()) {
       enableCheck.setEnabled(false);
       Invoke.background("Launching" + klass.getSimpleName(), () -> {

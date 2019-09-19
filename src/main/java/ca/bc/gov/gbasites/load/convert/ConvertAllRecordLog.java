@@ -52,7 +52,7 @@ public class ConvertAllRecordLog implements BaseCloseable {
 
   public void ignore(final String partnerOrganizationName, final String localityName,
     final Record record, final String message) {
-    this.ignoreLog = log(this.ignoreLog, "IGNORE", partnerOrganizationName, localityName, record,
+    this.ignoreLog = log(this.ignoreLog, "ALLOWED_NOT_EQUAL", partnerOrganizationName, localityName, record,
       message);
   }
 
@@ -74,7 +74,7 @@ public class ConvertAllRecordLog implements BaseCloseable {
 
   public void warning(final String partnerOrganizationName, final String localityName,
     final Record record, final String message) {
-    this.warningLog = log(this.warningLog, "WARNING", partnerOrganizationName, localityName, record,
+    this.warningLog = log(this.warningLog, "OVERRIDDEN", partnerOrganizationName, localityName, record,
       message);
   }
 
