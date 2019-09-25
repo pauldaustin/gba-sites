@@ -6,6 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jeometry.common.number.BigDecimals;
+import org.jeometry.common.number.Numbers;
 
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
@@ -88,7 +89,7 @@ public class SiteConverterCKRD extends AbstractSiteConverter {
             if (civicNumberSuffixMatcher.matches()) {
               civicNumber = Integer.valueOf(civicNumberSuffixMatcher.group(1));
               final String suffixPart = civicNumberSuffixMatcher.group(2);
-              if (BigDecimals.isNumber(suffixPart) || suffixPart.length() > 1) {
+              if (Numbers.isNumber(suffixPart) || suffixPart.length() > 1) {
                 unitDescriptor = suffixPart;
               } else {
                 civicNumberSuffix = suffixPart;

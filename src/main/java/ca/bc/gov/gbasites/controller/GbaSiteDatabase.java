@@ -12,7 +12,7 @@ import ca.bc.gov.gbasites.model.type.SitePoint;
 import com.revolsys.collection.range.Ranges;
 import com.revolsys.io.CloseableResourceProxy;
 import com.revolsys.jdbc.io.JdbcRecordStore;
-import com.revolsys.record.code.SimpleCodeTable;
+import com.revolsys.record.code.SingleValueCodeTable;
 import com.revolsys.spring.resource.Resource;
 
 public class GbaSiteDatabase {
@@ -58,7 +58,8 @@ public class GbaSiteDatabase {
 
   private static JdbcRecordStore newRecordStore() {
     final JdbcRecordStore recordStore = GbaController.getGbaRecordStore();
-    final SimpleCodeTable booleanCodeTable = new SimpleCodeTable(SitePoint.CIVIC_NUMBER_SUFFIX);
+    final SingleValueCodeTable booleanCodeTable = new SingleValueCodeTable(
+      SitePoint.CIVIC_NUMBER_SUFFIX);
     for (final Object letter : Ranges.newRange('A', 'Z')) {
       booleanCodeTable.addValue(letter.toString(), letter.toString());
     }

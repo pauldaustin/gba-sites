@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.logging.Logs;
 import org.jeometry.common.number.BigDecimals;
+import org.jeometry.common.number.Numbers;
 
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
@@ -297,7 +298,7 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
                   return false;
                 } else {
                   final String suffixPart = civicNumberSuffixMatcher.group(2);
-                  if (BigDecimals.isNumber(suffixPart) || suffixPart.length() > 1) {
+                  if (Numbers.isNumber(suffixPart) || suffixPart.length() > 1) {
                     addUnitDescriptor(suffixPart);
                   } else {
                     if (hasValue(CIVIC_NUMBER_SUFFIX)) {
@@ -731,7 +732,7 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
           } else if (fullAddress.endsWith(" " + compareStreetName)) {
             final String numberPart = fullAddress.substring(0,
               fullAddress.length() - compareStreetName.length() - 1);
-            if (BigDecimals.isNumber(numberPart)) {
+            if (Numbers.isNumber(numberPart)) {
               if (getCivicNumber() == null) {
                 if (civicNumberRangeHyphen.contains(numberPart)) {
                   throw IgnoreSiteException
@@ -751,7 +752,7 @@ public class SitePointProviderRecord extends DelegatingRecord implements SitePoi
                 final String numberGroup = civicNumberSuffixMatcher.group(1);
                 if (getCivicNumber() == Integer.parseInt(numberGroup)) {
                   final String suffixPart = civicNumberSuffixMatcher.group(2);
-                  if (BigDecimals.isNumber(suffixPart) || suffixPart.length() > 1) {
+                  if (Numbers.isNumber(suffixPart) || suffixPart.length() > 1) {
                     setUnitDescriptor(suffixPart);
                     addError("FULL_ADDRESS has extra UNIT_DESCRIPTOR");
                   } else {

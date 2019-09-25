@@ -26,7 +26,7 @@ import com.revolsys.parallel.process.ConsumerOutProcess;
 import com.revolsys.parallel.process.ProcessNetwork;
 import com.revolsys.record.Record;
 import com.revolsys.record.code.CodeTable;
-import com.revolsys.record.code.SimpleCodeTable;
+import com.revolsys.record.code.SingleValueCodeTable;
 import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.query.Query;
 import com.revolsys.record.schema.FieldDefinition;
@@ -106,7 +106,7 @@ public class SitePointExport implements SitePoint, Cancellable {
   }
 
   private CodeTable getIntegrationSessionCodeTable() {
-    final SimpleCodeTable integrationSessionCodeTable = new SimpleCodeTable(
+    final SingleValueCodeTable integrationSessionCodeTable = new SingleValueCodeTable(
       "INTEGRATION_SESSION_DATE");
     final Query query = new Query(GbaTables.INTEGRATION_SESSION_POLY) //
       .setFieldNames(Gba.INTEGRATION_SESSION_POLY_ID, Gba.SESSION_COMMIT_DATE);

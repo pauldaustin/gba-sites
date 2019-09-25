@@ -66,7 +66,7 @@ import com.revolsys.io.map.MapObjectFactory;
 import com.revolsys.io.map.MapObjectFactoryRegistry;
 import com.revolsys.parallel.process.ProcessNetwork;
 import com.revolsys.record.Record;
-import com.revolsys.record.code.SimpleCodeTable;
+import com.revolsys.record.code.SingleValueCodeTable;
 import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.schema.FieldDefinition;
 import com.revolsys.record.schema.RecordDefinition;
@@ -515,7 +515,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
       Transaction transaction = recordStore.newTransaction(Propagation.REQUIRES_NEW);
       Reader<Record> reader = RecordReader.newRecordReader(resource)) {
       if (recordStore.getRecordDefinition(pathName) == null) {
-        final SimpleCodeTable codeTable = new SimpleCodeTable(typeName);
+        final SingleValueCodeTable codeTable = new SingleValueCodeTable(typeName);
         for (final Record record : reader) {
           final Identifier code = record.getIdentifier(typeName);
           final String description = record.getString("DESCRIPTION");
