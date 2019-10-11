@@ -20,7 +20,9 @@ import org.jdesktop.swingx.VerticalLayout;
 import org.jeometry.common.date.Dates;
 import org.jeometry.common.logging.Logs;
 
+import ca.bc.gov.gba.controller.GbaConfig;
 import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.controller.GbaLogController;
 import ca.bc.gov.gbasites.controller.GbaSiteController;
 import ca.bc.gov.gbasites.load.ImportSites;
 
@@ -86,7 +88,7 @@ public class GbaSiteToolsMain extends BaseMain {
 
     tools.addMenuItem("script", "Run Script...", "Run Script", "script_go", () -> {
       final JavaProcess javaProcess = GbaController.newJavaProcess();
-      final File logDirectory = GbaController.getUserLogDirectory();
+      final File logDirectory = GbaLogController.getUserLogDirectory();
       ScriptRunner.runScriptProcess(this.frame, logDirectory, javaProcess);
     });
     newMenu(menuBar, tools);
@@ -108,14 +110,14 @@ public class GbaSiteToolsMain extends BaseMain {
     setMacDockIcon(Icons.getImage("gba_tools_icon_32"));
     final long time = System.currentTimeMillis();
 
-    final java.nio.file.Path logDirectory = GbaController.getUserLogPath();
+    final java.nio.file.Path logDirectory = GbaConfig.getUserLogDirectory();
     final String dateString = Dates.format("yyyyMMdd_HHmmss", new Date(time));
     final File logFile = logDirectory.resolve("gba_tools_" + dateString + ".log").toFile();
     try {
       LogAppender.addRootFileAppender(logFile, "%d\t%p\t%c\t%m%n", false, "ca.bc.gov.gbasites", //
-        "Starting application: " + " [" + GbaController.getEnvironment() + "] (v "
+        "Starting application: " + " [" + GbaConfig.getEnvironment() + "] (v "
           + GbaSiteController.getVersion() + ")", //
-        "User=" + GbaController.getUsername(), //
+        "User=" + GbaConfig.getUsername(), //
         "Host=" + InetAddress.getLocalHost() //
       );
     } catch (final IOException e) {
@@ -126,7 +128,7 @@ public class GbaSiteToolsMain extends BaseMain {
   @Override
   protected void runDo() throws Throwable {
     super.runDo();
-    final String title = "GBA Site Tools [" + GbaController.getEnvironment() + "] (v "
+    final String title = "GBA Site Tools [" + GbaConfig.getEnvironment() + "] (v "
       + GbaSiteController.getVersion() + ")";
     this.frame = new JFrame(title);
     this.frame

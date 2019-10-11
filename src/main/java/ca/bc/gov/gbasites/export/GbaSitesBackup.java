@@ -4,6 +4,7 @@ import java.nio.file.Path;
 
 import org.jeometry.common.io.PathName;
 
+import ca.bc.gov.gba.controller.GbaConfig;
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.GbaTables;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
@@ -29,7 +30,7 @@ public class GbaSitesBackup implements GbaTables {
       BatchUpdateDialog.WRITE);
   }
 
-  private final Path backupDirectory = Paths.getPath(GbaController.getDataPath(),
+  private final Path backupDirectory = Paths.getPath(GbaConfig.getDataDirectory(),
     "exports/BACKUP/gba_sites_export/GBA/");
 
   private BatchUpdateDialog dialog;

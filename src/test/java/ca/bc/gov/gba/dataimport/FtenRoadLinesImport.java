@@ -13,6 +13,7 @@ import org.jeometry.common.data.type.DataType;
 import org.jeometry.common.io.PathName;
 import org.jeometry.common.logging.Logs;
 
+import ca.bc.gov.gba.controller.GbaConfig;
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
@@ -47,7 +48,7 @@ public class FtenRoadLinesImport {
       BatchUpdateDialog.UPDATED, BatchUpdateDialog.DELETED);
   }
 
-  private final Path backupDirectory = GbaController.getDataPath()
+  private final Path backupDirectory = GbaConfig.getDataDirectory()
     .resolve("warehouse/WHSE_FOREST_TENURE/data");
 
   private final Map<PathName, List<Identifier>> deletedIdentifiersByTypePath = new LinkedHashMap<>();
