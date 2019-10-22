@@ -28,7 +28,7 @@ def setVersion(projectVersion, versionPrefix) {
   }
   sh "sed -i 's/<org.jeometry.version>.*<\\/org.jeometry.version>/<org.jeometry.version>${versionPrefix}-${version}<\\/org.jeometry.version>/g' pom.xml"
   sh "sed -i 's/<com.revolsys.open.version>.*<\\/com.revolsys.open.version>/<com.revolsys.open.version>${versionPrefix}-${version}<\\/com.revolsys.open.version>/g' pom.xml"
-  sh "sed -i 's/<ca.bc.gov.gba.version>.*<\\/com.revolsys.open.version>/<ca.bc.gov.gba.version>${versionPrefix}-${version}<\\/com.revolsys.open.version>/g' pom.xml"
+  sh "sed -i 's/<ca.bc.gov.gba.version>.*<\\/ca.bc.gov.gba.version>/<ca.bc.gov.gba.version>${versionPrefix}-${version}<\\/ca.bc.gov.gba.version>/g' pom.xml"
 }
 
 def tagVersion(pushUrl, projectVersion) {
