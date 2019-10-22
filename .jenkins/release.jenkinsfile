@@ -1,6 +1,6 @@
 // parameters
 // ----------
-// branch
+// branchName
 // version
 
 def checkoutBranch(pullUrl, pushUrl, branchName) {
@@ -102,6 +102,17 @@ git config --global user.name "Paul Austin"
   stage ('GBA') {
     checkoutVersionTagBuild(
       'gba',
+      'git@github.com:pauldaustin/gba.git',
+      'git@github.com:pauldaustin/gba-sites-gba.git',
+      "${branchName}",
+      "${versionPrefix}-${version}",
+      "${versionPrefix}"
+    );
+  }
+
+  stage ('GBA Sites') {
+    checkoutVersionTagBuild(
+      'gba-sites',
       'git@github.com:pauldaustin/gba-sites.git',
       null,
       "${branchName}",
