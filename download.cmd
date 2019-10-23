@@ -6,5 +6,5 @@ IF [%VERSION%] EQU [] SET VERSION=%LATEST_VERSION%
 set DIR=%~dp0
 set DIR=%DIR:\=/%
 set DIR=/cygdrive/%DIR::=%
-bash -c "cd `cygpath %DIR%/..`; curl -O https://open.revolsys.com/artifactory/repo/ca/bc/gov/gba/gba-sites/%VERSION%/gba-sites-%VERSION%-bin.zip"
+bash -c "cd `cygpath %DIR%/..`; curl -O https://open.revolsys.com/artifactory/gbasites-release-local/ca/bc/gov/gba/gba-sites/%VERSION%/gba-sites-%VERSION%-bin.zip"
 echo Downloaded %VERSION%
