@@ -7,7 +7,7 @@
   <groupId>ca.bc.gov.gba</groupId>
   <artifactId>gba-sites</artifactId>
   <name>GeoBC Atlas Sites</name>
-  <version>MAJOR-SNAPSHOT</version>
+  <version>1.0.3-RELEASE</version>
   <packaging>jar</packaging>
 
   <developers>
@@ -142,6 +142,6 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <ca.bc.gov.gba.version>MAJOR-SNAPSHOT</ca.bc.gov.gba.version>
+    <ca.bc.gov.gba.version>0.GBASITES-1.0.3-RELEASE</ca.bc.gov.gba.version>
   </properties>
 </project>
