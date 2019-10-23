@@ -23,7 +23,7 @@ call :gitUpdate src\gba-sites pauldaustin/gba-sites master
 
 rem ----------------
 
-call :gitUpdate ..\config revolsys/ca.bc.gov.gba.config master
+call :gitUpdate ..\config revolsys/gba-config master
 
 if NOT "%1" == "--batch" (
   pause
