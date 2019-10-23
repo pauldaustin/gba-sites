@@ -1,7 +1,7 @@
 @echo off
-+set DIR=%~dp0%
-+set APPS_DIR=%DIR%\..\..\apps64
-+set PATH=%APPS_DIR%\PortableGit;%PATH%
+set DIR=%~dp0%
+set APPS_DIR=%DIR%\..\..\apps64
+set PATH=%APPS_DIR%\PortableGit;%PATH%
 
 SET VERSION=%1
 IF [%VERSION%] EQU [] set /p VERSION=Enter Version (e.g. 1.0.1-RELEASE): 
