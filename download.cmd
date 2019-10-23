@@ -1,5 +1,5 @@
 @echo off
-set DIR=%~dp0%
+set DIR=%~dp0
 set APPS_DIR=%DIR%\..\..\apps64
 set PATH=%APPS_DIR%\PortableGit;%PATH%
 
