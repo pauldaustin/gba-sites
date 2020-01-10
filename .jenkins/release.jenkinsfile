@@ -1,0 +1,124 @@
+// parameters
+// ----------
+// branchName
+// version
+
+def checkoutBranch(pullUrl, pushUrl, branchName) {
+  deleteDir()
+  checkout([
+    $class: 'GitSCM',
+    branches: [[name: branchName]],
+    doGenerateSubmoduleConfigurations: false,
+    extensions: [],
+    gitTool: 'Default',
+    submoduleCfg: [],
+    userRemoteConfigs: [[url: pullUrl]]
+  ])
+  if (pushUrl) {
+    sh "git remote add projectOrigin ${pushUrl}"
+    sh "git checkout -b ${branchName}"
+    sh "git push -u projectOrigin -f ${branchName}"
+  }
+}
+
+def setVersion(projectVersion, versionPrefix) {
+  sh "git checkout -B version-${projectVersion}"
+  withMaven(jdk: 'openjdk-11', maven: 'm3') {
+    sh "mvn versions:set -DnewVersion='${projectVersion}' -DgenerateBackupPoms=false"
+  }
+  sh "sed -i 's/<org.jeometry.version>.*<\\/org.jeometry.version>/<org.jeometry.version>${versionPrefix}-${version}<\\/org.jeometry.version>/g' pom.xml"
+  sh "sed -i 's/<com.revolsys.open.version>.*<\\/com.revolsys.open.version>/<com.revolsys.open.version>${versionPrefix}-${version}<\\/com.revolsys.open.version>/g' pom.xml"
+  sh "sed -i 's/<ca.bc.gov.gba.version>.*<\\/ca.bc.gov.gba.version>/<ca.bc.gov.gba.version>${versionPrefix}-${version}<\\/ca.bc.gov.gba.version>/g' pom.xml"
+}
+
+def tagVersion(pushUrl, projectVersion) {
+  sh """
+git commit -a -m "Version ${projectVersion}"
+git tag -f -a ${projectVersion} -m "Version ${projectVersion}"
+git push -f ${pushUrl} ${projectVersion}
+  """
+}
+
+def checkoutVersionTagBuild(folderName, pullUrl, pushUrl, branchName, projectVersion, versionPrefix) {
+  dir(folderName) {
+    checkoutBranch(pullUrl, pushUrl, branchName);
+    setVersion(projectVersion, versionPrefix);
+    if (pushUrl) {
+      tagVersion(pushUrl, projectVersion);
+    } else {
+      tagVersion(pullUrl, projectVersion);
+    }
+    mavenDeploy()
+  }
+}
+
+def mavenDeploy() {
+  def artifactoryServer = Artifactory.server 'prod'
+
+  def mavenRuntime = Artifactory.newMavenBuild()
+  mavenRuntime.tool = 'm3' 
+  mavenRuntime.deployer releaseRepo: 'gbasites-release-local', snapshotRepo: 'gbasites-snapshot-local', server: artifactoryServer
+  mavenRuntime.resolver releaseRepo: 'repo', snapshotRepo: 'repo', server: artifactoryServer
+  mavenRuntime.deployer.deployArtifacts = false
+  
+  def buildInfo = Artifactory.newBuildInfo()
+
+  mavenRuntime.run pom: 'pom.xml', goals: 'clean install', buildInfo: buildInfo
+  mavenRuntime.deployer.deployArtifacts buildInfo
+  artifactoryServer.publishBuildInfo buildInfo
+}
+
+node ('master') {
+  def versionPrefix="0.GBASITES"
+
+  stage ('Initialize') {
+     sh '''
+git config --global user.email "paul.austin@revolsys.com"
+git config --global user.name "Paul Austin"
+     '''
+  }
+
+  stage ('Jeometry') {
+    checkoutVersionTagBuild(
+      'jeometry',
+      'git@github.com:jeometry-org/jeometry.git',
+      'git@github.com:pauldaustin/gba-sites-jeometry.git',
+      "${branchName}",
+      "${versionPrefix}-${version}",
+      "${versionPrefix}"
+    );
+  }
+
+  stage ('Revolsys') {
+    checkoutVersionTagBuild(
+      'revolsys',
+      'git@github.com:revolsys/com.revolsys.open.git',
+      'git@github.com:pauldaustin/gba-sites-revolsys.git',
+      "${branchName}",
+      "${versionPrefix}-${version}",
+      "${versionPrefix}"
+    );
+  }
+
+  stage ('GBA') {
+    checkoutVersionTagBuild(
+      'gba',
+      'git@github.com:pauldaustin/gba.git',
+      'git@github.com:pauldaustin/gba-sites-gba.git',
+      "${branchName}",
+      "${versionPrefix}-${version}",
+      "${versionPrefix}"
+    );
+  }
+
+  stage ('GBA Sites') {
+    checkoutVersionTagBuild(
+      'gba-sites',
+      'git@github.com:pauldaustin/gba-sites.git',
+      null,
+      "${branchName}",
+      "${version}",
+      "${versionPrefix}"
+    );
+  }
+}
