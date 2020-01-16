@@ -5,7 +5,6 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.jeometry.common.number.BigDecimals;
 import org.jeometry.common.number.Numbers;
 
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
@@ -15,6 +14,7 @@ import ca.bc.gov.gbasites.model.type.SitePoint;
 import com.revolsys.collection.map.MapEx;
 import com.revolsys.geometry.model.Point;
 import com.revolsys.record.Record;
+import com.revolsys.record.io.format.json.JsonObject;
 import com.revolsys.util.Debug;
 import com.revolsys.util.Property;
 import com.revolsys.util.Strings;
@@ -291,8 +291,8 @@ public class SiteConverterCKRD extends AbstractSiteConverter {
   }
 
   @Override
-  public MapEx toMap() {
-    final MapEx map = super.toMap();
+  public JsonObject toMap() {
+    final JsonObject map = super.toMap();
     addToMap(map, "unitFieldName", this.unitFieldName);
     addToMap(map, "civicNumberFieldName", this.civicNumberFieldName);
     addToMap(map, "streetNameFieldName", this.streetNameFieldName);

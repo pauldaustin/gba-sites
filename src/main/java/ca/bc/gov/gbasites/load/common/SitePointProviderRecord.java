@@ -7,7 +7,6 @@ import java.util.regex.Pattern;
 
 import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.logging.Logs;
-import org.jeometry.common.number.BigDecimals;
 import org.jeometry.common.number.Numbers;
 
 import ca.bc.gov.gba.controller.GbaController;

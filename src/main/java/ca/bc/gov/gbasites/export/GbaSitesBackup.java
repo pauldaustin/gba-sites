@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import org.jeometry.common.io.PathName;
 
 import ca.bc.gov.gba.controller.GbaConfig;
-import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.model.GbaTables;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;

@@ -18,6 +18,7 @@ import com.revolsys.collection.map.Maps;
 import com.revolsys.geometry.model.Point;
 import com.revolsys.predicate.Predicates;
 import com.revolsys.record.Record;
+import com.revolsys.record.io.format.json.JsonObject;
 import com.revolsys.record.query.QueryValue;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.util.Debug;
@@ -471,8 +472,8 @@ public class SiteConverterParts extends AbstractSiteConverter {
   }
 
   @Override
-  public MapEx toMap() {
-    final MapEx map = super.toMap();
+  public JsonObject toMap() {
+    final JsonObject map = super.toMap();
     addToMap(map, "unitFieldName", this.unitFieldName);
     addToMap(map, "unitTypeFieldName", this.unitTypeFieldName);
     addToMap(map, "civicNumberFieldName", this.civicNumberFieldName);

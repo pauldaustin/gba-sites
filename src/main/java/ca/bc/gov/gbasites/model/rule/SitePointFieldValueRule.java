@@ -13,7 +13,8 @@ import ca.bc.gov.gba.model.GbaTables;
 import ca.bc.gov.gba.model.message.QaMessageDescription;
 import ca.bc.gov.gba.rule.AbstractRecordRule;
 import ca.bc.gov.gba.rule.fix.SetValue;
-import ca.bc.gov.gba.rule.impl.SessionFieldValueRule;
+import ca.bc.gov.gba.rule.impl.FieldValueRule;
+import ca.bc.gov.gba.rule.impl.SessionField;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.model.type.code.SiteType;
@@ -26,7 +27,7 @@ import com.revolsys.record.Records;
 import com.revolsys.util.Property;
 import com.revolsys.util.Strings;
 
-public class SitePointFieldValueRule extends SessionFieldValueRule implements SitePoint {
+public class SitePointFieldValueRule extends FieldValueRule implements SitePoint {
   public static final QaMessageDescription CIVIC_NUMBER_0_NOT_VIRTUAL = new QaMessageDescription(
     "SP_VRTCN0", "Virtual Sites Civic Number 0",
     "Fb=(SITE_TYPE_CODE) must be Vb(Virtual Block From) for Fb=(CIVIC_NUMBER)=Vb(0).",
@@ -109,8 +110,9 @@ public class SitePointFieldValueRule extends SessionFieldValueRule implements Si
   }
 
   @Override
-  public boolean isRequired(final Record site, final String fieldName) {
-    if (super.isRequired(site, fieldName)) {
+  public boolean isRequired(final Record site, final SessionField field) {
+    final String fieldName = field.getName();
+    if (super.isRequired(site, field)) {
       return true;
     } else if (FULL_ADDRESS.equals(fieldName)) {
       return false;
