@@ -32,7 +32,6 @@ import com.revolsys.io.file.Paths;
 import com.revolsys.record.Record;
 import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.io.RecordWriter;
-import com.revolsys.record.io.format.json.Json;
 import com.revolsys.record.query.Q;
 import com.revolsys.record.query.Query;
 import com.revolsys.record.schema.RecordDefinition;
@@ -300,8 +299,7 @@ public class MergeEmergencyManagementSites implements SitePoint {
       }
 
       if (!extendedData.isEmpty()) {
-        final String data = Json.toString(extendedData);
-        site.setValue(EXTENDED_DATA, data);
+        site.setValue(EXTENDED_DATA, extendedData);
       }
       site.setGeometryValue(point);
 

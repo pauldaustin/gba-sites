@@ -34,7 +34,6 @@ import com.revolsys.io.file.Paths;
 import com.revolsys.record.Record;
 import com.revolsys.record.code.CodeTable;
 import com.revolsys.record.io.RecordWriter;
-import com.revolsys.record.io.format.json.Json;
 import com.revolsys.record.query.Query;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.record.schema.RecordDefinitionBuilder;
@@ -302,8 +301,7 @@ public class LoadEmergencyManagementSites implements SitePoint {
       }
 
       if (!extendedData.isEmpty()) {
-        final String data = Json.toString(extendedData);
-        site.setValue(EXTENDED_DATA, data);
+        site.setValue(EXTENDED_DATA, extendedData);
       }
       site.setGeometryValue(point);
 
