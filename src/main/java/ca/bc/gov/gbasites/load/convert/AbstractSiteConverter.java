@@ -49,6 +49,7 @@ import com.revolsys.record.Record;
 import com.revolsys.record.code.CodeTable;
 import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.io.RecordWriter;
+import com.revolsys.record.io.format.json.JsonObject;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.record.schema.RecordDefinitionBuilder;
 import com.revolsys.record.schema.RecordDefinitionImpl;
@@ -887,9 +888,9 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
   }
 
   @Override
-  public MapEx toMap() {
+  public JsonObject toMap() {
     final String type = getType();
-    final MapEx map = newTypeMap(type);
+    final JsonObject map = newTypeMap(type);
     addToMap(map, "idFieldName", this.idFieldName);
     addToMap(map, "addressFieldName", this.addressFieldName);
     return map;

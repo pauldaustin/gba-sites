@@ -27,7 +27,6 @@ import com.revolsys.parallel.process.ProcessNetwork;
 import com.revolsys.record.Record;
 import com.revolsys.record.RecordLog;
 import com.revolsys.record.io.RecordWriter;
-import com.revolsys.record.io.format.json.Json;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.util.Debug;
 import com.revolsys.util.Property;
@@ -340,7 +339,7 @@ public class AddressBcSiteConverter extends AbstractSiteConverter {
     final String custodianFullAddress = sourceSite.getString(FULL_ADDRESS);
     sitePoint.setValue(CUSTODIAN_FULL_ADDRESS, custodianFullAddress);
     if (!sourceSite.extendedData.isEmpty()) {
-      sitePoint.setValue(EXTENDED_DATA, Json.toString(sourceSite.extendedData));
+      sitePoint.setValue(EXTENDED_DATA, sourceSite.extendedData);
     }
     // SitePoint.updateCustodianSiteId("AddressBc", sitePoint);
     return sitePoint;

@@ -14,7 +14,6 @@ import org.jeometry.common.io.PathName;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaConfig;
-import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
