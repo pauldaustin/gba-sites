@@ -70,7 +70,7 @@ public class RecordsForCivicNumberSuffix {
   }
 
   /**
-   * Match and merge all records which have points within 2m. May result in a MultiPoint.
+   * Match and merge all records which have the same point. May result in a MultiPoint.
    *
    * @param record
    * @param counters
