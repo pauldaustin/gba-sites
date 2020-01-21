@@ -31,11 +31,7 @@ public class SitePointForm extends SessionRecordForm implements FocusListener {
   public SitePointForm(final SessionRecordLayer layer, final SessionProxyLayerRecord record) {
     super(layer);
     setAllowAddWithErrors(true);
-    addTabMetaData();
-    addTabSite();
-    addTabAddress();
-    addTabBoundaries();
-    getTabs().setSelectedIndex(0);
+    addTabs();
     setRecord(record);
   }
 
@@ -74,6 +70,14 @@ public class SitePointForm extends SessionRecordForm implements FocusListener {
     addPanel(panel, "Organizations", Arrays.asList(GbaType.CREATE_PARTNER_ORG_ID,
       GbaType.MODIFY_PARTNER_ORG_ID, GbaType.CUSTODIAN_PARTNER_ORG_ID));
     addPanel(panel, "Capture", Arrays.asList(GbaType.CAPTURE_DATE, GbaType.FEATURE_STATUS_CODE));
+  }
+
+  private void addTabs() {
+    addTabMetaData();
+    addTabSite();
+    addTabAddress();
+    addTabBoundaries();
+    getTabs().setSelectedIndex(0);
   }
 
   private void addTabSite() {
