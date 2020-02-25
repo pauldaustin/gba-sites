@@ -900,14 +900,16 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
         if (!edge1.equals(edge2)) {
           final Street street1 = edge1.getObject();
           final Street street2 = edge2.getObject();
-          if (edge1.getEnd(node).isFrom()) {
+          final End end1 = edge1.getEnd(node);
+          if (end1.isFrom()) {
             street1.setPreviousStreet(street2);
-          } else {
+          } else if (end1.isTo()) {
             street1.setNextStreet(street2);
           }
-          if (edge2.getEnd(node).isFrom()) {
+          final End end2 = edge2.getEnd(node);
+          if (end2.isFrom()) {
             street2.setPreviousStreet(street1);
-          } else {
+          } else if (end2.isTo()) {
             street2.setNextStreet(street1);
           }
         }

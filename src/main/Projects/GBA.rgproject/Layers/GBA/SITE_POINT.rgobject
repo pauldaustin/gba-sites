@@ -165,7 +165,7 @@
     "name":"GBA"
   },
   "formFactoryExpression":"new ca.bc.gov.gba.ui.form.SitePointForm(#this, #object)",
-  "typePath":"\/GBA\/SITE_POINT",
+  "typePath":"/GBA/SITE_POINT",
   "canAddRecords":true,
   "canDeleteRecords":true,
   "canEditRecords":true,
@@ -197,7 +197,6 @@
     "OBJECTID",
     "FULL_ADDRESS"
   ],
-  "useFieldTitles":false,
   "searchField":"FULL_ADDRESS",
   "fieldFactories": {
     "PARENT_SITE_ID": "com.revolsys.swing.map.layer.record.component.RecordLayerQueryTextField.factory(object, fieldName, 'FULL_ADDRESS')",
