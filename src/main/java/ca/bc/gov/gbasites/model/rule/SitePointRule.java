@@ -70,6 +70,7 @@ import com.revolsys.record.Records;
 import com.revolsys.record.code.CodeTableValueComparator;
 import com.revolsys.record.filter.ClosestRecordFilter;
 import com.revolsys.record.io.RecordWriter;
+import com.revolsys.record.io.format.json.JsonObject;
 import com.revolsys.record.io.format.tsv.Tsv;
 import com.revolsys.record.io.format.tsv.TsvWriter;
 import com.revolsys.util.Counter;
@@ -1332,8 +1333,8 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
         int i = 1;
         for (final Record site : sitesForFullAddress) {
           final Record duplicateSite = sitesForFullAddress.get(i);
-          final Map<String, Object> data = Maps.newLinkedHash("fullAddress", fullAddress);
-          addDataOtherId(data, site, false);
+          final JsonObject data = newDataOtherId(site, false)//
+            .add("fullAddress", fullAddress);
           addMessage(duplicateSite, MESSAGE_SITE_POINT_DUPLICATE_UNIT, data, UNIT_DESCRIPTOR);
           i = 0;
         }
@@ -1385,8 +1386,9 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
               return true;
             }
           } else {
-            final Map<String, Object> data = Maps.newLinkedHash("fullAddress", fullAddress1);
-            addDataOtherId(data, site2, false);
+            final JsonObject data = newDataOtherId(site2, false)//
+              .add("fullAddress", fullAddress1)//
+            ;
             valid &= addMessage(site1, MESSAGE_SITE_POINT_DUPLICATE_EQUAL, data, FULL_ADDRESS);
           }
         } else if (Strings.equals(fullAddress1, fullAddress2)) {
@@ -1439,8 +1441,8 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
         final Record site2 = CollectionUtil.get(closeSites.values(), 0);
         if (SitePoint.isUseInAddressRange(site1)) {
           // Only log the id of the first match
-          final Map<String, Object> data = Maps.newLinkedHash("fullAddress", fullAddress1);
-          addDataOtherId(data, site2, true);
+          final JsonObject data = newDataOtherId(site2, false)//
+            .add("fullAddress", fullAddress1);
           valid &= addMessage(site1, MESSAGE_SITE_POINT_TOO_CLOSE, data, GbaType.GEOMETRY);
         }
       }
@@ -1509,7 +1511,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
 
             final Map<String, Object> data = Maps.newLinkedHash("transportLineId",
               (Object)transportLineId.toString());
-            final double distance = sitePoint.distance(line);
+            final double distance = sitePoint.distanceLine(line);
             data.put("distance", Doubles.toString(Doubles.makePrecise(10, distance)));
 
             final List<Point> nearestPoints = DistanceWithPoints.nearestPoints(sitePoint, line);
@@ -1542,7 +1544,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
               final Map<String, Object> data = Maps.newLinkedHash("transportLineId",
                 (Object)transportLineId.toString());
               data.put("otherId", matchedTransportLineId);
-              final double distance = sitePoint.distance(line);
+              final double distance = sitePoint.distanceLine(line);
               data.put("distance", Doubles.toString(Doubles.makePrecise(10, distance)));
               if (matchedDistance == Double.MAX_VALUE) {
                 matchedDistance = closestLine.distancePoint(sitePoint);
