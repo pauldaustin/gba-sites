@@ -666,7 +666,7 @@ public class Street implements Comparable<Street>, Comparator<Record> {
       }
     }
     for (final Side side : Side.VALUES) {
-      for (final End end : End.VALUES) {
+      for (final End end : End.FROM_TO) {
         final Integer number = getTransportLineNumber(end, side);
         if (number != null) {
           if (!StreetBlock.isBlockEqual(blockNumber, number)) {

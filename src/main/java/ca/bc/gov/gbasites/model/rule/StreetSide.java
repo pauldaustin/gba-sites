@@ -475,7 +475,7 @@ public class StreetSide {
   public IntMinMax getTransportLineMinMax(final int blockNumber) {
     final IntMinMax intMinMax = new IntMinMax();
     if (this.street != null) {
-      for (final End end : End.VALUES) {
+      for (final End end : End.FROM_TO) {
         final Integer number = getTransportLineNumber(end);
         intMinMax.add(number);
       }
@@ -501,7 +501,7 @@ public class StreetSide {
       }
       final HouseNumberScheme scheme = TransportLine.getHouseNumberScheme(transportLine,
         transportLineSide);
-      for (final End end : End.VALUES) {
+      for (final End end : End.FROM_TO) {
         final String fieldName = TransportLine.getHouseNumberFieldName(end, transportLineSide);
         final Integer number = transportLine.getInteger(fieldName);
         if (number == null) {

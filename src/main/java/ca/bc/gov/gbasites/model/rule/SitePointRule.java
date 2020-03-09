@@ -543,7 +543,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
       if (address.hasExactMatch()) {
         addCount("Info", "Site -> Transport Line Address match " + side, count);
       }
-      for (final End lineEnd : End.VALUES) {
+      for (final End lineEnd : End.FROM_TO) {
         if (address.hasMatch(lineEnd)) {
           addCount("Info", "Site -> Transport Line Address match " + side + " " + lineEnd, count);
         } else if (address.hasMatchReverse(lineEnd)) {
