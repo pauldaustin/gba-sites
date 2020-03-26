@@ -63,7 +63,7 @@ def mavenDeploy() {
   
   def buildInfo = Artifactory.newBuildInfo()
 
-  mavenRuntime.run pom: 'pom.xml', goals: 'clean install', buildInfo: buildInfo
+  mavenRuntime.run pom: 'pom.xml', goals: 'clean install -B', buildInfo: buildInfo
   mavenRuntime.deployer.deployArtifacts buildInfo
   artifactoryServer.publishBuildInfo buildInfo
 }
@@ -73,7 +73,7 @@ node ('master') {
 
   stage ('Initialize') {
      sh '''
-git config --global user.email "paul.austin@revolsys.com"
+git config --global user.email "pauldaustin@users.noreply.github.com"
 git config --global user.name "Paul Austin"
      '''
   }
