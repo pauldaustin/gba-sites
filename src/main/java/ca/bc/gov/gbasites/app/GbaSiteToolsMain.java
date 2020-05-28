@@ -26,7 +26,7 @@ import ca.bc.gov.gba.controller.GbaLogController;
 import ca.bc.gov.gbasites.controller.GbaSiteController;
 import ca.bc.gov.gbasites.load.ImportSites;
 
-import com.revolsys.log.LogAppender;
+import com.revolsys.log.LogbackUtil;
 import com.revolsys.process.JavaProcess;
 import com.revolsys.swing.Borders;
 import com.revolsys.swing.Icons;
@@ -35,7 +35,7 @@ import com.revolsys.swing.TabbedPane;
 import com.revolsys.swing.action.RunnableAction;
 import com.revolsys.swing.action.enablecheck.BooleanEnableCheck;
 import com.revolsys.swing.component.BasePanel;
-import com.revolsys.swing.logging.Log4jTableModel;
+import com.revolsys.swing.logging.LoggingTableModel;
 import com.revolsys.swing.menu.MenuFactory;
 import com.revolsys.swing.parallel.BackgroundTaskTableModel;
 import com.revolsys.swing.parallel.BaseMain;
@@ -114,7 +114,7 @@ public class GbaSiteToolsMain extends BaseMain {
     final String dateString = Dates.format("yyyyMMdd_HHmmss", new Date(time));
     final File logFile = logDirectory.resolve("gba_tools_" + dateString + ".log").toFile();
     try {
-      LogAppender.addRootFileAppender(logFile, "%d\t%p\t%c\t%m%n", false, "ca.bc.gov.gbasites", //
+      LogbackUtil.addRootFileAppender(logFile, "%d\t%p\t%c\t%m%n", false, "ca.bc.gov.gbasites", //
         "Starting application: " + " [" + GbaConfig.getEnvironment() + "] (v "
           + GbaSiteController.getVersion() + ")", //
         "User=" + GbaConfig.getUsername(), //
@@ -145,7 +145,7 @@ public class GbaSiteToolsMain extends BaseMain {
     final TabbedPane bottomTabs = new TabbedPane();
     bottomTabs.setPreferredSize(new Dimension(400, 150));
     BackgroundTaskTableModel.addNewTabPanel(bottomTabs);
-    Log4jTableModel.addNewTabPane(bottomTabs);
+    LoggingTableModel.addNewTabPane(bottomTabs);
 
     final JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sectionsPanel, bottomTabs);
     split.setResizeWeight(0.9);
