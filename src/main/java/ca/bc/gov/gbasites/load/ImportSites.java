@@ -59,7 +59,6 @@ import com.revolsys.collection.map.CollectionMap;
 import com.revolsys.gis.esri.gdb.file.FileGdbRecordStore;
 import com.revolsys.gis.esri.gdb.file.FileGdbRecordStoreFactory;
 import com.revolsys.gis.esri.gdb.file.FileGdbWriter;
-import com.revolsys.io.Reader;
 import com.revolsys.io.file.AtomicPathUpdator;
 import com.revolsys.io.file.Paths;
 import com.revolsys.io.map.MapObjectFactory;
@@ -513,7 +512,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
       "/ca/bc/gov/gba/schema/codes/" + typeName + ".tsv");
     try (
       Transaction transaction = recordStore.newTransaction(Propagation.REQUIRES_NEW);
-      Reader<Record> reader = RecordReader.newRecordReader(resource)) {
+      RecordReader reader = RecordReader.newRecordReader(resource)) {
       if (recordStore.getRecordDefinition(pathName) == null) {
         final SingleValueCodeTable codeTable = new SingleValueCodeTable(typeName);
         for (final Record record : reader) {

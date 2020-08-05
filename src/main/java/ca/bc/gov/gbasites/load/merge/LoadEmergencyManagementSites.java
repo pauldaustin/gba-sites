@@ -29,10 +29,10 @@ import ca.bc.gov.gbasites.model.type.code.SiteLocationCode;
 import com.revolsys.collection.map.CollectionMap;
 import com.revolsys.geometry.model.Point;
 import com.revolsys.gis.esri.gdb.file.FileGdbRecordStoreFactory;
-import com.revolsys.io.Reader;
 import com.revolsys.io.file.Paths;
 import com.revolsys.record.Record;
 import com.revolsys.record.code.CodeTable;
+import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.io.RecordWriter;
 import com.revolsys.record.query.Query;
 import com.revolsys.record.schema.RecordDefinition;
@@ -326,7 +326,7 @@ public class LoadEmergencyManagementSites implements SitePoint {
       query.setCancellable(dialog);
       query.addOrderBy("ID", true);
       try (
-        Reader<Record> emReader = emRecordStore.getRecords(query)) {
+        RecordReader emReader = emRecordStore.getRecords(query)) {
         for (final Record emSite : dialog.cancellable(emReader)) {
           readCounter.add();
           try {

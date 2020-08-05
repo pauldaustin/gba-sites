@@ -27,7 +27,6 @@ import ca.bc.gov.gbasites.model.type.code.SiteLocationCode;
 
 import com.revolsys.geometry.model.Point;
 import com.revolsys.gis.esri.gdb.file.FileGdbRecordStoreFactory;
-import com.revolsys.io.Reader;
 import com.revolsys.io.file.Paths;
 import com.revolsys.record.Record;
 import com.revolsys.record.io.RecordReader;
@@ -325,7 +324,7 @@ public class MergeEmergencyManagementSites implements SitePoint {
       query.setCancellable(this.dialog);
       query.addOrderBy("ID", true);
       try (
-        Reader<Record> emReader = emRecordStore.getRecords(query)) {
+        RecordReader emReader = emRecordStore.getRecords(query)) {
         for (final Record emSite : this.dialog.cancellable(emReader)) {
           this.dialog.addLabelCount(EM_SITES, SiteTables.SITE_POINT, ImportSites.PROVIDER_READ);
           final Record site = loadEmergencyManagementSite(gbaRecordStore, emSite);

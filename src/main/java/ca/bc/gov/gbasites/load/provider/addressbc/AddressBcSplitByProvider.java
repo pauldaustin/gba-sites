@@ -32,7 +32,6 @@ import com.revolsys.collection.map.LinkedHashMapEx;
 import com.revolsys.collection.map.MapEx;
 import com.revolsys.collection.range.RangeSet;
 import com.revolsys.collection.set.Sets;
-import com.revolsys.io.Reader;
 import com.revolsys.io.ZipUtil;
 import com.revolsys.io.file.Paths;
 import com.revolsys.record.Record;
@@ -246,7 +245,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
 
     final Path file = this.sourceDirectory.resolve("ABC_EXTENDED_ADDRESS.csv");
     try (
-      Reader<Record> reader = RecordReader.newRecordReader(file)) {
+      RecordReader reader = RecordReader.newRecordReader(file)) {
       for (final Record record : reader) {
         final String civicId = record.getValue(AddressBC.CIVIC_ID);
 
@@ -319,7 +318,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
     final Set<String> ignoreUnitNumberSuffixes = Sets.newHash("MH", "BH");
     final Path file = this.sourceDirectory.resolve("ABC_SUB_ADDRESS.csv");
     try (
-      Reader<Record> reader = RecordReader.newRecordReader(file)) {
+      RecordReader reader = RecordReader.newRecordReader(file)) {
       for (final Record record : reader) {
         final String civicId = record.getValue(AddressBC.CIVIC_ID);
         final String unitNumber = record.getString(AddressBC.UNIT_NUMBER, "").trim();
