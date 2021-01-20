@@ -216,7 +216,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
 
   private void loadResourceActiveRoads(final RecordStore bcgwRecordStore) {
     final Query retiredQuery = new Query(FTEN_ROAD_LINES)//
-      .setFieldNames(FOREST_FILE_ID, ROAD_SECTION_ID, ROAD_NAME, GbaType.GEOMETRY) //
+      .select(FOREST_FILE_ID, ROAD_SECTION_ID, ROAD_NAME, GbaType.GEOMETRY) //
       .setWhereCondition(Q.and(//
         Q.isNull(RETIREMENT_DATE), //
         Q.equal(APPLICATION_STATUS_CODE, "A") //
@@ -237,7 +237,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
 
   private void loadResourceRetiredRoads(final RecordStore bcgwRecordStore) {
     final Query retiredQuery = new Query(FTEN_ROAD_LINES)//
-      .setFieldNames(FOREST_FILE_ID, ROAD_SECTION_ID) //
+      .select(FOREST_FILE_ID, ROAD_SECTION_ID) //
       .setWhereCondition(Q.isNotNull(RETIREMENT_DATE)) //
     ;
     try (
@@ -254,7 +254,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
   private void matchGbaRecords(final RecordGraph resourceRecordGraph) {
     if (!isCancelled()) {
       final Query query = new Query(GbaTables.TRANSPORT_LINE);
-      query.setFieldNames(GbaType.GEOMETRY);
+      query.select(GbaType.GEOMETRY);
       try (
         RecordReader reader = this.gbaRecordStore.getRecords(query)) {
         for (final Record gbaRecord : cancellable(this.gbaRecordStore.getRecords(query))) {

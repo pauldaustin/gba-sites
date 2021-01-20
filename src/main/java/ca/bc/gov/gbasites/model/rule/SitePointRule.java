@@ -45,7 +45,7 @@ import ca.bc.gov.gbasites.qa.QaSitePoint;
 
 import com.revolsys.collection.CollectionUtil;
 import com.revolsys.collection.SetValueHolderRunnable;
-import com.revolsys.collection.ValueHolder;
+import com.revolsys.collection.SimpleValueHolder;
 import com.revolsys.collection.map.Maps;
 import com.revolsys.collection.range.IntMinMax;
 import com.revolsys.collection.range.RangeInvalidException;
@@ -1832,7 +1832,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
         }
       }
 
-      final ValueHolder<Boolean> moved = new ValueHolder<>(false);
+      final SimpleValueHolder<Boolean> moved = new SimpleValueHolder<>(false);
       if (matchedTransportLine == null) {
         final Map<String, Object> data = new TreeMap<>();
         addDataName(data);

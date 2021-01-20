@@ -699,22 +699,22 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
       AddressBC.NAME);
 
     localityCounts.addTotalColumn(PROVIDER_READ) //
-      .addCounters(providersCounters.getLabelCountMap(READ)) //
+      .addCounters(providersCounters.getLabelCounters(READ)) //
     ;
     localityCounts.addTotalColumn(PROVIDER_USED) //
-      .addCounters(providersCounters.getLabelCountMap(RecordMergeCounters.USED)) //
+      .addCounters(providersCounters.getLabelCounters(RecordMergeCounters.USED)) //
     ;
     localityCounts.addTotalColumn(GEOBC_READ) //
-      .addCounters(geobcCounters.getLabelCountMap(READ)) //
+      .addCounters(geobcCounters.getLabelCounters(READ)) //
     ;
     localityCounts.addTotalColumn(GEOBC_USED) //
-      .addCounters(geobcCounters.getLabelCountMap(RecordMergeCounters.USED)) //
+      .addCounters(geobcCounters.getLabelCounters(RecordMergeCounters.USED)) //
     ;
     localityCounts.addTotalColumn(ABC_READ) //
-      .addCounters(addressBcCounters.getLabelCountMap(READ)) //
+      .addCounters(addressBcCounters.getLabelCounters(READ)) //
     ;
     localityCounts.addTotalColumn(ABC_USED) //
-      .addCounters(addressBcCounters.getLabelCountMap(RecordMergeCounters.USED)) //
+      .addCounters(addressBcCounters.getLabelCounters(RecordMergeCounters.USED)) //
     ;
     localityCounts.addTotalColumn(TOTAL_USED, PROVIDER_USED, GEOBC_USED, ABC_USED);
 
