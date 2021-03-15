@@ -45,15 +45,15 @@ public class RecordMergeCounters {
     }
 
     final TotalLabelCounters totalColumn = counters.addTotalColumn(RecordMergeCounters.USED, READ) //
-      .subtractCounters(counters.getLabelCountMap(DUPLICATE)) //
-      .subtractCounters(counters.getLabelCountMap(MERGE_POINT)) //
-      .subtractCounters(counters.getLabelCountMap(MERGE_UNIT)) //
+      .subtractCounters(counters.getLabelCounters(DUPLICATE)) //
+      .subtractCounters(counters.getLabelCounters(MERGE_POINT)) //
+      .subtractCounters(counters.getLabelCounters(MERGE_UNIT)) //
     ;
     if (AddressBC.NAME.equals(categoryName)) {
       totalColumn //
-        .subtractCounters(counters.getLabelCountMap(MATCH_ADDRESS))//
-        .subtractCounters(counters.getLabelCountMap(MATCH_POINT))//
-        .subtractCounters(counters.getLabelCountMap(MATCH_UNIT))//
+        .subtractCounters(counters.getLabelCounters(MATCH_ADDRESS))//
+        .subtractCounters(counters.getLabelCounters(MATCH_POINT))//
+        .subtractCounters(counters.getLabelCounters(MATCH_UNIT))//
       ;
     }
     return counters;

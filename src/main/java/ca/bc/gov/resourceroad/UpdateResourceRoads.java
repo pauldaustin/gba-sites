@@ -16,6 +16,7 @@ import ca.bc.gov.gba.itn.model.GbaItnTables;
 import ca.bc.gov.gba.itn.model.GbaType;
 import ca.bc.gov.gba.itn.model.TransportLine;
 import ca.bc.gov.gba.itn.model.TransportLineType;
+import ca.bc.gov.gba.model.type.TransportLines;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 
@@ -138,7 +139,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
     if (!isCancelled()) {
       final Query query = new Query(GbaItnTables.TRANSPORT_LINE);
       query.setWhereCondition(
-        Q.in(TRANSPORT_LINE_TYPE_CODE, TransportLine.getTypeCodeNonDemographic()));
+        Q.in(TRANSPORT_LINE_TYPE_CODE, TransportLines.getTypeCodeNonDemographic()));
       try (
         RecordReader reader = this.gbaRecordStore.getRecords(query)) {
         for (final Record gbaRecord : cancellable(this.gbaRecordStore.getRecords(query))) {
@@ -215,7 +216,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
 
   private void loadResourceActiveRoads(final RecordStore bcgwRecordStore) {
     final Query retiredQuery = new Query(FTEN_ROAD_LINES)//
-      .setFieldNames(FOREST_FILE_ID, ROAD_SECTION_ID, ROAD_NAME, GbaType.GEOMETRY) //
+      .select(FOREST_FILE_ID, ROAD_SECTION_ID, ROAD_NAME, GbaType.GEOMETRY) //
       .setWhereCondition(Q.and(//
         Q.isNull(RETIREMENT_DATE), //
         Q.equal(APPLICATION_STATUS_CODE, "A") //
@@ -236,7 +237,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
 
   private void loadResourceRetiredRoads(final RecordStore bcgwRecordStore) {
     final Query retiredQuery = new Query(FTEN_ROAD_LINES)//
-      .setFieldNames(FOREST_FILE_ID, ROAD_SECTION_ID) //
+      .select(FOREST_FILE_ID, ROAD_SECTION_ID) //
       .setWhereCondition(Q.isNotNull(RETIREMENT_DATE)) //
     ;
     try (
@@ -253,7 +254,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
   private void matchGbaRecords(final RecordGraph resourceRecordGraph) {
     if (!isCancelled()) {
       final Query query = new Query(GbaItnTables.TRANSPORT_LINE);
-      query.setFieldNames(GbaType.GEOMETRY);
+      query.select(GbaType.GEOMETRY);
       try (
         RecordReader reader = this.gbaRecordStore.getRecords(query)) {
         for (final Record gbaRecord : cancellable(this.gbaRecordStore.getRecords(query))) {

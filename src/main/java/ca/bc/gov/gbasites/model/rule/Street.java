@@ -21,7 +21,6 @@ import ca.bc.gov.gba.itn.model.TransportLineDivided;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.message.QaMessageDescription;
 import ca.bc.gov.gba.model.type.TransportLines;
-import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gba.ui.layer.SessionRecordIdentifierComparator;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
@@ -51,7 +50,7 @@ public class Street implements Comparable<Street>, Comparator<Record> {
   }
 
   public static boolean isStructureUnencumbered(final Record transportLine) {
-    final String name = StructuredNames.getStructuredName1(transportLine);
+    final String name = TransportLines.getStructuredName1(transportLine);
     final String structure = TransportLines.getTransportLineStructure(transportLine);
     if (Property.hasValue(name) && Property.hasValue(structure) && name.contains(structure)) {
       if (isModifiedByGeoBc(transportLine)) {
@@ -438,7 +437,7 @@ public class Street implements Comparable<Street>, Comparator<Record> {
       if (!direction.isForwards()) {
         side = side.opposite();
       }
-      return TransportLine.getLocality(transportLine, side);
+      return TransportLines.getLocality(transportLine, side);
     }
     return null;
   }
@@ -573,9 +572,9 @@ public class Street implements Comparable<Street>, Comparator<Record> {
           transportLineEnd = transportLineEnd.opposite();
           transportLineSide = transportLineSide.opposite();
         }
-        final HouseNumberScheme transportLineScheme = TransportLine
+        final HouseNumberScheme transportLineScheme = TransportLines
           .getHouseNumberScheme(transportLine, transportLineSide);
-        final String fieldName = TransportLine.getHouseNumberFieldName(transportLineEnd,
+        final String fieldName = TransportLines.getHouseNumberFieldName(transportLineEnd,
           transportLineSide);
         final Integer number = transportLine.getInteger(fieldName);
         if (number == null) {
@@ -820,10 +819,10 @@ public class Street implements Comparable<Street>, Comparator<Record> {
   public String toString() {
     final StringBuilder string = new StringBuilder();
     if (this.transportLines.isEmpty()) {
-      string.append(GbaType.getStructuredName1(this.sites.get(0)));
+      string.append(TransportLines.getStructuredName1(this.sites.get(0)));
       string.append("\n  ");
     } else {
-      string.append(GbaType.getStructuredName1(this.transportLines.get(0)));
+      string.append(TransportLines.getStructuredName1(this.transportLines.get(0)));
       final Identifier leftLocalityId = getLocalityId(Side.LEFT);
       final Identifier rightLocalityId = getLocalityId(Side.RIGHT);
       string.append(" - ");

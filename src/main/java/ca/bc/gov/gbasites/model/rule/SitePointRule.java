@@ -30,6 +30,7 @@ import ca.bc.gov.gba.itn.model.StructuredName;
 import ca.bc.gov.gba.itn.model.TransportLine;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.message.QaMessageDescription;
+import ca.bc.gov.gba.model.type.TransportLines;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gba.rule.AbstractRecordRule;
 import ca.bc.gov.gba.rule.RecordRule;
@@ -45,6 +46,7 @@ import ca.bc.gov.gbasites.qa.QaSitePoint;
 
 import com.revolsys.collection.CollectionUtil;
 import com.revolsys.collection.SetValueHolderRunnable;
+import com.revolsys.collection.SimpleValueHolder;
 import com.revolsys.collection.map.Maps;
 import com.revolsys.collection.range.IntMinMax;
 import com.revolsys.collection.range.RangeInvalidException;
@@ -258,7 +260,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
     final Record transportLine) {
     if (transportLine != null) {
       final StringBuilder range = new StringBuilder();
-      final HouseNumberScheme leftScheme = TransportLine.getHouseNumberScheme(transportLine,
+      final HouseNumberScheme leftScheme = TransportLines.getHouseNumberScheme(transportLine,
         Side.LEFT);
       range.append(leftScheme);
       if (!leftScheme.isNone()) {
@@ -270,7 +272,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
         range.append(toLeft);
       }
       range.append(", ");
-      final HouseNumberScheme rightScheme = TransportLine.getHouseNumberScheme(transportLine,
+      final HouseNumberScheme rightScheme = TransportLines.getHouseNumberScheme(transportLine,
         Side.RIGHT);
       range.append(rightScheme);
       if (!rightScheme.isNone()) {
@@ -372,7 +374,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
 
   public static boolean hasAddresses(final List<Record> transportLines) {
     for (final Record transportLine : transportLines) {
-      if (TransportLine.hasHouseNumbers(transportLine)) {
+      if (TransportLines.hasHouseNumbers(transportLine)) {
         return true;
       }
     }
@@ -380,8 +382,8 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
   }
 
   public static boolean isInBlockRange(final Record transportLine, final Integer civicNumber) {
-    final Integer min = TransportLine.getMinimumCivicNumber(transportLine);
-    final Integer max = TransportLine.getMaximumCivicNumber(transportLine);
+    final Integer min = TransportLines.getMinimumCivicNumber(transportLine);
+    final Integer max = TransportLines.getMaximumCivicNumber(transportLine);
     if (min == null) {
       return true;
     } else if (StreetBlock.isInBlock(civicNumber, min, max)) {
@@ -796,8 +798,8 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
       .getTotalCounter(QaSitePoint.TRANSPORT_LINE_READ);
     final List<Record> records = getTransportLines();
     for (final Record transportLine : RecordRuleThreadProperties.i(records)) {
-      final boolean inLocality = TransportLine.isInLocality(transportLine, localityId);
-      if (inLocality && TransportLine.isDemographic(transportLine)) {
+      final boolean inLocality = TransportLines.isInLocality(transportLine, localityId);
+      if (inLocality && TransportLines.isDemographic(transportLine)) {
         final Identifier transportLineId = transportLine.getIdentifier();
         this.transportLinesById.put(transportLineId, transportLine);
         transportLines.add(transportLine);
@@ -993,8 +995,8 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
   private void logTransportLinesWithNoSitePoints(final Identifier structuredNameId,
     final List<Record> transportLines) {
     for (final Record transportLine : transportLines) {
-      if (TransportLine.isInLocality(transportLine, this.getLocalityId())) {
-        if (TransportLine.hasHouseNumbers(transportLine)
+      if (TransportLines.isInLocality(transportLine, this.getLocalityId())) {
+        if (TransportLines.hasHouseNumbers(transportLine)
           && !Street.isStructureUnencumbered(transportLine)) {
           final String name = GbaController.structuredNames.getValue(structuredNameId);
           final Map<String, String> data = Collections.singletonMap("name", name);
@@ -1578,7 +1580,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
             final Side side = metrics.getSide();
             if (side != null) {
               boolean schemeValid = true;
-              final HouseNumberScheme scheme = TransportLine.getHouseNumberScheme(transportLine,
+              final HouseNumberScheme scheme = TransportLines.getHouseNumberScheme(transportLine,
                 side);
               if (scheme.isOdd()) {
                 schemeValid = Numbers.isOdd(civicNumber);
@@ -1788,7 +1790,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
         final LineString line = matchedTransportLine.getGeometry();
         matchedMetrics = line.getMetrics(point);
       }
-      final Identifier structuredNameId = GbaType.getStructuredName1Id(site);
+      final Identifier structuredNameId = TransportLines.getStructuredName1Id(site);
       final Predicate<Record> filter = new SitePointClosestTransportLineFilter(point, 100,
         structuredNameId);
 
@@ -1831,7 +1833,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
         }
       }
 
-      final ValueHolder<Boolean> moved = new ValueHolder<>(false);
+      final SimpleValueHolder<Boolean> moved = new SimpleValueHolder<>(false);
       if (matchedTransportLine == null) {
         final Map<String, Object> data = new TreeMap<>();
         addDataName(data);
@@ -1865,11 +1867,11 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
       final Point sitePoint = site.getGeometry();
 
       final ClosestRecordFilter filter = new ClosestRecordFilter(sitePoint, 100,
-        TransportLine::isDemographic);
+        TransportLines::isDemographic);
       queryDistance(GbaItnTables.TRANSPORT_LINE, sitePoint, 100, filter);
       final Record closestTransportLine = filter.getClosestRecord();
       if (closestTransportLine != null) {
-        final String name = GbaType.getStructuredName1(closestTransportLine);
+        final String name = TransportLines.getStructuredName1(closestTransportLine);
         final String addressBcName = GbaType.getExtendedData(site, "FULL_NAME");
         if (Property.hasValue(addressBcName)) {
           final String upperName = name.toUpperCase();
@@ -1890,7 +1892,8 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
             }
           }
           if (nameMatched) {
-            final Identifier structuredNameId = GbaType.getStructuredName1Id(closestTransportLine);
+            final Identifier structuredNameId = TransportLines
+              .getStructuredName1Id(closestTransportLine);
             site.setValue(STREET_NAME_ID, structuredNameId);
             removeMessages(site, FieldValueRule.MESSAGE_FIELD_REQUIRED, STREET_NAME_ID);
             SitePointFieldValueRule.setFullAddress(this, site);

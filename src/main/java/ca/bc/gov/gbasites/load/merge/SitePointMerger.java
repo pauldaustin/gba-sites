@@ -220,11 +220,11 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
   public SitePointMerger(final ImportSites dialog) {
     super(dialog);
     this.countersProvider = new RecordMergeCounters(
-      this.dialog.getLabelCountTableModel(ImportSites.PROVIDERS), null);
-    this.countersGeoBc = new RecordMergeCounters(this.dialog.getLabelCountTableModel(GeoBC.NAME),
+      this.dialog.labelCounts(ImportSites.PROVIDERS), null);
+    this.countersGeoBc = new RecordMergeCounters(this.dialog.labelCounts(GeoBC.NAME),
       GeoBC.PARTNER_ORGANIZATION);
     this.countersAddressBc = new RecordMergeCounters(
-      this.dialog.getLabelCountTableModel(AddressBC.NAME), AddressBC.PARTNER_ORGANIZATION);
+      this.dialog.labelCounts(AddressBC.NAME), AddressBC.PARTNER_ORGANIZATION);
 
   }
 

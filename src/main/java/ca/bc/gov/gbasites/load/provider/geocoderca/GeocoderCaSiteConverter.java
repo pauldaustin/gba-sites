@@ -265,7 +265,7 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
   private void loadStructuredNames() {
     final Query query = new Query(GbaItnTables.TRANSPORT_LINE) //
       .setDistinct(true)//
-      .setFieldNames(TransportLine.STRUCTURED_NAME_1_ID, GbaType.GEOMETRY) //
+      .select(TransportLine.STRUCTURED_NAME_1_ID, GbaType.GEOMETRY) //
       .setWhereCondition(Q.and(//
         Q.equal(TransportLine.LEFT_LOCALITY_ID, this.localityId), //
         Q.equal(TransportLine.RIGHT_LOCALITY_ID, this.localityId) //

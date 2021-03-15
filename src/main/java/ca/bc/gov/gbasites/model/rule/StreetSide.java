@@ -10,7 +10,7 @@ import org.jeometry.common.number.Numbers;
 
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.itn.model.HouseNumberScheme;
-import ca.bc.gov.gba.itn.model.TransportLine;
+import ca.bc.gov.gba.model.type.TransportLines;
 import ca.bc.gov.gba.rule.transportline.AddressRange;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
@@ -499,10 +499,10 @@ public class StreetSide {
       if (direction.isBackwards()) {
         transportLineSide = transportLineSide.opposite();
       }
-      final HouseNumberScheme scheme = TransportLine.getHouseNumberScheme(transportLine,
+      final HouseNumberScheme scheme = TransportLines.getHouseNumberScheme(transportLine,
         transportLineSide);
       for (final End end : End.FROM_TO) {
-        final String fieldName = TransportLine.getHouseNumberFieldName(end, transportLineSide);
+        final String fieldName = TransportLines.getHouseNumberFieldName(end, transportLineSide);
         final Integer number = transportLine.getInteger(fieldName);
         if (number == null) {
           if (!scheme.isNone()) {
@@ -536,7 +536,7 @@ public class StreetSide {
       if (transportLineDirections.get(i).isBackwards()) {
         transportLineSide = transportLineSide.opposite();
       }
-      final HouseNumberScheme scheme = TransportLine.getHouseNumberScheme(transportLine,
+      final HouseNumberScheme scheme = TransportLines.getHouseNumberScheme(transportLine,
         transportLineSide);
       if (!scheme.isNone()) {
         return scheme;

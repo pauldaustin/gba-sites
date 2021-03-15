@@ -109,7 +109,7 @@ public class SitePointExport implements SitePoint, Cancellable {
     final SingleValueCodeTable integrationSessionCodeTable = new SingleValueCodeTable(
       "INTEGRATION_SESSION_DATE");
     final Query query = new Query(GbaItnTables.INTEGRATION_SESSION_POLY) //
-      .setFieldNames(Gba.INTEGRATION_SESSION_POLY_ID, Gba.SESSION_COMMIT_DATE);
+      .select(Gba.INTEGRATION_SESSION_POLY_ID, Gba.SESSION_COMMIT_DATE);
     for (final Record record : this.recordStore.getRecords(query)) {
       final Identifier id = record.getIdentifier(Gba.INTEGRATION_SESSION_POLY_ID);
       final Date date = record.getValue(Gba.SESSION_COMMIT_DATE);
@@ -171,13 +171,13 @@ public class SitePointExport implements SitePoint, Cancellable {
         exportRecordDefinition.addField(CUSTODIAN_PARTNER_ORG, DataTypes.STRING, 50, true);
       } else if (CREATE_INTEGRATION_SESSION_ID.equals(fieldName)) {
         sourceFieldDefinition.setCodeTable(integrationSessionCodeTable);
-        exportRecordDefinition.addField(CREATE_INTEGRATION_DATE, DataTypes.DATE, true);
+        exportRecordDefinition.addField(CREATE_INTEGRATION_DATE, DataTypes.SQL_DATE, true);
       } else if (MODIFY_INTEGRATION_SESSION_ID.equals(fieldName)) {
         sourceFieldDefinition.setCodeTable(integrationSessionCodeTable);
-        exportRecordDefinition.addField(MODIFY_INTEGRATION_DATE, DataTypes.DATE, true);
+        exportRecordDefinition.addField(MODIFY_INTEGRATION_DATE, DataTypes.SQL_DATE, true);
       } else if (CUSTODIAN_SESSION_ID.equals(fieldName)) {
         sourceFieldDefinition.setCodeTable(integrationSessionCodeTable);
-        exportRecordDefinition.addField(CUSTODIAN_INTEGRATION_DATE, DataTypes.DATE, false);
+        exportRecordDefinition.addField(CUSTODIAN_INTEGRATION_DATE, DataTypes.SQL_DATE, false);
       } else if (DATA_CAPTURE_METHOD_CODE.equals(fieldName)) {
         exportRecordDefinition.addField(DATA_CAPTURE_METHOD, DataTypes.STRING, 30, false);
       } else if (SITE_LOCATION_CODE.equals(fieldName)) {

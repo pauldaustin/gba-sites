@@ -3,7 +3,6 @@ package ca.bc.gov.gbasites.load.convert;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,9 +15,9 @@ import com.revolsys.collection.CollectionUtil;
 import com.revolsys.collection.map.MapEx;
 import com.revolsys.collection.map.Maps;
 import com.revolsys.geometry.model.Point;
-import com.revolsys.predicate.Predicates;
 import com.revolsys.record.Record;
 import com.revolsys.record.io.format.json.JsonObject;
+import com.revolsys.record.query.Condition;
 import com.revolsys.record.query.QueryValue;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.util.Debug;
@@ -81,7 +80,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
 
   private String activeQuery;
 
-  private Predicate<Record> activeTest = Predicates.all();
+  private Condition activeTest = Condition.ALL;
 
   private boolean civicNumberIncludesUnitPrefix;
 
@@ -407,7 +406,7 @@ public class SiteConverterParts extends AbstractSiteConverter {
     if (Property.hasValue(activeQuery)) {
       this.activeTest = QueryValue.parseWhere(null, activeQuery);
     } else {
-      this.activeTest = Predicates.all();
+      this.activeTest = Condition.ALL;
     }
   }
 

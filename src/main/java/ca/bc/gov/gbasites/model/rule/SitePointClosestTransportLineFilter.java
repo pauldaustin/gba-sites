@@ -8,6 +8,7 @@ import java.util.function.Predicate;
 import org.jeometry.common.data.identifier.Identifier;
 
 import ca.bc.gov.gba.itn.model.TransportLine;
+import ca.bc.gov.gba.model.type.TransportLines;
 
 import com.revolsys.collection.CollectionUtil;
 import com.revolsys.geometry.model.LineString;
@@ -37,7 +38,7 @@ public class SitePointClosestTransportLineFilter implements Predicate<Record> {
 
   @Override
   public boolean test(final Record record) {
-    if (TransportLine.isDemographic(record)) {
+    if (TransportLines.isDemographic(record)) {
       final List<Identifier> roadStructuredNameIds = Records.getIdentifiers(record,
         TransportLine.STRUCTURED_NAME_FIELD_NAMES);
       // Only attach to road if it shares one structured name with the

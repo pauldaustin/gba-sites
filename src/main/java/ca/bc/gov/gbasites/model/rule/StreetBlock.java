@@ -11,6 +11,7 @@ import org.jeometry.common.number.Integers;
 
 import ca.bc.gov.gba.itn.model.HouseNumberScheme;
 import ca.bc.gov.gba.itn.model.TransportLine;
+import ca.bc.gov.gba.model.type.TransportLines;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.map.Maps;
@@ -164,7 +165,7 @@ public class StreetBlock {
   }
 
   public static boolean isInBlockRange(final Record record, final int civicNumber) {
-    if (record != null && TransportLine.isDemographic(record)) {
+    if (record != null && TransportLines.isDemographic(record)) {
       final Integer singleHouseNumber = record.getInteger(TransportLine.SINGLE_HOUSE_NUMBER);
       if (singleHouseNumber == null) {
         for (final Side side : Side.VALUES) {
@@ -179,8 +180,8 @@ public class StreetBlock {
 
   public static boolean isInBlockRange(final Record record, final Side side,
     final int civicNumber) {
-    final Integer fromHouseNumber = TransportLine.getHouseNumber(record, End.FROM, side);
-    final Integer toHouseNumber = TransportLine.getHouseNumber(record, End.TO, side);
+    final Integer fromHouseNumber = TransportLines.getHouseNumber(record, End.FROM, side);
+    final Integer toHouseNumber = TransportLines.getHouseNumber(record, End.TO, side);
     if (StreetBlock.isInBlock(civicNumber, fromHouseNumber, toHouseNumber)) {
       return true;
     }
