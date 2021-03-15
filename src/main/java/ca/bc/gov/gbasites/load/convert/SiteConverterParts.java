@@ -7,7 +7,7 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ca.bc.gov.gba.model.type.code.NameDirection;
+import ca.bc.gov.gba.itn.model.NameDirection;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;
 import ca.bc.gov.gbasites.model.type.SitePoint;

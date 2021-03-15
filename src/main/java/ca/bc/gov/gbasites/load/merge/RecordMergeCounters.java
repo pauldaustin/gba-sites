@@ -1,6 +1,6 @@
 package ca.bc.gov.gbasites.load.merge;
 
-import ca.bc.gov.gba.model.type.GbaType;
+import ca.bc.gov.gba.itn.model.GbaType;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;

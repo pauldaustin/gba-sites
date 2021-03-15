@@ -3,7 +3,7 @@ package ca.bc.gov.gbasites.load.merge;
 import java.util.ArrayList;
 import java.util.List;
 
-import ca.bc.gov.gba.model.type.GbaType;
+import ca.bc.gov.gba.itn.model.GbaType;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.list.Lists;

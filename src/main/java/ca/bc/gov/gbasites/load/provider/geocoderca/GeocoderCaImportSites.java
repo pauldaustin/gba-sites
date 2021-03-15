@@ -2,7 +2,7 @@ package ca.bc.gov.gbasites.load.provider.geocoderca;
 
 import java.nio.file.Path;
 
-import ca.bc.gov.gba.model.type.StructuredName;
+import ca.bc.gov.gba.itn.model.StructuredName;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 

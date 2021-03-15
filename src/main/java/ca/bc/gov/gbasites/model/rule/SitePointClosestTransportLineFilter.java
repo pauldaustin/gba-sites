@@ -7,7 +7,7 @@ import java.util.function.Predicate;
 
 import org.jeometry.common.data.identifier.Identifier;
 
-import ca.bc.gov.gba.model.type.TransportLine;
+import ca.bc.gov.gba.itn.model.TransportLine;
 
 import com.revolsys.collection.CollectionUtil;
 import com.revolsys.geometry.model.LineString;

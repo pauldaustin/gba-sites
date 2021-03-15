@@ -52,8 +52,8 @@ public class ConvertAllRecordLog implements BaseCloseable {
 
   public void ignore(final String partnerOrganizationName, final String localityName,
     final Record record, final String message) {
-    this.ignoreLog = log(this.ignoreLog, "ALLOWED_NOT_EQUAL", partnerOrganizationName, localityName, record,
-      message);
+    this.ignoreLog = log(this.ignoreLog, "ALLOWED_NOT_EQUAL", partnerOrganizationName, localityName,
+      record, message);
   }
 
   private RecordLog log(RecordLog recordLog, final String filePrefix,
@@ -74,8 +74,8 @@ public class ConvertAllRecordLog implements BaseCloseable {
 
   public void warning(final String partnerOrganizationName, final String localityName,
     final Record record, final String message) {
-    this.warningLog = log(this.warningLog, "OVERRIDDEN", partnerOrganizationName, localityName, record,
-      message);
+    this.warningLog = log(this.warningLog, "OVERRIDDEN", partnerOrganizationName, localityName,
+      record, message);
   }
 
 }

@@ -78,7 +78,6 @@ import com.revolsys.swing.field.CheckBox;
 import com.revolsys.swing.field.ComboBox;
 import com.revolsys.swing.layout.GroupLayouts;
 import com.revolsys.swing.table.counts.LabelCountMapTableModel;
-import com.revolsys.transaction.Propagation;
 import com.revolsys.transaction.Transaction;
 import com.revolsys.util.Cancellable;
 import com.revolsys.util.Counter;
@@ -511,7 +510,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     final ClassPathResource resource = new ClassPathResource(
       "/ca/bc/gov/gba/schema/codes/" + typeName + ".tsv");
     try (
-      Transaction transaction = recordStore.newTransaction(Propagation.REQUIRES_NEW);
+      Transaction transaction = recordStore.newTransaction();
       RecordReader reader = RecordReader.newRecordReader(resource)) {
       if (recordStore.getRecordDefinition(pathName) == null) {
         final SingleValueCodeTable codeTable = new SingleValueCodeTable(typeName);

@@ -23,13 +23,13 @@ import org.jeometry.common.number.Doubles;
 import org.jeometry.common.number.Numbers;
 
 import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.itn.model.GbaItnTables;
+import ca.bc.gov.gba.itn.model.GbaType;
+import ca.bc.gov.gba.itn.model.HouseNumberScheme;
+import ca.bc.gov.gba.itn.model.StructuredName;
+import ca.bc.gov.gba.itn.model.TransportLine;
 import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.model.GbaTables;
 import ca.bc.gov.gba.model.message.QaMessageDescription;
-import ca.bc.gov.gba.model.type.GbaType;
-import ca.bc.gov.gba.model.type.StructuredName;
-import ca.bc.gov.gba.model.type.TransportLine;
-import ca.bc.gov.gba.model.type.code.HouseNumberScheme;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gba.rule.AbstractRecordRule;
 import ca.bc.gov.gba.rule.RecordRule;
@@ -45,7 +45,6 @@ import ca.bc.gov.gbasites.qa.QaSitePoint;
 
 import com.revolsys.collection.CollectionUtil;
 import com.revolsys.collection.SetValueHolderRunnable;
-import com.revolsys.collection.ValueHolder;
 import com.revolsys.collection.map.Maps;
 import com.revolsys.collection.range.IntMinMax;
 import com.revolsys.collection.range.RangeInvalidException;
@@ -324,7 +323,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
   // }
 
   /**
-   * Get the list of {@link GbaTables#SITE_POINT} records with the current {@link RecordRuleThreadProperties#getLocalityId()}.
+   * Get the list of {@link GbaItnTables#SITE_POINT} records with the current {@link RecordRuleThreadProperties#getLocalityId()}.
    *
    * @return The list of sites.
    */
@@ -364,10 +363,10 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
     final Counter totalCounter = RecordRuleThreadProperties
       .getTotalCounter(QaSitePoint.TRANSPORT_LINE_READ);
     final List<Record> records = RecordRuleThreadProperties.getRecords(totalCounter, localityId,
-      GbaTables.TRANSPORT_LINE, false);
+      GbaItnTables.TRANSPORT_LINE, false);
     final RecordSpatialIndex<Record> index = RecordSpatialIndex.quadTree(Gba.GEOMETRY_FACTORY_2D)
       .addRecords(records);
-    RecordRuleThreadProperties.setSpatialIndex(GbaTables.TRANSPORT_LINE, index);
+    RecordRuleThreadProperties.setSpatialIndex(GbaItnTables.TRANSPORT_LINE, index);
     return records;
   }
 
@@ -723,10 +722,10 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
   }
 
   /**
-   * initialize the map from {@link SitePoint#STREET_NAME_ID} to list of {@link GbaTables#SITE_POINT} records.
+   * initialize the map from {@link SitePoint#STREET_NAME_ID} to list of {@link GbaItnTables#SITE_POINT} records.
    *
-   * @param sitesByStructuredNameId Map from {@link SitePoint#STREET_NAME_ID} to list of {@link GbaTables#SITE_POINT} records.
-   * @param sitesWithNoStructuredName List of {@link GbaTables#SITE_POINT} records that don't have a {@link SitePoint#STREET_NAME_ID}.
+   * @param sitesByStructuredNameId Map from {@link SitePoint#STREET_NAME_ID} to list of {@link GbaItnTables#SITE_POINT} records.
+   * @param sitesWithNoStructuredName List of {@link GbaItnTables#SITE_POINT} records that don't have a {@link SitePoint#STREET_NAME_ID}.
    */
   private void initSitesByStructuredNameId(
     final Map<Identifier, List<Record>> sitesByStructuredNameId,
@@ -1153,7 +1152,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
   }
 
   /**
-   * Validate the {@link GbaTables#SITE_POINT} records within the locality.
+   * Validate the {@link GbaItnTables#SITE_POINT} records within the locality.
    */
   @Override
   public boolean validateLocality() {
@@ -1470,7 +1469,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
         final Predicate<Record> filter = new SitePointClosestTransportLineFilter(sitePoint,
           maxDistance, structuredNameIds);
 
-        final Collection<Record> closeTransportLines = queryDistance(GbaTables.TRANSPORT_LINE,
+        final Collection<Record> closeTransportLines = queryDistance(GbaItnTables.TRANSPORT_LINE,
           sitePoint, maxDistance, filter);
         for (final Record transportLine : closeTransportLines) {
           final LineString line = transportLine.getGeometry();
@@ -1503,7 +1502,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
           valid &= addMessage(site, MESSAGE_SITE_POINT_TRANSPORT_LINE_NO_CLOSE, data,
             TRANSPORT_LINE_ID);
         } else {
-          transportLine = loadRecord(GbaTables.TRANSPORT_LINE, transportLineId);
+          transportLine = loadRecord(GbaItnTables.TRANSPORT_LINE, transportLineId);
           if (transportLine == null) {
             return false;
           } else {
@@ -1530,7 +1529,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
           if (transportLineId.equals(matchedTransportLineId)) {
             transportLine = matchedTransportLine;
           } else {
-            transportLine = loadRecord(GbaTables.TRANSPORT_LINE, transportLineId);
+            transportLine = loadRecord(GbaItnTables.TRANSPORT_LINE, transportLineId);
             if (transportLine == null) {
               if (matchedTransportLineId == null) {
                 return false;
@@ -1793,8 +1792,8 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
       final Predicate<Record> filter = new SitePointClosestTransportLineFilter(point, 100,
         structuredNameId);
 
-      final Collection<Record> closeTransportLines = queryDistance(GbaTables.TRANSPORT_LINE, point,
-        100, filter);
+      final Collection<Record> closeTransportLines = queryDistance(GbaItnTables.TRANSPORT_LINE,
+        point, 100, filter);
       for (final Record closeTransportLine : closeTransportLines) {
         if (!closeTransportLine.hasValue(TransportLine.SINGLE_HOUSE_NUMBER)) {
           final LineString line = closeTransportLine.getGeometry();
@@ -1867,7 +1866,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
 
       final ClosestRecordFilter filter = new ClosestRecordFilter(sitePoint, 100,
         TransportLine::isDemographic);
-      queryDistance(GbaTables.TRANSPORT_LINE, sitePoint, 100, filter);
+      queryDistance(GbaItnTables.TRANSPORT_LINE, sitePoint, 100, filter);
       final Record closestTransportLine = filter.getClosestRecord();
       if (closestTransportLine != null) {
         final String name = GbaType.getStructuredName1(closestTransportLine);

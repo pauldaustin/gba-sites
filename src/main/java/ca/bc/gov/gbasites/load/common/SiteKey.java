@@ -8,7 +8,7 @@ import org.jeometry.common.compare.CompareUtil;
 import org.jeometry.common.data.identifier.Identifier;
 
 import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.type.code.NameDirection;
+import ca.bc.gov.gba.itn.model.NameDirection;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.map.Maps;

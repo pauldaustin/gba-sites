@@ -17,11 +17,11 @@ import org.jeometry.common.data.type.DataTypes;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.itn.model.GbaItnTables;
+import ca.bc.gov.gba.itn.model.GbaType;
+import ca.bc.gov.gba.itn.model.TransportLine;
 import ca.bc.gov.gba.model.BoundaryCache;
 import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.model.GbaTables;
-import ca.bc.gov.gba.model.type.GbaType;
-import ca.bc.gov.gba.model.type.TransportLine;
 import ca.bc.gov.gba.model.type.code.Localities;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
@@ -263,7 +263,7 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
   }
 
   private void loadStructuredNames() {
-    final Query query = new Query(GbaTables.TRANSPORT_LINE) //
+    final Query query = new Query(GbaItnTables.TRANSPORT_LINE) //
       .setDistinct(true)//
       .setFieldNames(TransportLine.STRUCTURED_NAME_1_ID, GbaType.GEOMETRY) //
       .setWhereCondition(Q.and(//

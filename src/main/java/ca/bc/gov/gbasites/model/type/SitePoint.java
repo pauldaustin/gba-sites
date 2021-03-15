@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 import org.jeometry.common.data.identifier.Identifier;
 
 import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.type.GbaType;
+import ca.bc.gov.gba.itn.model.GbaType;
 import ca.bc.gov.gba.ui.layer.SessionRecordIdentifierComparator;
 import ca.bc.gov.gbasites.model.rule.StreetBlock;
 import ca.bc.gov.gbasites.model.type.code.SiteType;

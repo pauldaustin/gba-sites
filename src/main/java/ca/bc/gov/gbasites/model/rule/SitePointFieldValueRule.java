@@ -9,7 +9,7 @@ import java.util.Set;
 
 import org.jeometry.common.data.type.DataType;
 
-import ca.bc.gov.gba.model.GbaTables;
+import ca.bc.gov.gba.itn.model.GbaItnTables;
 import ca.bc.gov.gba.model.message.QaMessageDescription;
 import ca.bc.gov.gba.rule.AbstractRecordRule;
 import ca.bc.gov.gba.rule.fix.SetValue;
@@ -182,7 +182,7 @@ public class SitePointFieldValueRule extends FieldValueRule implements SitePoint
   protected boolean validateRecordDo(final Record site) {
     boolean valid = super.validateRecordDo(site);
     valid &= validateParentForeignKey(SiteTables.SITE_POINT, site, PARENT_SITE_ID);
-    valid &= validateForeignKey(GbaTables.TRANSPORT_LINE, site, TRANSPORT_LINE_ID);
+    valid &= validateForeignKey(GbaItnTables.TRANSPORT_LINE, site, TRANSPORT_LINE_ID);
 
     valid &= validateUnitDescriptor(site);
     valid &= validateFullAddress(site);

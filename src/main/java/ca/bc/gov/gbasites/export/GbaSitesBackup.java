@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import org.jeometry.common.io.PathName;
 
 import ca.bc.gov.gba.controller.GbaConfig;
-import ca.bc.gov.gba.model.GbaTables;
+import ca.bc.gov.gba.itn.model.GbaItnTables;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
@@ -22,7 +22,7 @@ import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.record.schema.RecordStore;
 import com.revolsys.transaction.Transaction;
 
-public class GbaSitesBackup implements GbaTables {
+public class GbaSitesBackup implements GbaItnTables {
   public static void main(final String[] args) {
     final GbaSitesBackup process = new GbaSitesBackup();
     BatchUpdateDialog.start(process::batchUpdate, "GBA Sites Backup", BatchUpdateDialog.READ,

@@ -11,8 +11,8 @@ import org.jeometry.common.data.type.DataTypes;
 import org.jeometry.common.io.PathName;
 
 import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.itn.model.GbaItnTables;
 import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.model.GbaTables;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.model.type.SitePoint;
@@ -108,7 +108,7 @@ public class SitePointExport implements SitePoint, Cancellable {
   private CodeTable getIntegrationSessionCodeTable() {
     final SingleValueCodeTable integrationSessionCodeTable = new SingleValueCodeTable(
       "INTEGRATION_SESSION_DATE");
-    final Query query = new Query(GbaTables.INTEGRATION_SESSION_POLY) //
+    final Query query = new Query(GbaItnTables.INTEGRATION_SESSION_POLY) //
       .setFieldNames(Gba.INTEGRATION_SESSION_POLY_ID, Gba.SESSION_COMMIT_DATE);
     for (final Record record : this.recordStore.getRecords(query)) {
       final Identifier id = record.getIdentifier(Gba.INTEGRATION_SESSION_POLY_ID);
@@ -211,9 +211,9 @@ public class SitePointExport implements SitePoint, Cancellable {
   private void readRecords(final Channel<Record> out) {
     final List<Query> queries = new ArrayList<>();
     for (final PathName pathName : Arrays.asList( //
-      GbaTables.DATA_CAPTURE_METHOD_CODE, //
+      GbaItnTables.DATA_CAPTURE_METHOD_CODE, //
       SiteTables.FEATURE_STATUS_CODE, //
-      GbaTables.PARTNER_ORGANIZATION, //
+      GbaItnTables.PARTNER_ORGANIZATION, //
       SiteTables.SITE_LOCATION_CODE, //
       SiteTables.SITE_TYPE_CODE)) {
       final Query query = newQuery(pathName);

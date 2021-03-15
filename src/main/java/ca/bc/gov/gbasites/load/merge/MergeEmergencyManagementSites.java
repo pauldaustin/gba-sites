@@ -36,7 +36,6 @@ import com.revolsys.record.query.Query;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.record.schema.RecordDefinitionBuilder;
 import com.revolsys.record.schema.RecordStore;
-import com.revolsys.transaction.Propagation;
 import com.revolsys.transaction.Transaction;
 import com.revolsys.util.Property;
 import com.revolsys.util.Strings;
@@ -335,7 +334,7 @@ public class MergeEmergencyManagementSites implements SitePoint {
               readEmSitesById.put(identifier, site);
               final Record gbaSite = recordsById.get(identifier);
               try (
-                Transaction transaction = gbaRecordStore.newTransaction(Propagation.REQUIRES_NEW)) {
+                Transaction transaction = gbaRecordStore.newTransaction()) {
                 if (gbaSite == null) {
                   this.dialog.insertRecord(EM_SITES, site);
                 } else {

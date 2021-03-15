@@ -12,10 +12,10 @@ import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.io.PathName;
 
 import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.GbaTables;
-import ca.bc.gov.gba.model.type.GbaType;
-import ca.bc.gov.gba.model.type.TransportLine;
-import ca.bc.gov.gba.model.type.code.TransportLineType;
+import ca.bc.gov.gba.itn.model.GbaItnTables;
+import ca.bc.gov.gba.itn.model.GbaType;
+import ca.bc.gov.gba.itn.model.TransportLine;
+import ca.bc.gov.gba.itn.model.TransportLineType;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 
@@ -36,7 +36,6 @@ import com.revolsys.record.io.RecordReader;
 import com.revolsys.record.query.Q;
 import com.revolsys.record.query.Query;
 import com.revolsys.record.schema.RecordStore;
-import com.revolsys.transaction.Propagation;
 import com.revolsys.transaction.Transaction;
 import com.revolsys.util.Debug;
 
@@ -90,7 +89,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
   public UpdateResourceRoads() {
     super(CLASS_NAME, READ, MISSING, RETIRED, ACTIVE, MATCHED, INSERTED, UPDATED, DELETED, ERROR);
     newLabelCount(COUNTS, FTEN_ROAD_LINES, READ);
-    newLabelCount(COUNTS, GbaTables.TRANSPORT_LINE, READ);
+    newLabelCount(COUNTS, GbaItnTables.TRANSPORT_LINE, READ);
 
   }
 
@@ -116,13 +115,13 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
       newValues.put(fieldName, null);
     }
     try (
-      Transaction transaction = gbaRecordStore.newTransaction(Propagation.REQUIRES_NEW)) {
+      Transaction transaction = gbaRecordStore.newTransaction()) {
       updateRecord(COUNTS, record, newValues);
     }
   }
 
   private void gbaRecordInsert(final Record resourceRecord, final LineString resourceLine) {
-    final Record newRecord = this.gbaRecordStore.newRecord(GbaTables.TRANSPORT_LINE);
+    final Record newRecord = this.gbaRecordStore.newRecord(GbaItnTables.TRANSPORT_LINE);
     newRecord.setValues(TransportLine.NON_DEMOGRAPHIC_FIXED_FIELD_VALUES);
     newRecord.setValue(DATA_CAPTURE_METHOD_CODE, "unknown");
     newRecord.setValue(TRANSPORT_LINE_TYPE_CODE, TransportLineType.ROAD_RESOURCE);
@@ -137,7 +136,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
 
   private void gbaRecordsSplitWithinDistanceOfResourceNode(final RecordGraph resourceRecordGraph) {
     if (!isCancelled()) {
-      final Query query = new Query(GbaTables.TRANSPORT_LINE);
+      final Query query = new Query(GbaItnTables.TRANSPORT_LINE);
       query.setWhereCondition(
         Q.in(TRANSPORT_LINE_TYPE_CODE, TransportLine.getTypeCodeNonDemographic()));
       try (
@@ -206,7 +205,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
           final Record newRecord = gbaRecord.newRecordGeometry(newLine);
           newRecord.setIdentifier(null);
           insertRecord(COUNTS, newRecord);
-          addLabelCount(COUNTS, GbaTables.TRANSPORT_LINE, SPLIT);
+          addLabelCount(COUNTS, GbaItnTables.TRANSPORT_LINE, SPLIT);
         }
         deleteRecord(gbaRecord);
       }
@@ -253,7 +252,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
 
   private void matchGbaRecords(final RecordGraph resourceRecordGraph) {
     if (!isCancelled()) {
-      final Query query = new Query(GbaTables.TRANSPORT_LINE);
+      final Query query = new Query(GbaItnTables.TRANSPORT_LINE);
       query.setFieldNames(GbaType.GEOMETRY);
       try (
         RecordReader reader = this.gbaRecordStore.getRecords(query)) {
@@ -270,7 +269,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
     gbaRecordsSplitWithinDistanceOfResourceNode(resourceRecordGraph);
     GbaController.forEach100000Tile((boundingBox) -> {
       if (!isCancelled()) {
-        final Query query = Query.intersects(this.gbaRecordStore, GbaTables.TRANSPORT_LINE,
+        final Query query = Query.intersects(this.gbaRecordStore, GbaItnTables.TRANSPORT_LINE,
           boundingBox);//
         final RecordGraph gbaRecordGraph = new RecordGraph();
         try (
@@ -355,7 +354,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
     final List<Edge<Record>> gbaEdges = gbaRecordGraph.getEdges(searchBoundingBox);
     if (gbaEdges.isEmpty()) {
       gbaRecordInsert(resourceRecord, resourceLine);
-      // addLabelCount(COUNTS, GbaTables.TRANSPORT_LINE, INSERTED);
+      // addLabelCount(COUNTS, GbaItnTables.TRANSPORT_LINE, INSERTED);
     } else {
       boolean hasEdgeMatch = false;
       for (final Edge<Record> gbaEdge : gbaEdges) {
@@ -377,7 +376,7 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
   }
 
   private void processExistingGbaResourceRecords(final RecordStore gbaRecordStore) {
-    final Query query = new Query(GbaTables.TRANSPORT_LINE)//
+    final Query query = new Query(GbaItnTables.TRANSPORT_LINE)//
       .setWhereCondition(//
         Q.and(//
           Q.isNotNull(RESOURCE_ROAD_FILE_ID), //

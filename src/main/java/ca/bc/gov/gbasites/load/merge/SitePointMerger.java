@@ -32,7 +32,6 @@ import com.revolsys.jdbc.io.JdbcRecordStore;
 import com.revolsys.record.Record;
 import com.revolsys.record.io.RecordWriter;
 import com.revolsys.record.schema.RecordDefinition;
-import com.revolsys.transaction.Propagation;
 import com.revolsys.transaction.Transaction;
 import com.revolsys.util.Cancellable;
 import com.revolsys.util.Counter;
@@ -431,7 +430,7 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
         ImportSites.SITES_DIRECTORY, this.localityName);
       AtomicPathUpdator pathUpdatorDelete = ImportSites.SITE_POINT_TO_DELETE
         .newLocalityPathUpdator(this.dialog, ImportSites.SITES_DIRECTORY, this.localityName);
-      Transaction transaction = this.recordStore.newTransaction(Propagation.REQUIRES_NEW)) {
+      Transaction transaction = this.recordStore.newTransaction()) {
 
       final RecordDefinition recordDefinition = ImportSites.getSitePointTsvRecordDefinition();
       final boolean targetExists = pathUpdator.isTargetExists();

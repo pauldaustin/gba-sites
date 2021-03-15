@@ -9,7 +9,7 @@ import java.util.Set;
 import org.jeometry.common.data.identifier.Identifier;
 
 import ca.bc.gov.gba.controller.ArchiveAndChangeLogController;
-import ca.bc.gov.gba.model.type.code.IntegrationAction;
+import ca.bc.gov.gba.itn.model.IntegrationAction;
 import ca.bc.gov.gba.model.type.code.Localities;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;

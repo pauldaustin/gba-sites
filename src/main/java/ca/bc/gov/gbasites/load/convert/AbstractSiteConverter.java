@@ -18,10 +18,10 @@ import org.jeometry.common.data.type.DataTypes;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.itn.model.GbaItnTables;
+import ca.bc.gov.gba.itn.model.NameDirection;
 import ca.bc.gov.gba.model.BoundaryCache;
 import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.model.GbaTables;
-import ca.bc.gov.gba.model.type.code.NameDirection;
 import ca.bc.gov.gba.model.type.code.PartnerOrganization;
 import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gba.ui.StatisticsDialog;
@@ -36,7 +36,6 @@ import ca.bc.gov.gbasites.model.type.code.FeatureStatus;
 
 import com.revolsys.beans.Classes;
 import com.revolsys.collection.map.CollectionMap;
-import com.revolsys.collection.map.MapEx;
 import com.revolsys.collection.map.Maps;
 import com.revolsys.collection.set.Sets;
 import com.revolsys.geometry.model.Geometry;
@@ -111,7 +110,7 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
               final String nameAlias = record.getString("NAME_ALIAS");
               final String structuredName = record.getString("STRUCTURED_NAME");
               final Identifier structuredNameId = GbaController
-                .getCodeTableIdentifier(GbaTables.STRUCTURED_NAME, structuredName);
+                .getCodeTableIdentifier(GbaItnTables.STRUCTURED_NAME, structuredName);
               if (structuredNameId == null) {
                 if ("Y".equals(record.getString("CREATE_STRUCTURED_NAME"))) {
                   continue;

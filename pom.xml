@@ -121,8 +121,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>ca.bc.gov</groupId>
-      <artifactId>gba</artifactId>
+      <groupId>ca.bc.gov.gba</groupId>
+      <artifactId>gba_desktop</artifactId>
       <version>${ca.bc.gov.gba.version}</version>
     </dependency>
   </dependencies>

@@ -14,12 +14,14 @@ import org.jeometry.common.data.type.DataType;
 import org.jeometry.common.number.Numbers;
 
 import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.itn.model.GbaType;
+import ca.bc.gov.gba.itn.model.HouseNumberScheme;
+import ca.bc.gov.gba.itn.model.TransportLine;
+import ca.bc.gov.gba.itn.model.TransportLineDivided;
 import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.model.message.QaMessageDescription;
-import ca.bc.gov.gba.model.type.GbaType;
-import ca.bc.gov.gba.model.type.TransportLine;
-import ca.bc.gov.gba.model.type.code.HouseNumberScheme;
-import ca.bc.gov.gba.model.type.code.TransportLineDivided;
+import ca.bc.gov.gba.model.type.TransportLines;
+import ca.bc.gov.gba.model.type.code.StructuredNames;
 import ca.bc.gov.gba.ui.layer.SessionRecordIdentifierComparator;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
@@ -49,8 +51,8 @@ public class Street implements Comparable<Street>, Comparator<Record> {
   }
 
   public static boolean isStructureUnencumbered(final Record transportLine) {
-    final String name = GbaType.getStructuredName1(transportLine);
-    final String structure = TransportLine.getTransportLineStructure(transportLine);
+    final String name = StructuredNames.getStructuredName1(transportLine);
+    final String structure = TransportLines.getTransportLineStructure(transportLine);
     if (Property.hasValue(name) && Property.hasValue(structure) && name.contains(structure)) {
       if (isModifiedByGeoBc(transportLine)) {
         return true;

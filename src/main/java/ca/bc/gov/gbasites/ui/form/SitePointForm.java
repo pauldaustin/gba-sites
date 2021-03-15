@@ -9,7 +9,7 @@ import java.util.Map;
 
 import javax.swing.JPanel;
 
-import ca.bc.gov.gba.model.type.GbaType;
+import ca.bc.gov.gba.itn.model.GbaType;
 import ca.bc.gov.gba.ui.form.SessionRecordForm;
 import ca.bc.gov.gba.ui.form.StructuredNamesPanel;
 import ca.bc.gov.gba.ui.layer.SessionProxyLayerRecord;

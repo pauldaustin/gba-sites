@@ -31,7 +31,6 @@ import com.revolsys.record.query.Query;
 import com.revolsys.record.schema.FieldDefinition;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.record.schema.RecordStore;
-import com.revolsys.transaction.Propagation;
 import com.revolsys.transaction.Transaction;
 
 public class FtenRoadLinesImport {
@@ -69,7 +68,7 @@ public class FtenRoadLinesImport {
 
   private void deleteRecord(final PathName typePath, final Identifier identifier) {
     try (
-      Transaction transaction = this.gbaRecordStore.newTransaction(Propagation.REQUIRES_NEW)) {
+      Transaction transaction = this.gbaRecordStore.newTransaction()) {
       this.gbaRecordStore.deleteRecord(typePath, identifier);
       final BatchUpdateDialog r = this.dialog;
       r.addLabelCount(StatisticsDialog.COUNTS, typePath, BatchUpdateDialog.DELETED);
@@ -95,7 +94,7 @@ public class FtenRoadLinesImport {
 
   private void insertRecord(final PathName typePath, final Record backupRecord) {
     try (
-      Transaction transaction = this.gbaRecordStore.newTransaction(Propagation.REQUIRES_NEW);
+      Transaction transaction = this.gbaRecordStore.newTransaction();
       RecordWriter gbaWriter = this.gbaRecordStore.newRecordWriter()) {
       final RecordDefinition recordDefinition = this.gbaRecordStore.getRecordDefinition(typePath);
       final Record gbaRecord = this.gbaRecordStore.newRecord(typePath);
@@ -140,7 +139,7 @@ public class FtenRoadLinesImport {
           maxId = null;
         }
         try (
-          Transaction transaction = this.gbaRecordStore.newTransaction(Propagation.REQUIRES_NEW)) {
+          Transaction transaction = this.gbaRecordStore.newTransaction()) {
           while (gbaIterator.hasNext() && backupIterator.hasNext()) {
             if (backupRecord == null) {
               this.dialog.addLabelCount(StatisticsDialog.COUNTS, typePath, BACKUP_READ);
@@ -281,7 +280,7 @@ public class FtenRoadLinesImport {
 
   private void updateRecord(final Record gbaRecord) {
     try (
-      Transaction transaction = this.gbaRecordStore.newTransaction(Propagation.REQUIRES_NEW);
+      Transaction transaction = this.gbaRecordStore.newTransaction();
       RecordWriter gbaWriter = this.gbaRecordStore.newRecordWriter();) {
       gbaWriter.write(gbaRecord);
       final BatchUpdateDialog r = this.dialog;
