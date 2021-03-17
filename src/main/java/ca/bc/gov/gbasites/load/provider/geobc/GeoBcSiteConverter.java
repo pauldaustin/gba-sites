@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.jeometry.common.logging.Logs;
 
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.SitePointProviderRecord;

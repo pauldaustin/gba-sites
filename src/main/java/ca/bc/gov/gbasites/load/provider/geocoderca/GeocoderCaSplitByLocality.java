@@ -15,9 +15,10 @@ import javax.swing.SwingUtilities;
 import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.logging.Logs;
 
-import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.BoundaryCache;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.core.model.codetable.BoundaryCache;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.geometry.model.Point;
@@ -45,7 +46,7 @@ public class GeocoderCaSplitByLocality implements Cancellable, SitePoint {
     public LocalityWriter(final Identifier localityId,
       final RecordDefinitionProxy recordDefinition) {
       this.localityName = LOCALITIES.getValue(localityId);
-      final String baseName = BatchUpdateDialog.toFileName(this.localityName) + "_GEOCODER_CA";
+      final String baseName = Gba.toFileName(this.localityName) + "_GEOCODER_CA";
       final String fileName = baseName + ".tsv";
       final Path directory = GeocoderCaSplitByLocality.this.inputByLocalityDirectory;
       this.writePath = directory.resolve("_" + fileName);
@@ -84,14 +85,14 @@ public class GeocoderCaSplitByLocality implements Cancellable, SitePoint {
     }
 
     public void writeRecord(final Record record) {
-      GeocoderCaSplitByLocality.this.counts.addCount(this.localityName, BatchUpdateDialog.READ);
-      GeocoderCaSplitByLocality.this.counts.addCount(this.localityName, BatchUpdateDialog.WRITE);
+      GeocoderCaSplitByLocality.this.counts.addCount(this.localityName, CountNames.READ);
+      GeocoderCaSplitByLocality.this.counts.addCount(this.localityName, CountNames.WRITE);
       this.recordWriter.write(record);
       this.writeCount++;
     }
   }
 
-  private static final BoundaryCache LOCALITIES = GbaController.getLocalities();
+  private static final BoundaryCache LOCALITIES = GbaItnCodeTables.getLocalities();
 
   private static final String SPLIT = "Split";
 
@@ -120,8 +121,8 @@ public class GeocoderCaSplitByLocality implements Cancellable, SitePoint {
   }
 
   public void run() {
-    this.counts = this.importSites.newLabelCountTableModel(SPLIT, "Locality",
-      BatchUpdateDialog.READ, BatchUpdateDialog.WRITE);
+    this.counts = this.importSites.labelCounts(SPLIT, "Locality", CountNames.READ,
+      CountNames.WRITE);
     SwingUtilities.invokeLater(() -> {
       this.counts.getTable().setSortOrder(0, SortOrder.ASCENDING);
       this.importSites.setSelectedTab(SPLIT);

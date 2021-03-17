@@ -9,9 +9,9 @@ import javax.swing.SwingUtilities;
 
 import org.jeometry.common.data.type.DataTypes;
 
-import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.StructuredNames;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.StructuredNames;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.convert.AbstractSiteConverter;
 
@@ -66,7 +66,7 @@ public class GeocoderCaSiteConvert implements Cancellable {
   }
 
   private void init() {
-    final StructuredNames structuredNames = GbaController.getStructuredNames();
+    final StructuredNames structuredNames = GbaItnCodeTables.getStructuredNames();
     structuredNames.setLoadAll(true);
     structuredNames.setLoadMissingCodes(false);
     structuredNames.refresh();
@@ -95,7 +95,7 @@ public class GeocoderCaSiteConvert implements Cancellable {
 
   public void run() {
     this.partnerOrganization = GbaSiteDatabase.newPartnerOrganization("Geocoder.ca");
-    this.counts = this.importSites.newLabelCountTableModel("Convert", "Provider", "Read", "Error",
+    this.counts = this.importSites.labelCounts("Convert", "Provider", "Read", "Error",
       "Ignored", "Warning", "Write", "Merged UD", "Duplicate");
     SwingUtilities.invokeLater(() -> {
 

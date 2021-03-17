@@ -9,7 +9,7 @@ import org.jeometry.common.data.type.DataType;
 import org.jeometry.common.number.Numbers;
 
 import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.itn.model.HouseNumberScheme;
+import ca.bc.gov.gba.itn.model.code.HouseNumberScheme;
 import ca.bc.gov.gba.model.type.TransportLines;
 import ca.bc.gov.gba.rule.transportline.AddressRange;
 import ca.bc.gov.gbasites.model.type.SitePoint;

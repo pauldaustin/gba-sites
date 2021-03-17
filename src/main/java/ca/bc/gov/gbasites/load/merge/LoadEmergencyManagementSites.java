@@ -13,9 +13,10 @@ import org.jeometry.common.data.type.DataTypes;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.BoundaryCache;
-import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.core.model.codetable.BoundaryCache;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
@@ -55,9 +56,9 @@ public class LoadEmergencyManagementSites implements SitePoint {
 
   private final BoundaryCache communityCache = CommunityPoly.getCommunities();
 
-  private final BoundaryCache localityCache = GbaController.getLocalities();
+  private final BoundaryCache localityCache = GbaItnCodeTables.getLocalities();
 
-  private final BoundaryCache regionalDistrictCache = GbaController.getRegionalDistricts();
+  private final BoundaryCache regionalDistrictCache = GbaItnCodeTables.getRegionalDistricts();
 
   private final Map<Identifier, String> emMissingNameBySiteId = Identifier.newTreeMap();
 
@@ -313,9 +314,9 @@ public class LoadEmergencyManagementSites implements SitePoint {
     final StatisticsDialog dialog) {
     Paths.createDirectories(EM_SITES_DIRECTORY);
     final Counter readCounter = dialog.getCounter(EM_SITES, SiteTables.SITE_POINT,
-      BatchUpdateDialog.READ);
+      CountNames.READ);
     final Counter writeCounter = dialog.getCounter(EM_SITES, SiteTables.SITE_POINT,
-      BatchUpdateDialog.WRITE);
+      CountNames.WRITE);
     final Counter xcoverCounter = dialog.getCounter(EM_SITES, SiteTables.SITE_POINT, IGNORE_XCOVER);
 
     try (

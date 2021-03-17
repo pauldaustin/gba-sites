@@ -9,9 +9,9 @@ import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.logging.Logs;
 import org.jeometry.common.number.Numbers;
 
-import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.StructuredNames;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.StructuredNames;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.convert.AbstractSiteConverter;
 import ca.bc.gov.gbasites.model.type.SitePoint;
@@ -31,7 +31,7 @@ import com.revolsys.util.Property;
 import com.revolsys.util.Strings;
 
 public class SitePointProviderRecord extends DelegatingRecord implements SitePoint {
-  private static final StructuredNames STRUCTURED_NAMES = GbaController.getStructuredNames();
+  private static final StructuredNames STRUCTURED_NAMES = GbaItnCodeTables.getStructuredNames();
 
   private static final String CIVIC_NUMBER_INCLUDES_UNIT_DESCRIPTOR_SUFFIX = "CIVIC_NUMBER includes UNIT_DESCRIPTOR suffix";
 

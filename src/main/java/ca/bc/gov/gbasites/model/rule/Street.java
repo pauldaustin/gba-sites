@@ -13,13 +13,13 @@ import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.data.type.DataType;
 import org.jeometry.common.number.Numbers;
 
-import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.core.model.qa.message.QaMessageDescription;
 import ca.bc.gov.gba.itn.model.GbaType;
-import ca.bc.gov.gba.itn.model.HouseNumberScheme;
 import ca.bc.gov.gba.itn.model.TransportLine;
-import ca.bc.gov.gba.itn.model.TransportLineDivided;
-import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.model.message.QaMessageDescription;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
+import ca.bc.gov.gba.itn.model.code.HouseNumberScheme;
+import ca.bc.gov.gba.itn.model.code.TransportLineDivided;
 import ca.bc.gov.gba.model.type.TransportLines;
 import ca.bc.gov.gba.ui.layer.SessionRecordIdentifierComparator;
 import ca.bc.gov.gbasites.model.type.SitePoint;
@@ -826,10 +826,10 @@ public class Street implements Comparable<Street>, Comparator<Record> {
       final Identifier leftLocalityId = getLocalityId(Side.LEFT);
       final Identifier rightLocalityId = getLocalityId(Side.RIGHT);
       string.append(" - ");
-      string.append((String)GbaController.getLocalities().getValue(leftLocalityId));
+      string.append((String)GbaItnCodeTables.getLocalities().getValue(leftLocalityId));
       if (!leftLocalityId.equals(rightLocalityId)) {
         string.append(", ");
-        string.append((String)GbaController.getLocalities().getValue(rightLocalityId));
+        string.append((String)GbaItnCodeTables.getLocalities().getValue(rightLocalityId));
       }
       string.append("\n  ");
       string.append(getTransportLineFieldValues(TransportLine.TRANSPORT_LINE_ID));

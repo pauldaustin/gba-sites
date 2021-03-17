@@ -9,7 +9,7 @@ import java.util.Map.Entry;
 
 import org.jeometry.common.logging.Logs;
 
-import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.provider.addressbc.AddressBC;
@@ -93,7 +93,7 @@ public class WriteFgdbAll implements Cancellable, Runnable {
         .getMap()//
       ;
 
-      final Collection<String> localityNames = GbaController.getLocalities().getBoundaryNames();
+      final Collection<String> localityNames = GbaItnCodeTables.getLocalities().getBoundaryNames();
       for (final String localityName : cancellable(localityNames)) {
         final Counter allCounter = this.dialog.getCounter("FGDB", localityName, "All");
 

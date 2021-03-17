@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -18,28 +19,35 @@ import java.util.function.Predicate;
 
 import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.data.type.DataType;
+import org.jeometry.common.io.PathName;
 import org.jeometry.common.logging.Logs;
 import org.jeometry.common.number.Doubles;
 import org.jeometry.common.number.Numbers;
 
+import ca.bc.gov.gba.controller.ArchiveAndChangeLogController;
 import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.core.model.qa.message.QaMessageDescription;
+import ca.bc.gov.gba.core.model.qa.rule.RecordRuleThreadProperties;
+import ca.bc.gov.gba.core.model.qa.rule.fix.SetValue;
+import ca.bc.gov.gba.core.model.qa.rule.impl.FieldValueRule;
+import ca.bc.gov.gba.core.model.qa.session.SessionUpdateRecordIdentifier;
 import ca.bc.gov.gba.itn.model.GbaItnTables;
 import ca.bc.gov.gba.itn.model.GbaType;
-import ca.bc.gov.gba.itn.model.HouseNumberScheme;
-import ca.bc.gov.gba.itn.model.StructuredName;
 import ca.bc.gov.gba.itn.model.TransportLine;
-import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.model.message.QaMessageDescription;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
+import ca.bc.gov.gba.itn.model.code.HouseNumberScheme;
+import ca.bc.gov.gba.itn.model.code.IntegrationAction;
+import ca.bc.gov.gba.itn.model.code.StructuredName;
+import ca.bc.gov.gba.itn.model.code.StructuredNames;
 import ca.bc.gov.gba.model.type.TransportLines;
-import ca.bc.gov.gba.model.type.code.StructuredNames;
-import ca.bc.gov.gba.rule.AbstractRecordRule;
-import ca.bc.gov.gba.rule.RecordRule;
-import ca.bc.gov.gba.rule.RecordRuleThreadProperties;
-import ca.bc.gov.gba.rule.fix.SetValue;
+import ca.bc.gov.gba.rule.AbstractRecordGeometryRule;
+import ca.bc.gov.gba.rule.fix.QuickFixes;
 import ca.bc.gov.gba.rule.fix.SetValues;
-import ca.bc.gov.gba.rule.impl.FieldValueRule;
 import ca.bc.gov.gba.rule.transportline.AddressRange;
+import ca.bc.gov.gba.ui.layer.SessionProxyLayerRecord;
 import ca.bc.gov.gba.ui.layer.SessionRecordIdentifierComparator;
+import ca.bc.gov.gba.ui.layer.SessionRecordLayer;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.qa.QaSitePoint;
@@ -67,6 +75,7 @@ import com.revolsys.geometry.operation.distance.DistanceWithPoints;
 import com.revolsys.io.FileUtil;
 import com.revolsys.io.Writer;
 import com.revolsys.record.Record;
+import com.revolsys.record.RecordState;
 import com.revolsys.record.Records;
 import com.revolsys.record.code.CodeTableValueComparator;
 import com.revolsys.record.filter.ClosestRecordFilter;
@@ -74,11 +83,14 @@ import com.revolsys.record.io.RecordWriter;
 import com.revolsys.record.io.format.json.JsonObject;
 import com.revolsys.record.io.format.tsv.Tsv;
 import com.revolsys.record.io.format.tsv.TsvWriter;
+import com.revolsys.record.schema.RecordStore;
+import com.revolsys.transaction.Transaction;
 import com.revolsys.util.Counter;
 import com.revolsys.util.Property;
 import com.revolsys.util.Strings;
 
-public class SitePointRule extends AbstractRecordRule implements Cloneable, SitePoint {
+public class SitePointRule extends AbstractRecordGeometryRule
+  implements Cloneable, SitePoint, QuickFixes {
   private static final Function<Integer, StreetBlock> CREATE_MESSAGE_BLOCK_FUNCTION = (block) -> {
     return new StreetBlock(block);
   };
@@ -292,6 +304,36 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
     data.put("fullAddress", fullAddress);
   }
 
+  /**
+   * Get the list of {@link GbaItnTables#SITE_POINT} records with the current {@link RecordRuleThreadProperties#getLocalityId()}.
+   *
+   * @return The list of sites.
+   */
+  public static List<Record> getSites() {
+    List<Record> sites = RecordRuleThreadProperties.getProperty("sites");
+    if (sites == null) {
+      final Map<Integer, Record> sitesById = new TreeMap<>();
+      final Counter totalCounter = RecordRuleThreadProperties
+        .getTotalCounter(QaSitePoint.SITE_READ);
+      final Identifier localityId = RecordRuleThreadProperties.getLocalityId();
+      final List<Record> records = RecordRuleThreadProperties.getRecords(totalCounter, localityId,
+        SiteTables.SITE_POINT, false);
+      final GeometryFactoryIndexedPointInAreaLocator locator = GbaItnCodeTables.getLocalities()
+        .getPointLocator(localityId);
+      for (final Record site : RecordRuleThreadProperties.i(records)) {
+        final Point point = site.getGeometry();
+        if (locator.intersects(point)) {
+          sitesById.put(site.getInteger(SITE_ID), site);
+        } else {
+          totalCounter.add(-1);
+        }
+      }
+      sites = new ArrayList<>(sitesById.values());
+      RecordRuleThreadProperties.setProperty("sites", sites);
+    }
+    return sites;
+  }
+
   // private AddressRange expandAddressRange(
   // final Map<Integer, Record> transportLineByHouseNumber,
   // final Edge<Record> edge, final AddressRange numberRange) {
@@ -323,36 +365,6 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
   // }
   // return null;
   // }
-
-  /**
-   * Get the list of {@link GbaItnTables#SITE_POINT} records with the current {@link RecordRuleThreadProperties#getLocalityId()}.
-   *
-   * @return The list of sites.
-   */
-  public static List<Record> getSites() {
-    List<Record> sites = RecordRuleThreadProperties.getProperty("sites");
-    if (sites == null) {
-      final Map<Integer, Record> sitesById = new TreeMap<>();
-      final Counter totalCounter = RecordRuleThreadProperties
-        .getTotalCounter(QaSitePoint.SITE_READ);
-      final Identifier localityId = RecordRuleThreadProperties.getLocalityId();
-      final List<Record> records = RecordRuleThreadProperties.getRecords(totalCounter, localityId,
-        SiteTables.SITE_POINT, false);
-      final GeometryFactoryIndexedPointInAreaLocator locator = GbaController.getLocalities()
-        .getPointLocator(localityId);
-      for (final Record site : RecordRuleThreadProperties.i(records)) {
-        final Point point = site.getGeometry();
-        if (locator.intersects(point)) {
-          sitesById.put(site.getInteger(SITE_ID), site);
-        } else {
-          totalCounter.add(-1);
-        }
-      }
-      sites = new ArrayList<>(sitesById.values());
-      RecordRuleThreadProperties.setProperty("sites", sites);
-    }
-    return sites;
-  }
 
   public static StreetBlock getStreetBlock(final int number) {
     final Map<Integer, StreetBlock> blocksByNumber = RecordRuleThreadProperties
@@ -405,6 +417,8 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
   }
 
   private Writer<Record> deletedWriter;
+
+  private Map<String, Identifier> localityNameIdBySimplifiedNameMap;
 
   // private boolean validateAddressRange(
   // final Map<Integer, Record> transportLineByHouseNumber,
@@ -509,8 +523,6 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
   // return false;
   // }
 
-  private Map<String, Identifier> localityNameIdBySimplifiedNameMap;
-
   private Map<Record, List<Record>> sitesByTransportLine;
 
   private Identifier structuredNameId;
@@ -602,6 +614,31 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
     this.sitesByTransportLine = null;
     FileUtil.closeSilent(this.deletedWriter);
     this.deletedWriter = null;
+  }
+
+  protected boolean deleteRecord(final Record record) {
+    if (IntegrationAction.isDeleted(record)) {
+      return false;
+    } else {
+      if (record instanceof SessionProxyLayerRecord) {
+        final SessionProxyLayerRecord sessionRecord = (SessionProxyLayerRecord)record;
+        final SessionRecordLayer layer = sessionRecord.getLayer();
+        layer.deleteRecordAndSaveChanges(sessionRecord);
+        return true;
+      } else {
+        final RecordStore recordStore = GbaController.getCommitRecordStore();
+        try (
+          Transaction transaction = recordStore.newTransaction()) {
+          final ArchiveAndChangeLogController archiveAndChangeLog = ArchiveAndChangeLogController
+            .getArchiveAndChangeLog();
+          final PathName typePath = record.getPathName();
+          final Identifier identifier = record.getIdentifier();
+          final boolean deleted = archiveAndChangeLog.deleteRecord(typePath, identifier);
+          record.setState(RecordState.DELETED);
+          return deleted;
+        }
+      }
+    }
   }
 
   public void deleteSite(final Record site, final String message) {
@@ -840,7 +877,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
           transportLine);
       }
     }
-    for (final Record site : fi(getSites(), RecordRule.notDeleted())) {
+    for (final Record site : fi(getSites(), IntegrationAction.notDeleted())) {
       for (final String fieldName : SITE_STRUCTURED_NAME_FIELD_NAMES) {
         final Identifier structuredNameId = site.getIdentifier(fieldName);
         if (structuredNameId != null) {
@@ -863,7 +900,8 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
 
           final Map<String, Object> data = new HashMap<>();
           data.put("name", name);
-          final Record structuredName = GbaController.structuredNames.getRecord(structuredNameId);
+          final Record structuredName = GbaItnCodeTables.getStructuredNames()
+            .getRecord(structuredNameId);
           Geometry geometry = Records.unionGeometry(records);
           if (geometry != null) {
             final List<LineString> lines = geometry.getGeometries(LineString.class);
@@ -916,6 +954,15 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
           }
         }
       }
+    }
+  }
+
+  public Record loadRecord(final Record record, final String fieldName) {
+    if (record == null) {
+      return null;
+    } else {
+      final Identifier identifier = SessionUpdateRecordIdentifier.getIdentifier(record, fieldName);
+      return loadRecord(identifier);
     }
   }
 
@@ -1127,6 +1174,30 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
     return record.setValue(fieldName, identifier);
   }
 
+  public boolean setFullAddress(final Record site) {
+    final List<String> lines = new ArrayList<>();
+    final Set<Record> sites = new LinkedHashSet<>();
+    sites.add(site);
+    for (Record parentSite = loadRecord(site,
+      PARENT_SITE_ID); parentSite != null; parentSite = loadRecord(parentSite, PARENT_SITE_ID)) {
+      if (sites.add(parentSite)) {
+        SitePointFieldValueRule.addFullAddressLines(lines, parentSite);
+      } else {
+        parentSite = null;
+      }
+    }
+    SitePointFieldValueRule.addFullAddressLines(lines, site);
+    final String fullAddress = Strings.toString("\n", lines);
+    if (Property.hasValue(fullAddress)) {
+      if (site.setValue(FULL_ADDRESS, fullAddress)) {
+        addCount("Fixed", "FULL_ADDRESS updated");
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   private void setTransportLine(final Record site, final Record transportLine) {
     // TODO if (setForeignKeyIdentifier(site, TRANSPORT_LINE_ID, transportLine))
     // {
@@ -1196,7 +1267,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
       final Map<Integer, List<Record>> strataTransportLinesByCivicNumber = new TreeMap<>();
 
       for (final Record transportLine : RecordRuleThreadProperties.fi(streetTransportLines,
-        RecordRule.notDeleted())) {
+        IntegrationAction.notDeleted())) {
         final Integer strataCivicNumber = transportLine
           .getInteger(TransportLine.SINGLE_HOUSE_NUMBER);
         if (strataCivicNumber == null) {
@@ -1210,7 +1281,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
       }
 
       for (final Record site : RecordRuleThreadProperties.fi(streetSites,
-        RecordRule.notDeleted())) {
+        IntegrationAction.notDeleted())) {
         final boolean useInAddressRange = SitePoint.isUseInAddressRange(site);
         if (useInAddressRange) {
           final Integer civicNumber = site.getInteger(CIVIC_NUMBER);
@@ -1366,7 +1437,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
     boolean valid = true;
     final Point point1 = site1.getGeometry();
     final Collection<Record> sitesWithinDistance = queryDistance(point1, 2);
-    final boolean fixingAllowed = isFixingAllowed();
+    final boolean fixingAllowed = RecordRuleThreadProperties.isFixingAllowed();
     if (sitesWithinDistance.size() > 1) {
       final String fullAddress1 = site1.getString(FULL_ADDRESS);
       final Map<Identifier, Record> closeSites = Identifier.newTreeMap();
@@ -1451,13 +1522,19 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
     return valid;
   }
 
+  @Override
+  protected boolean validateRecordGeometry(final Record record, final Geometry geometry) {
+    throw new UnsupportedOperationException("TODO Implement");
+  }
+
   private boolean validateRecordMatchTransportLine(final Record site) {
     boolean valid = true;
     if (site.hasValuesAll(CIVIC_NUMBER, STREET_NAME_ID, LOCALITY_ID)) {
       final int civicNumber = site.getInteger(CIVIC_NUMBER);
       final List<Identifier> structuredNameIds = Records.getIdentifiers(site,
         SITE_STRUCTURED_NAME_FIELD_NAMES);
-      Identifier transportLineId = getIdentifier(site, TRANSPORT_LINE_ID);
+      Identifier transportLineId = SessionUpdateRecordIdentifier.getIdentifier(site,
+        TRANSPORT_LINE_ID);
 
       PointLineStringMetrics matchedMetrics = null;
       Record matchedTransportLine = null;
@@ -1849,7 +1926,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
         }
       }
       valid &= validateRecordDuplicateExactOrClose(site);
-      if (!RecordRule.isDeleted(site)) {
+      if (!IntegrationAction.isDeleted(site)) {
         if (moved.getValue()) {
           addCount("Fixed", "Moved virtual site");
         }
@@ -1896,7 +1973,7 @@ public class SitePointRule extends AbstractRecordRule implements Cloneable, Site
               .getStructuredName1Id(closestTransportLine);
             site.setValue(STREET_NAME_ID, structuredNameId);
             removeMessages(site, FieldValueRule.MESSAGE_FIELD_REQUIRED, STREET_NAME_ID);
-            SitePointFieldValueRule.setFullAddress(this, site);
+            setFullAddress(site);
             setTransportLine(site, closestTransportLine);
             Maps.addToList(sitesByStructuredNameId, structuredNameId, site);
           } else {

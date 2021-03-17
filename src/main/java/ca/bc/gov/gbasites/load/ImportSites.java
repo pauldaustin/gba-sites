@@ -24,10 +24,12 @@ import org.jeometry.common.io.PathName;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.model.type.code.StructuredNames;
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.itn.GbaItnDatabase;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
+import ca.bc.gov.gba.itn.model.code.StructuredNames;
 import ca.bc.gov.gba.process.AbstractTaskByLocality;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.common.DirectorySuffixAndExtension;
@@ -83,7 +85,7 @@ import com.revolsys.util.Cancellable;
 import com.revolsys.util.Counter;
 import com.revolsys.util.Property;
 
-public class ImportSites extends AbstractTaskByLocality implements SitePoint {
+public class ImportSites extends AbstractTaskByLocality implements SitePoint, CountNames {
 
   public static final String PROVIDER = "Provider";
 
@@ -345,7 +347,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   private void action4WriteFgdb() {
     if (!isCancelled() && this.fgdbCheckbox.isSelected()) {
-      newLabelCountTableModel("FGDB", "Locality Name", //
+      labelCounts("FGDB", "Locality Name", //
         "Provider", //
         GeoBC.NAME, //
         AddressBC.NAME, //
@@ -394,7 +396,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   private void addProviderCounts(final LabelCountMapTableModel providerCounts,
     final String countPrefix) {
-    providerCounts.addCountNameColumns( //
+    providerCounts.addColumns( //
       countPrefix + "Source", //
       countPrefix + "Converted", //
       countPrefix + "Ignored", //
@@ -488,7 +490,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   private void loadCodes() {
 
-    final StructuredNames structuredNames = GbaController.getStructuredNames();
+    final StructuredNames structuredNames = GbaItnCodeTables.getStructuredNames();
     structuredNames.setLoadAll(true);
     structuredNames.setLoadMissingCodes(false);
     structuredNames.refresh();
@@ -506,7 +508,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
 
   private void loadCodes(final PathName pathName, final Consumer<Record> action) {
     final String typeName = pathName.getName();
-    final RecordStore recordStore = GbaController.getRecordStore();
+    final RecordStore recordStore = GbaItnDatabase.getRecordStore();
     final ClassPathResource resource = new ClassPathResource(
       "/ca/bc/gov/gba/schema/codes/" + typeName + ".tsv");
     try (
@@ -652,7 +654,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     }
     final boolean hasProviders = !this.dataProvidersToProcess.isEmpty();
 
-    final LabelCountMapTableModel providerCounts = newLabelCountTableModel(PROVIDER, //
+    final LabelCountMapTableModel providerCounts = labelCounts(PROVIDER, //
       "Data Provider" //
     );
     addProviderCounts(providerCounts, "P ");
@@ -668,8 +670,7 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     final String ABC_USED = AddressBC.COUNT_PREFIX + "Used";
     final String TOTAL_USED = "Total Used";
 
-    final LabelCountMapTableModel localityCounts = newLabelCountTableModel(
-      ProviderSitePointConverter.LOCALITY, //
+    final LabelCountMapTableModel localityCounts = labelCounts(ProviderSitePointConverter.LOCALITY, //
       ProviderSitePointConverter.LOCALITY, //
 
       PROVIDER_READ, //
@@ -720,20 +721,20 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
     for (final String localityName : getLocalityNamesToProcess()) {
       localityCounts.addRowLabel(localityName);
     }
-    newLabelCountTableModel(LoadEmergencyManagementSites.EM_SITES, "Type Name", GBA_READ,
-      PROVIDER_READ, LoadEmergencyManagementSites.IGNORE_XCOVER, INSERTED, UPDATED);
+    labelCounts(LoadEmergencyManagementSites.EM_SITES, "Type Name", GBA_READ, PROVIDER_READ,
+      LoadEmergencyManagementSites.IGNORE_XCOVER, INSERTED, UPDATED);
     if (hasProviders) {
-      newLabelCountTableModel(ERROR, //
+      labelCounts(CountNames.ERROR, //
         "Message", //
-        ERROR//
+        CountNames.ERROR//
       );
 
-      newLabelCountTableModel(ProviderSitePointConverter.NAME_ERRORS, //
+      labelCounts(ProviderSitePointConverter.NAME_ERRORS, //
         "Message", //
-        ERROR//
+        CountNames.ERROR//
       );
 
-      newLabelCountTableModel(ProviderSitePointConverter.WARNING, "Message", //
+      labelCounts(ProviderSitePointConverter.WARNING, "Message", //
         ProviderSitePointConverter.WARNING);
     }
   }
@@ -749,9 +750,10 @@ public class ImportSites extends AbstractTaskByLocality implements SitePoint {
       try (
         FileGdbWriter writer = recordStore.newRecordWriter(recordDefinition)) {
 
-        final Collection<String> localityNames = GbaController.getLocalities().getBoundaryNames();
+        final Collection<String> localityNames = GbaItnCodeTables.getLocalities()
+          .getBoundaryNames();
         for (final String localityName : cancellable(localityNames)) {
-          final String localityFileName = BatchUpdateDialog.toFileName(localityName);
+          final String localityFileName = Gba.toFileName(localityName);
           final Counter writeCounter = getCounter("FGDB", localityName, "Merged");
 
           final List<Record> records = emergencyManagementSitesByLocality.getOrEmpty(localityName);

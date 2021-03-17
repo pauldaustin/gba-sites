@@ -4,9 +4,10 @@ import java.util.function.BiConsumer;
 
 import org.jeometry.common.data.identifier.Identifier;
 
-import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.BoundaryCache;
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
+import ca.bc.gov.gba.core.model.codetable.BoundaryCache;
+import ca.bc.gov.gba.itn.GbaItnDatabase;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.range.Ranges;
@@ -33,10 +34,10 @@ public class GbaSiteDatabase {
       name = dataProvider;
       shortName = dataProvider.substring(dataProvider.indexOf('-') + 2);
     } else {
-      final BoundaryCache localities = GbaController.getLocalities();
+      final BoundaryCache localities = GbaItnCodeTables.getLocalities();
       final Identifier localityId = localities.getIdentifier(dataProvider);
       if (localityId == null) {
-        final BoundaryCache regionalDistricts = GbaController.getRegionalDistricts();
+        final BoundaryCache regionalDistricts = GbaItnCodeTables.getRegionalDistricts();
         final Identifier regionalDistrictId = regionalDistricts.getIdentifier(dataProvider);
         if (regionalDistrictId == null) {
           shortName = dataProvider;
@@ -57,7 +58,7 @@ public class GbaSiteDatabase {
   }
 
   private static JdbcRecordStore newRecordStore() {
-    final JdbcRecordStore recordStore = GbaController.getGbaRecordStore();
+    final JdbcRecordStore recordStore = GbaItnDatabase.getRecordStore();
     final SingleValueCodeTable booleanCodeTable = new SingleValueCodeTable(
       SitePoint.CIVIC_NUMBER_SUFFIX);
     for (final Object letter : Ranges.newRange('A', 'Z')) {

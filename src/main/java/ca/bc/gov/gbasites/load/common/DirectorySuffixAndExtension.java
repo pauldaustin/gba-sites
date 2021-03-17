@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.ImportSites;
 
@@ -85,7 +85,7 @@ public class DirectorySuffixAndExtension {
   }
 
   public List<Path> listLocalityFiles(final Path baseDirectory, final String localityName) {
-    final String localityFileName = BatchUpdateDialog.toFileName(localityName);
+    final String localityFileName = Gba.toFileName(localityName);
     final String pattern = localityFileName + this.suffix + ".*" + this.extension;
     final List<Path> files = Paths.listFiles(newDirectoryPath(baseDirectory), pattern);
     Collections.sort(files);
@@ -123,7 +123,7 @@ public class DirectorySuffixAndExtension {
     final Path baseDirectory, final String localityName) {
     final Path directory = newDirectoryPath(baseDirectory);
 
-    final String prefixFileName = BatchUpdateDialog.toFileName(localityName);
+    final String prefixFileName = Gba.toFileName(localityName);
     final String fileName = getFileName(prefixFileName);
 
     return ImportSites.newPathUpdator(cancellable, directory, fileName);
@@ -134,7 +134,7 @@ public class DirectorySuffixAndExtension {
     final PartnerOrganization partnerOrganization, String providerSuffix) {
     final Path directory = newDirectoryPath(baseDirectory);
 
-    final String prefixFileName = BatchUpdateDialog.toFileName(localityName);
+    final String prefixFileName = Gba.toFileName(localityName);
     final String partnerOrganizationFileName = partnerOrganization.getPartnerOrganizationFileName();
     providerSuffix = "_" + partnerOrganizationFileName + providerSuffix;
     final String fileName = getFileName(prefixFileName, providerSuffix);

@@ -1,7 +1,7 @@
 package ca.bc.gov.gbasites.load.merge;
 
 import ca.bc.gov.gba.itn.model.GbaType;
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
 import ca.bc.gov.gbasites.load.provider.addressbc.AddressBC;
@@ -32,7 +32,7 @@ public class RecordMergeCounters {
 
   public static LabelCountMapTableModel addProviderCounts(final StatisticsDialog dialog,
     final String categoryName) {
-    final LabelCountMapTableModel counters = dialog.newLabelCountTableModel(categoryName, //
+    final LabelCountMapTableModel counters = dialog.labelCounts(categoryName, //
       ProviderSitePointConverter.LOCALITY, //
 
       READ, //
@@ -41,7 +41,7 @@ public class RecordMergeCounters {
       MERGE_UNIT);
 
     if (AddressBC.NAME.equals(categoryName)) {
-      counters.addCountNameColumns(MATCH_ADDRESS, MATCH_POINT, MATCH_UNIT);
+      counters.addColumns(MATCH_ADDRESS, MATCH_POINT, MATCH_UNIT);
     }
 
     final TotalLabelCounters totalColumn = counters.addTotalColumn(RecordMergeCounters.USED, READ) //

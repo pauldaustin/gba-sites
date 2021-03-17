@@ -4,7 +4,7 @@ import java.nio.file.Path;
 
 import org.jeometry.common.io.PathName;
 
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 

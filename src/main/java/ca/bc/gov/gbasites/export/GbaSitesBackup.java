@@ -5,9 +5,9 @@ import java.nio.file.Path;
 import org.jeometry.common.io.PathName;
 
 import ca.bc.gov.gba.controller.GbaConfig;
+import ca.bc.gov.gba.core.model.CountNames;
 import ca.bc.gov.gba.itn.model.GbaItnTables;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
-import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.model.type.code.CommunityPoly;
@@ -25,8 +25,8 @@ import com.revolsys.transaction.Transaction;
 public class GbaSitesBackup implements GbaItnTables {
   public static void main(final String[] args) {
     final GbaSitesBackup process = new GbaSitesBackup();
-    BatchUpdateDialog.start(process::batchUpdate, "GBA Sites Backup", BatchUpdateDialog.READ,
-      BatchUpdateDialog.WRITE);
+    BatchUpdateDialog.start(process::batchUpdate, "GBA Sites Backup", CountNames.READ,
+      CountNames.WRITE);
   }
 
   private final Path backupDirectory = Paths.getPath(GbaConfig.getDataDirectory(),
@@ -55,8 +55,8 @@ public class GbaSitesBackup implements GbaItnTables {
         RecordReader gbaReader = this.gbaRecordStore.getRecords(query);
         RecordWriter tsvWriter = RecordWriter.newRecordWriter(recordDefinition, tsvPath);) {
         for (final Record record : this.dialog.cancellable(gbaReader)) {
-          this.dialog.addLabelCount(StatisticsDialog.COUNTS, typePath, BatchUpdateDialog.READ);
-          this.dialog.addLabelCount(StatisticsDialog.COUNTS, typePath, BatchUpdateDialog.WRITE);
+          this.dialog.addLabelCount(CountNames.COUNTS, typePath, CountNames.READ);
+          this.dialog.addLabelCount(CountNames.COUNTS, typePath, CountNames.WRITE);
           tsvWriter.write(record);
         }
       }

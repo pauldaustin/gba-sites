@@ -9,8 +9,8 @@ import java.util.TreeMap;
 
 import org.jeometry.common.number.Integers;
 
-import ca.bc.gov.gba.itn.model.HouseNumberScheme;
 import ca.bc.gov.gba.itn.model.TransportLine;
+import ca.bc.gov.gba.itn.model.code.HouseNumberScheme;
 import ca.bc.gov.gba.model.type.TransportLines;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 

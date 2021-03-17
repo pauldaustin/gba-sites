@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 import org.jeometry.common.logging.Logs;
 import org.jeometry.common.number.Integers;
 
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;

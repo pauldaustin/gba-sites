@@ -10,10 +10,10 @@ import javax.swing.SwingUtilities;
 import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.coordinatesystem.model.systems.EpsgId;
 
-import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.BoundaryCache;
-import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.core.model.codetable.BoundaryCache;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.map.LinkedHashMapEx;
@@ -36,7 +36,7 @@ public class GeocoderCaFilterBC implements Cancellable, SitePoint {
 
   private static final String OUTSIDE_BC = "OUTSIDE_BC";
 
-  private static final BoundaryCache REGIONAL_DISTRICTS = GbaController.getRegionalDistricts();
+  private static final BoundaryCache REGIONAL_DISTRICTS = GbaItnCodeTables.getRegionalDistricts();
 
   private LabelCountMapTableModel counts;
 
@@ -82,7 +82,7 @@ public class GeocoderCaFilterBC implements Cancellable, SitePoint {
         RecordWriter outsideBcErrorWriter = RecordWriter.newRecordWriter(writeRecordDefinition,
           outsideBcErrorFile);) {
         for (final Record record : cancellable(reader)) {
-          this.counts.addCount(record, BatchUpdateDialog.READ);
+          this.counts.addCount(record, CountNames.READ);
           final Point point = record.getGeometry();
           final Point albersPoint = point.convertGeometry(albersGeometryFactory);
           final Identifier regionalDistrictId = REGIONAL_DISTRICTS.getBoundaryId(albersPoint);
@@ -103,7 +103,7 @@ public class GeocoderCaFilterBC implements Cancellable, SitePoint {
               writeRecord.setGeometryValue(albersPoint);
               bcErrorWriter.write(writeRecord);
             }
-            this.counts.addCount(record, BatchUpdateDialog.WRITE);
+            this.counts.addCount(record, CountNames.WRITE);
             final Record writeRecord = writeRecordDefinition.newRecord(record);
             writeRecord.setValue("Province", "BC");
             writeRecord.setGeometryValue(albersPoint);
@@ -121,8 +121,8 @@ public class GeocoderCaFilterBC implements Cancellable, SitePoint {
   }
 
   public void run() {
-    this.counts = this.importSites.newLabelCountTableModel(EXTRACT_BC, "File",
-      BatchUpdateDialog.READ, INSIDE_BC, OUTSIDE_BC, BatchUpdateDialog.WRITE);
+    this.counts = this.importSites.labelCounts(EXTRACT_BC, "File",
+      CountNames.READ, INSIDE_BC, OUTSIDE_BC, CountNames.WRITE);
     SwingUtilities.invokeLater(() -> {
       this.counts.getTable().setSortOrder(0, SortOrder.ASCENDING);
 

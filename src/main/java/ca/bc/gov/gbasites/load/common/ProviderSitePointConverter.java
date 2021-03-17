@@ -14,9 +14,9 @@ import org.jeometry.common.data.type.DataType;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaConfig;
-import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.PartnerOrganizationProxy;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganizationProxy;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.ImportSites;

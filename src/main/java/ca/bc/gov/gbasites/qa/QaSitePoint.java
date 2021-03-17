@@ -4,9 +4,11 @@ import java.util.function.Consumer;
 
 import org.jeometry.common.data.identifier.Identifier;
 
+import ca.bc.gov.gba.core.model.CountNames;
 import ca.bc.gov.gba.process.AbstractTaskByLocality;
 
-public class QaSitePoint extends AbstractTaskByLocality {
+public class QaSitePoint extends AbstractTaskByLocality implements CountNames {
+
   private static final long serialVersionUID = 1L;
 
   public static final String SITE_READ = "Site Read";
@@ -21,7 +23,7 @@ public class QaSitePoint extends AbstractTaskByLocality {
 
   public QaSitePoint() {
     super(null, TRANSPORT_LINE_READ, "Transport Line Update", SITE_READ, SITE_VALIDATE,
-      "Site Update", "Site Delete", ERROR, EXCLUDED);
+      "Site Update", "Site Delete", CountNames.ERROR, EXCLUDED);
   }
 
   @Override

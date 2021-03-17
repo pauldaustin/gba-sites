@@ -4,7 +4,7 @@ import java.nio.file.Path;
 
 import org.jeometry.common.data.identifier.Identifier;
 
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 public interface GeoBC {

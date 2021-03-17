@@ -23,6 +23,7 @@ import org.jeometry.common.logging.Logs;
 import ca.bc.gov.gba.controller.GbaConfig;
 import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.controller.GbaLogController;
+import ca.bc.gov.gba.itn.GbaItnDatabase;
 import ca.bc.gov.gbasites.controller.GbaSiteController;
 import ca.bc.gov.gbasites.load.ImportSites;
 
@@ -154,7 +155,7 @@ public class GbaSiteToolsMain extends BaseMain {
     this.frame.setMinimumSize(new Dimension(600, 300));
     this.frame.pack();
     SwingUtil.setLocationCentre(this.frame);
-    Invoke.background("GBA Init", GbaController::getGbaRecordStore);
+    Invoke.background("GBA Init", GbaItnDatabase::getRecordStore);
     this.frame.setVisible(true);
   }
 

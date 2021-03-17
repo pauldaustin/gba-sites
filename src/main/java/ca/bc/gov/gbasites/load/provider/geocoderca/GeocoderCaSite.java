@@ -12,10 +12,10 @@ import java.util.regex.Pattern;
 import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.logging.Logs;
 
-import ca.bc.gov.gba.controller.GbaController;
 import ca.bc.gov.gba.itn.model.GbaItnTables;
-import ca.bc.gov.gba.itn.model.StructuredName;
-import ca.bc.gov.gba.model.type.code.StructuredNames;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
+import ca.bc.gov.gba.itn.model.code.StructuredName;
+import ca.bc.gov.gba.itn.model.code.StructuredNames;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
@@ -66,7 +66,7 @@ public class GeocoderCaSite extends DelegatingRecord implements GeocoderCa, Site
   private static final Path STREET_TYPES_FILE = ProviderSitePointConverter.SITE_CONFIG_DIRECTORY
     .resolve("GEOCODER_CA_STREET_TYPES.xlsx");
 
-  public static final StructuredNames STRUCTURED_NAMES = GbaController.getStructuredNames();
+  public static final StructuredNames STRUCTURED_NAMES = GbaItnCodeTables.getStructuredNames();
 
   private static final Pattern SUITE_AT_END_PATTERN = Pattern
     .compile("(?:([\\w ]+) )?(?:SUITE|UNIT) (\\w+)");

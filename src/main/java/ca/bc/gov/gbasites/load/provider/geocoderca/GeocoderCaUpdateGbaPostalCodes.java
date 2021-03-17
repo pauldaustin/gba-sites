@@ -7,7 +7,7 @@ import java.util.List;
 import javax.swing.SortOrder;
 import javax.swing.SwingUtilities;
 
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.core.model.CountNames;
 
 import com.revolsys.io.file.Paths;
 import com.revolsys.parallel.process.ProcessNetwork;
@@ -39,8 +39,8 @@ public class GeocoderCaUpdateGbaPostalCodes implements Cancellable {
   }
 
   public void run() {
-    this.counts = this.importSites.newLabelCountTableModel("Post Code Update", "Locality",
-      BatchUpdateDialog.READ, "GBA Read", BatchUpdateDialog.UPDATED);
+    this.counts = this.importSites.labelCounts("Post Code Update", "Locality",
+      CountNames.READ, "GBA Read", CountNames.UPDATED);
     SwingUtilities.invokeLater(() -> {
 
       this.counts.getTable().setSortOrder(0, SortOrder.ASCENDING);

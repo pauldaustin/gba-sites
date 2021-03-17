@@ -2,8 +2,8 @@ package ca.bc.gov.gbasites.load.common;
 
 import java.nio.file.Path;
 
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.PartnerOrganizationProxy;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganizationProxy;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 
 import com.revolsys.io.file.AtomicPathUpdator;

@@ -5,9 +5,9 @@ import java.nio.file.Path;
 import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.logging.Logs;
 
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.PartnerOrganizationProxy;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganizationProxy;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.DirectorySuffixAndExtension;
@@ -58,12 +58,12 @@ public abstract class AbstractRecordConverter<R extends Record> extends BaseObje
   protected Identifier localityId;
 
   public void addError(final Record record, final String message) {
-    this.dialog.addLabelCount(BatchUpdateDialog.ERROR, message, BatchUpdateDialog.ERROR);
+    this.dialog.addLabelCount(CountNames.ERROR, message, CountNames.ERROR);
     log(this.errorLog, record, message);
   }
 
   public void addIgnore(final Record record, final String message) {
-    this.dialog.addLabelCount(BatchUpdateDialog.IGNORED, message, BatchUpdateDialog.IGNORED);
+    this.dialog.addLabelCount(CountNames.IGNORED, message, CountNames.IGNORED);
     log(this.ignoreLog, record, message);
   }
 

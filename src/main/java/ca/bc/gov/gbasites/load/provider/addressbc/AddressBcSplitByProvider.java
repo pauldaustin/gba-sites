@@ -17,9 +17,9 @@ import org.jeometry.common.exception.Exceptions;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaConfig;
-import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.ImportSites;
@@ -168,7 +168,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
             if (Property.hasValue(regionalDistrict) || Property.hasValue(provider)) {
               Logs.error(AddressBcSplitByProvider.class,
                 "Cannot have Locality, Regional District and Provider\n" + record);
-            } else if (GbaController.getLocalities().getIdentifier(locality) == null) {
+            } else if (GbaItnCodeTables.getLocalities().getIdentifier(locality) == null) {
               Logs.error(AddressBcSplitByProvider.class, "Locality not found " + locality);
             } else {
               providerName = locality;
@@ -177,7 +177,7 @@ public class AddressBcSplitByProvider implements Cancellable, SitePoint {
             if (Property.hasValue(provider)) {
               Logs.error(AddressBcSplitByProvider.class,
                 "Cannot have Regional District and  Provider\n" + record);
-            } else if (GbaController.getRegionalDistricts()
+            } else if (GbaItnCodeTables.getRegionalDistricts()
               .getIdentifier(regionalDistrict) == null) {
               Logs.error(AddressBcSplitByProvider.class,
                 "Regional District not found " + regionalDistrict);

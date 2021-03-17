@@ -7,14 +7,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.data.type.DataType;
+import org.jeometry.common.io.PathName;
 
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.core.model.qa.message.QaMessageDescription;
+import ca.bc.gov.gba.core.model.qa.rule.fix.SetValue;
+import ca.bc.gov.gba.core.model.qa.rule.impl.FieldValueRule;
+import ca.bc.gov.gba.core.model.qa.rule.impl.SessionField;
+import ca.bc.gov.gba.core.model.qa.session.SessionUpdateRecordIdentifier;
 import ca.bc.gov.gba.itn.model.GbaItnTables;
-import ca.bc.gov.gba.model.message.QaMessageDescription;
-import ca.bc.gov.gba.rule.AbstractRecordRule;
-import ca.bc.gov.gba.rule.fix.SetValue;
-import ca.bc.gov.gba.rule.impl.FieldValueRule;
-import ca.bc.gov.gba.rule.impl.SessionField;
+import ca.bc.gov.gba.rule.fix.QuickFixes;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 import ca.bc.gov.gbasites.model.type.code.SiteType;
@@ -27,7 +31,8 @@ import com.revolsys.record.Records;
 import com.revolsys.util.Property;
 import com.revolsys.util.Strings;
 
-public class SitePointFieldValueRule extends FieldValueRule implements SitePoint {
+public class SitePointFieldValueRule extends FieldValueRule
+  implements SitePoint, QuickFixes, CountNames {
   public static final QaMessageDescription CIVIC_NUMBER_0_NOT_VIRTUAL = new QaMessageDescription(
     "SP_VRTCN0", "Virtual Sites Civic Number 0",
     "Fb=(SITE_TYPE_CODE) must be Vb(Virtual Block From) for Fb=(CIVIC_NUMBER)=Vb(0).",
@@ -51,9 +56,9 @@ public class SitePointFieldValueRule extends FieldValueRule implements SitePoint
   public static final QaMessageDescription VIRTUAL_FIELD_VALUE_NOT_ALLOWED = new QaMessageDescription(
     "SP_VRTFVNA", "Virtual Site Field Not Allowed", "Virtual Site Field Not Allowed",
     "Virtual site value must be null for Fb({fieldName})=Vb({fieldValue})", false) //
-      .addQuickFix(FIX_SET_NULL);
+      .addQuickFix(ca.bc.gov.gba.core.model.qa.rule.fix.QuickFixes.FIX_SET_NULL);
 
-  private static void addFullAddressLines(final List<String> lines, final Record site) {
+  static void addFullAddressLines(final List<String> lines, final Record site) {
     final int size = lines.size();
     // Added in reverse order so that they will appear at the top of the list.
     // This is important for sub-sites.
@@ -67,31 +72,6 @@ public class SitePointFieldValueRule extends FieldValueRule implements SitePoint
 
     if (size == lines.size()) {
       Lists.addNotContains(lines, 0, siteName1);
-    }
-  }
-
-  public static boolean setFullAddress(final AbstractRecordRule rule, final Record site) {
-    final List<String> lines = new ArrayList<>();
-    final Set<Record> sites = new LinkedHashSet<>();
-    sites.add(site);
-    for (Record parentSite = rule.loadRecord(site,
-      PARENT_SITE_ID); parentSite != null; parentSite = rule.loadRecord(parentSite,
-        PARENT_SITE_ID)) {
-      if (sites.add(parentSite)) {
-        addFullAddressLines(lines, parentSite);
-      } else {
-        parentSite = null;
-      }
-    }
-    addFullAddressLines(lines, site);
-    final String fullAddress = Strings.toString("\n", lines);
-    if (Property.hasValue(fullAddress)) {
-      if (site.setValue(FULL_ADDRESS, fullAddress)) {
-        rule.addCount("Fixed", "FULL_ADDRESS updated");
-      }
-      return true;
-    } else {
-      return false;
     }
   }
 
@@ -154,6 +134,39 @@ public class SitePointFieldValueRule extends FieldValueRule implements SitePoint
     }
   }
 
+  public Record loadRecord(final Record record, final String fieldName) {
+    if (record == null) {
+      return null;
+    } else {
+      final Identifier identifier = SessionUpdateRecordIdentifier.getIdentifier(record, fieldName);
+      return loadRecord(identifier);
+    }
+  }
+
+  public boolean setFullAddress(final Record site) {
+    final List<String> lines = new ArrayList<>();
+    final Set<Record> sites = new LinkedHashSet<>();
+    sites.add(site);
+    for (Record parentSite = loadRecord(site,
+      PARENT_SITE_ID); parentSite != null; parentSite = loadRecord(parentSite, PARENT_SITE_ID)) {
+      if (sites.add(parentSite)) {
+        addFullAddressLines(lines, parentSite);
+      } else {
+        parentSite = null;
+      }
+    }
+    addFullAddressLines(lines, site);
+    final String fullAddress = Strings.toString("\n", lines);
+    if (Property.hasValue(fullAddress)) {
+      if (site.setValue(FULL_ADDRESS, fullAddress)) {
+        addCount("Fixed", "FULL_ADDRESS updated");
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   private boolean validateCivicNumber(final Record site) {
     if (site.equalValue(CIVIC_NUMBER, 0)) {
       final String siteTypeCode = site.getValue(SITE_TYPE_CODE);
@@ -171,11 +184,52 @@ public class SitePointFieldValueRule extends FieldValueRule implements SitePoint
   }
 
   private boolean validateFullAddress(final Record site) {
-    final boolean valid = setFullAddress(this, site);
+    final boolean valid = setFullAddress(site);
     if (!valid) {
       addMessage(site, NO_FULL_ADDRESS, FULL_ADDRESS);
     }
     return valid;
+  }
+
+  protected boolean validateParentForeignKey(final PathName typePath, final Record record,
+    final String fieldName) {
+    if (record != null) {
+      final Set<Record> records = new LinkedHashSet<>();
+      for (Record currentRecord = record; currentRecord != null;) {
+        if (currentRecord.hasField(fieldName)) {
+          final Identifier identifier = SessionUpdateRecordIdentifier.getIdentifier(currentRecord,
+            fieldName);
+          if (Property.hasValue(identifier)) {
+            final Record referencedRecord = loadRecord(typePath, identifier);
+            if (referencedRecord == null) {
+              final Map<String, Object> data = Maps.newLinkedHash("typePath", (Object)typePath);
+              data.put("value", identifier);
+              return addMessage(currentRecord, MESSAGE_FOREIGN_KEY_RECORD_NOT_FOUND, data,
+                fieldName);
+            } else if (isSame(referencedRecord, currentRecord)) {
+              final Map<String, Object> data = Maps.newLinkedHash("typePath", (Object)typePath);
+              data.put("value", identifier);
+              return addMessage(currentRecord, MESSAGE_FOREIGN_KEY_SELF_REFERENCE, data, fieldName);
+            } else if (records.add(currentRecord)) {
+              final Identifier sourceIdentifier = getSourceIdentifier(referencedRecord);
+              if (sourceIdentifier != null) {
+                currentRecord.setValue(fieldName, sourceIdentifier);
+              }
+              currentRecord = referencedRecord;
+            } else {
+              final Map<String, Object> data = Maps.newLinkedHash("typePath", (Object)typePath);
+              data.put("value", identifier);
+              return addMessage(currentRecord, MESSAGE_FOREIGN_KEY_PARENT_CHILD, data, fieldName);
+            }
+          } else {
+            currentRecord = null;
+          }
+        } else {
+          currentRecord = null;
+        }
+      }
+    }
+    return true;
   }
 
   @Override

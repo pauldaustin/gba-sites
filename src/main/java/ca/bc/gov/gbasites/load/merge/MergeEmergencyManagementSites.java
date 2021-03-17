@@ -14,9 +14,11 @@ import org.jeometry.common.data.type.DataTypes;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.BoundaryCache;
-import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.core.model.codetable.BoundaryCache;
+import ca.bc.gov.gba.itn.GbaItnDatabase;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.provider.geobc.GeoBC;
 import ca.bc.gov.gbasites.model.type.SitePoint;
@@ -49,9 +51,9 @@ public class MergeEmergencyManagementSites implements SitePoint {
 
   private final BoundaryCache communityCache = CommunityPoly.getCommunities();
 
-  private final BoundaryCache localityCache = GbaController.getLocalities();
+  private final BoundaryCache localityCache = GbaItnCodeTables.getLocalities();
 
-  private final BoundaryCache regionalDistrictCache = GbaController.getRegionalDistricts();
+  private final BoundaryCache regionalDistrictCache = GbaItnCodeTables.getRegionalDistricts();
 
   private final Map<Identifier, String> emMissingNameBySiteId = Identifier.newTreeMap();
 
@@ -306,9 +308,9 @@ public class MergeEmergencyManagementSites implements SitePoint {
   }
 
   private void loadEmergencyManagementSites() {
-    final RecordStore gbaRecordStore = GbaController.getRecordStore();
+    final RecordStore gbaRecordStore = GbaItnDatabase.getRecordStore();
     final Query loadedQuery = new Query(SiteTables.SITE_POINT, Q.lessThan(SITE_ID, 100000));
-    loadedQuery.setStatistics(this.dialog.getLabelCountMap(EM_SITES, BatchUpdateDialog.GBA_READ));
+    loadedQuery.setStatistics(this.dialog.getLabelCountMap(EM_SITES, CountNames.GBA_READ));
     loadedQuery.setCancellable(this.dialog);
     final RecordReader recordReader = gbaRecordStore.getRecords(loadedQuery);
     final Map<Identifier, Record> recordsById = recordReader.readRecordsById();

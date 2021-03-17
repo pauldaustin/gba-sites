@@ -2,10 +2,10 @@ package ca.bc.gov.gbasites.qa;
 
 import java.util.List;
 
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.core.model.qa.rule.RecordRuleThreadProperties;
 import ca.bc.gov.gba.itn.model.GbaItnTables;
-import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.process.qa.AbstractTaskByLocalityProcess;
-import ca.bc.gov.gba.rule.RecordRuleThreadProperties;
 import ca.bc.gov.gbasites.model.rule.SitePointRule;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 

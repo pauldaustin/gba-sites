@@ -11,9 +11,9 @@ import java.util.List;
 import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.logging.Logs;
 
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
 import ca.bc.gov.gba.process.qa.AbstractTaskByLocalityProcess;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
@@ -39,7 +39,7 @@ import com.revolsys.util.Debug;
 import com.revolsys.util.Strings;
 
 public class SitePointMerger extends AbstractTaskByLocalityProcess
-  implements Cancellable, SitePoint {
+  implements Cancellable, SitePoint, CountNames {
 
   public static final String MOVED = "Moved";
 
@@ -219,12 +219,12 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
 
   public SitePointMerger(final ImportSites dialog) {
     super(dialog);
-    this.countersProvider = new RecordMergeCounters(
-      this.dialog.labelCounts(ImportSites.PROVIDERS), null);
+    this.countersProvider = new RecordMergeCounters(this.dialog.labelCounts(ImportSites.PROVIDERS),
+      null);
     this.countersGeoBc = new RecordMergeCounters(this.dialog.labelCounts(GeoBC.NAME),
       GeoBC.PARTNER_ORGANIZATION);
-    this.countersAddressBc = new RecordMergeCounters(
-      this.dialog.labelCounts(AddressBC.NAME), AddressBC.PARTNER_ORGANIZATION);
+    this.countersAddressBc = new RecordMergeCounters(this.dialog.labelCounts(AddressBC.NAME),
+      AddressBC.PARTNER_ORGANIZATION);
 
   }
 
@@ -266,10 +266,10 @@ public class SitePointMerger extends AbstractTaskByLocalityProcess
   @Override
   protected void initLocality(final Identifier localityId) {
     super.initLocality(localityId);
-    this.counterInsert = getCounter(BatchUpdateDialog.INSERTED);
-    this.counterUpdate = getCounter(BatchUpdateDialog.UPDATED);
+    this.counterInsert = getCounter(INSERTED);
+    this.counterUpdate = getCounter(UPDATED);
     this.counterToDelete = getCounter(ImportSites.TO_DELETE);
-    this.counterDelete = getCounter(BatchUpdateDialog.DELETED);
+    this.counterDelete = getCounter(DELETED);
     this.counterMatched = getCounter(ImportSites.MATCHED);
 
     this.counterMergedWrite = getCounter(ImportSites.MERGED_WRITE);

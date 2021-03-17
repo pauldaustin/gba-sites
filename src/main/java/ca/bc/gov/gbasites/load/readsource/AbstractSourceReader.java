@@ -6,8 +6,8 @@ import org.jeometry.common.data.type.DataType;
 import org.jeometry.common.io.PathName;
 import org.jeometry.common.logging.Logs;
 
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.PartnerOrganizationProxy;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganizationProxy;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.PartnerOrganizationFiles;

@@ -18,13 +18,14 @@ import org.jeometry.common.data.type.DataTypes;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.core.model.codetable.BoundaryCache;
 import ca.bc.gov.gba.itn.model.GbaItnTables;
-import ca.bc.gov.gba.itn.model.NameDirection;
-import ca.bc.gov.gba.model.BoundaryCache;
-import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.StructuredNames;
-import ca.bc.gov.gba.ui.StatisticsDialog;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
+import ca.bc.gov.gba.itn.model.code.NameDirection;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.StructuredNames;
 import ca.bc.gov.gbasites.load.ImportSites;
 import ca.bc.gov.gbasites.load.common.IgnoreSiteException;
 import ca.bc.gov.gbasites.load.common.ProviderSitePointConverter;
@@ -60,7 +61,7 @@ import com.revolsys.util.Uuid;
 public abstract class AbstractSiteConverter extends AbstractRecordConverter<SitePointProviderRecord>
   implements SitePoint {
 
-  public static final StructuredNames STRUCTURED_NAMES = GbaController.getStructuredNames();
+  public static final StructuredNames STRUCTURED_NAMES = GbaItnCodeTables.getStructuredNames();
 
   private static final Map<String, Set<String>> nameSuffixCodeByAlias = new HashMap<>();
 
@@ -82,14 +83,14 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
 
   public static final String IGNORE_STREET_NAME_NOT_SPECIFIED = "Ignore STREET_NAME not specified";
 
-  public static final BoundaryCache regionalDistricts = GbaController.getRegionalDistricts();
+  public static final BoundaryCache regionalDistricts = GbaItnCodeTables.getRegionalDistricts();
 
   public static RecordDefinitionImpl sitePointTsvRecordDefinition;
 
   private static final RecordDefinitionImpl RECORD_DEFINITION = ImportSites
     .getSitePointTsvRecordDefinition();
 
-  private static final BoundaryCache localities = GbaController.getLocalities();
+  private static final BoundaryCache localities = GbaItnCodeTables.getLocalities();
 
   private static final BoundaryCache communities = CommunityPoly.getCommunities();
 
@@ -227,7 +228,7 @@ public abstract class AbstractSiteConverter extends AbstractRecordConverter<Site
         this.nameDifferentWriter.write(dataProvider, this.localityName, originalName,
           structuredName, structuredNameId, message);
         getDialog().addLabelCount(ProviderSitePointConverter.NAME_ERRORS, message,
-          StatisticsDialog.ERROR);
+          CountNames.ERROR);
       }
     }
   }

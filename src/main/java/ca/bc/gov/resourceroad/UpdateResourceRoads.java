@@ -12,10 +12,11 @@ import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.io.PathName;
 
 import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.core.model.CountNames;
 import ca.bc.gov.gba.itn.model.GbaItnTables;
 import ca.bc.gov.gba.itn.model.GbaType;
 import ca.bc.gov.gba.itn.model.TransportLine;
-import ca.bc.gov.gba.itn.model.TransportLineType;
+import ca.bc.gov.gba.itn.model.code.TransportLineType;
 import ca.bc.gov.gba.model.type.TransportLines;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
@@ -40,7 +41,7 @@ import com.revolsys.record.schema.RecordStore;
 import com.revolsys.transaction.Transaction;
 import com.revolsys.util.Debug;
 
-public class UpdateResourceRoads extends BatchUpdateDialog implements TransportLine {
+public class UpdateResourceRoads extends BatchUpdateDialog implements TransportLine, CountNames {
   private static final long serialVersionUID = 1L;
 
   private static final String CLASS_NAME = UpdateResourceRoads.class.getSimpleName();
@@ -88,7 +89,8 @@ public class UpdateResourceRoads extends BatchUpdateDialog implements TransportL
   final RecordStore gbaRecordStore = GbaSiteDatabase.getRecordStore();
 
   public UpdateResourceRoads() {
-    super(CLASS_NAME, READ, MISSING, RETIRED, ACTIVE, MATCHED, INSERTED, UPDATED, DELETED, ERROR);
+    super(CLASS_NAME, READ, MISSING, RETIRED, ACTIVE, MATCHED, INSERTED, UPDATED, DELETED,
+      CountNames.ERROR);
     newLabelCount(COUNTS, FTEN_ROAD_LINES, READ);
     newLabelCount(COUNTS, GbaItnTables.TRANSPORT_LINE, READ);
 

@@ -1,6 +1,6 @@
 package ca.bc.gov.gbasites.controller;
 
-import ca.bc.gov.gba.model.property.RecordRuleProperty;
+import ca.bc.gov.gba.core.model.qa.rule.RecordRuleProperty;
 import ca.bc.gov.gbasites.model.rule.BoundaryCacheFieldRule;
 import ca.bc.gov.gbasites.model.rule.SitePointFieldValueRule;
 import ca.bc.gov.gbasites.model.rule.SitePointRule;

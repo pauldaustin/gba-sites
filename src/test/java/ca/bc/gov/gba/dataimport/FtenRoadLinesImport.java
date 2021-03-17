@@ -14,8 +14,8 @@ import org.jeometry.common.io.PathName;
 import org.jeometry.common.logging.Logs;
 
 import ca.bc.gov.gba.controller.GbaConfig;
+import ca.bc.gov.gba.core.model.CountNames;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
-import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 
 import com.revolsys.geometry.model.Geometry;
@@ -42,8 +42,8 @@ public class FtenRoadLinesImport {
   public static void main(final String[] args) {
     final FtenRoadLinesImport process = new FtenRoadLinesImport();
     BatchUpdateDialog.start(process::batchUpdate, FtenRoadLinesImport.class.getName(), BACKUP_READ,
-      BatchUpdateDialog.READ, BatchUpdateDialog.IGNORED, BatchUpdateDialog.INSERTED,
-      BatchUpdateDialog.UPDATED, BatchUpdateDialog.DELETED);
+      CountNames.READ, CountNames.IGNORED, CountNames.INSERTED, CountNames.UPDATED,
+      CountNames.DELETED);
   }
 
   private final Path backupDirectory = GbaConfig.getDataDirectory()
@@ -71,7 +71,7 @@ public class FtenRoadLinesImport {
       Transaction transaction = this.gbaRecordStore.newTransaction()) {
       this.gbaRecordStore.deleteRecord(typePath, identifier);
       final BatchUpdateDialog r = this.dialog;
-      r.addLabelCount(StatisticsDialog.COUNTS, typePath, BatchUpdateDialog.DELETED);
+      r.addLabelCount(CountNames.COUNTS, typePath, CountNames.DELETED);
     }
   }
 
@@ -101,7 +101,7 @@ public class FtenRoadLinesImport {
       setGbaValues(recordDefinition, backupRecord, gbaRecord);
       gbaWriter.write(gbaRecord);
       final BatchUpdateDialog r = this.dialog;
-      r.addLabelCount(StatisticsDialog.COUNTS, typePath, BatchUpdateDialog.INSERTED);
+      r.addLabelCount(CountNames.COUNTS, typePath, CountNames.INSERTED);
     }
   }
 
@@ -142,7 +142,7 @@ public class FtenRoadLinesImport {
           Transaction transaction = this.gbaRecordStore.newTransaction()) {
           while (gbaIterator.hasNext() && backupIterator.hasNext()) {
             if (backupRecord == null) {
-              this.dialog.addLabelCount(StatisticsDialog.COUNTS, typePath, BACKUP_READ);
+              this.dialog.addLabelCount(CountNames.COUNTS, typePath, BACKUP_READ);
               backupRecord = getBackupRecord(backupIterator);
               backupIdentifier = backupRecord.getIdentifier(idFieldName);
               if (maxId != null) {
@@ -152,7 +152,7 @@ public class FtenRoadLinesImport {
               }
             }
             if (gbaRecord == null) {
-              this.dialog.addLabelCount(StatisticsDialog.COUNTS, typePath, BatchUpdateDialog.READ);
+              this.dialog.addLabelCount(CountNames.COUNTS, typePath, CountNames.READ);
               gbaRecord = gbaIterator.next();
               gbaIdentifier = gbaRecord.getIdentifier(idFieldName);
             }
@@ -166,8 +166,7 @@ public class FtenRoadLinesImport {
                   failedInsertRecords.add(backupRecord);
                 }
               } else {
-                this.dialog.addLabelCount(StatisticsDialog.COUNTS, typePath,
-                  BatchUpdateDialog.IGNORED);
+                this.dialog.addLabelCount(CountNames.COUNTS, typePath, CountNames.IGNORED);
               }
               backupRecord = null;
             } else if (idCompare < 0) {
@@ -199,7 +198,7 @@ public class FtenRoadLinesImport {
             }
           }
           while (backupIterator.hasNext()) {
-            this.dialog.addLabelCount(StatisticsDialog.COUNTS, typePath, BACKUP_READ);
+            this.dialog.addLabelCount(CountNames.COUNTS, typePath, BACKUP_READ);
             backupRecord = getBackupRecord(backupIterator);
             if (filter == null || filter.test(backupRecord)) {
               backupIdentifier = backupRecord.getIdentifier(idFieldName);
@@ -214,8 +213,7 @@ public class FtenRoadLinesImport {
                 failedInsertRecords.add(backupRecord);
               }
             } else {
-              this.dialog.addLabelCount(StatisticsDialog.COUNTS, typePath,
-                BatchUpdateDialog.IGNORED);
+              this.dialog.addLabelCount(CountNames.COUNTS, typePath, CountNames.IGNORED);
             }
           }
           while (gbaIterator.hasNext()) {
@@ -284,7 +282,7 @@ public class FtenRoadLinesImport {
       RecordWriter gbaWriter = this.gbaRecordStore.newRecordWriter();) {
       gbaWriter.write(gbaRecord);
       final BatchUpdateDialog r = this.dialog;
-      r.addLabelCount(StatisticsDialog.COUNTS, gbaRecord.getPathName(), BatchUpdateDialog.UPDATED);
+      r.addLabelCount(CountNames.COUNTS, gbaRecord.getPathName(), CountNames.UPDATED);
     }
   }
 }

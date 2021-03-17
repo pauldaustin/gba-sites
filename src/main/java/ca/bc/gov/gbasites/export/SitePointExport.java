@@ -11,10 +11,11 @@ import org.jeometry.common.data.type.DataTypes;
 import org.jeometry.common.io.PathName;
 
 import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.itn.GbaItnDatabase;
 import ca.bc.gov.gba.itn.model.GbaItnTables;
-import ca.bc.gov.gba.model.Gba;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
-import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
 
@@ -69,13 +70,13 @@ public class SitePointExport implements SitePoint, Cancellable {
 
   public static void main(final String[] args) {
     final SitePointExport process = new SitePointExport();
-    BatchUpdateDialog.start(process::batchUpdate, "Site Point Export", BatchUpdateDialog.READ,
-      BatchUpdateDialog.WRITE);
+    BatchUpdateDialog.start(process::batchUpdate, "Site Point Export", CountNames.READ,
+      CountNames.WRITE);
   }
 
   private BatchUpdateDialog dialog;
 
-  private final RecordStore recordStore = GbaController.getRecordStore();
+  private final RecordStore recordStore = GbaItnDatabase.getRecordStore();
 
   private RecordDefinition sitePointExportRecordDefinition;
 
@@ -94,8 +95,8 @@ public class SitePointExport implements SitePoint, Cancellable {
       final FileGdbWriterProcess writerProcess = new FileGdbWriterProcess(sitePointFile);
       newSitePointExportRecordDefinition(writerProcess);
 
-      final LabelCounters writeCounts = this.dialog.getLabelCountMap(StatisticsDialog.COUNTS,
-        BatchUpdateDialog.WRITE);
+      final LabelCounters writeCounts = this.dialog.getLabelCountMap(CountNames.COUNTS,
+        CountNames.WRITE);
       writerProcess //
         .setCounts(writeCounts)//
         .setCancellable(this) //
@@ -131,10 +132,9 @@ public class SitePointExport implements SitePoint, Cancellable {
     } else {
       final String idFieldName = recordDefinition.getIdFieldName();
       query = Query.orderBy(pathName, idFieldName);
-      final LabelCounters counts = this.dialog.getLabelCountMap(StatisticsDialog.COUNTS,
-        BatchUpdateDialog.READ);
+      final LabelCounters counts = this.dialog.getLabelCountMap(CountNames.COUNTS, CountNames.READ);
       query.setStatistics(counts);
-      this.dialog.newLabelCount(StatisticsDialog.COUNTS, pathName, BatchUpdateDialog.READ);
+      this.dialog.newLabelCount(CountNames.COUNTS, pathName, CountNames.READ);
     }
     return query;
   }

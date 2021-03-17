@@ -8,10 +8,11 @@ import java.util.Map;
 import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.logging.Logs;
 
-import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.BoundaryCache;
-import ca.bc.gov.gba.model.message.QaMessageDescription;
-import ca.bc.gov.gba.rule.AbstractRecordRule;
+import ca.bc.gov.gba.core.model.codetable.BoundaryCache;
+import ca.bc.gov.gba.core.model.qa.message.QaMessageDescription;
+import ca.bc.gov.gba.core.model.qa.rule.AbstractRecordRule;
+import ca.bc.gov.gba.itn.GbaItnDatabase;
+import ca.bc.gov.gba.rule.fix.QuickFixes;
 import ca.bc.gov.gba.rule.fix.SetToMessageData;
 
 import com.revolsys.collection.list.Lists;
@@ -21,7 +22,7 @@ import com.revolsys.record.Record;
 import com.revolsys.record.schema.RecordDefinition;
 import com.revolsys.record.schema.RecordStore;
 
-public class BoundaryCacheFieldRule extends AbstractRecordRule implements Cloneable {
+public class BoundaryCacheFieldRule extends AbstractRecordRule implements Cloneable, QuickFixes {
 
   private static final QaMessageDescription MESSAGE_DIFFERENT_FROM_CONTAINED = new QaMessageDescription(
     "BNDY_DIFCON", "Boundary Field Differs From Contained",
@@ -33,7 +34,7 @@ public class BoundaryCacheFieldRule extends AbstractRecordRule implements Clonea
     "BNDY_NTCON", "Boundary Field Not Contained",
     "The value for a boundary field should be only set if the record is spatially contained in a boundary. Either set field value = null, move the point location, or add a rule exclusion. NOTE: setting to null may result in a required error.",
     "Fb({fieldTitle})=Vb({boundaryName}) not contained in any boundary.", true) //
-      .addQuickFix(FIX_SET_NULL);
+      .addQuickFix(ca.bc.gov.gba.core.model.qa.rule.fix.QuickFixes.FIX_SET_NULL);
 
   private final Map<String, BoundaryCache> boundaryCacheByFieldName = new HashMap<>();
 
@@ -53,7 +54,7 @@ public class BoundaryCacheFieldRule extends AbstractRecordRule implements Clonea
 
   @Override
   protected void init(final RecordDefinition recordDefinition) {
-    final RecordStore recordStore = GbaController.getRecordStore();
+    final RecordStore recordStore = GbaItnDatabase.getRecordStore();
     for (final String fieldName : this.boundaryFieldNames) {
       final BoundaryCache boundaryCache = (BoundaryCache)recordStore
         .getCodeTableByFieldName(fieldName);

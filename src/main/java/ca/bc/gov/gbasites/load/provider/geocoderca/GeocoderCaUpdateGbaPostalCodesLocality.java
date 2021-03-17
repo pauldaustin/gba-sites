@@ -9,9 +9,9 @@ import java.util.Set;
 import org.jeometry.common.data.identifier.Identifier;
 
 import ca.bc.gov.gba.controller.ArchiveAndChangeLogController;
-import ca.bc.gov.gba.itn.model.IntegrationAction;
-import ca.bc.gov.gba.model.type.code.Localities;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.itn.model.code.IntegrationAction;
+import ca.bc.gov.gba.itn.model.code.Localities;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 import ca.bc.gov.gbasites.model.type.SiteTables;
@@ -80,7 +80,7 @@ public class GeocoderCaUpdateGbaPostalCodesLocality implements SitePoint, Cancel
     try (
       RecordReader reader = RecordReader.newRecordReader(this.inputFile)) {
       for (final Record site : cancellable(reader)) {
-        this.counts.addCount(this.localityName, BatchUpdateDialog.READ);
+        this.counts.addCount(this.localityName, CountNames.READ);
         final String streetName = site.getString(STREET_NAME);
         final Integer civicNumber = site.getInteger(CIVIC_NUMBER);
         String postalCode = site.getString(POSTAL_CODE);
@@ -164,7 +164,7 @@ public class GeocoderCaUpdateGbaPostalCodesLocality implements SitePoint, Cancel
         ;
 
         this.archiveAndChangeLog.updateRecord(site, newValues, IntegrationAction.UPDATE_FIELD);
-        this.counts.addCount(this.localityName, BatchUpdateDialog.UPDATED);
+        this.counts.addCount(this.localityName, CountNames.UPDATED);
       }
     }
   }

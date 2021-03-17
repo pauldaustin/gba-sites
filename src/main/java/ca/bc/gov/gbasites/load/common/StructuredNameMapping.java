@@ -5,13 +5,13 @@ import java.util.List;
 
 import org.jeometry.common.data.identifier.Identifier;
 
-import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.model.type.code.StructuredNames;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
+import ca.bc.gov.gba.itn.model.code.StructuredNames;
 
 import com.revolsys.util.Strings;
 
 public class StructuredNameMapping {
-  public static final StructuredNames STRUCTURED_NAMES = GbaController.getStructuredNames();
+  public static final StructuredNames STRUCTURED_NAMES = GbaItnCodeTables.getStructuredNames();
 
   private static final String STREET_NAME_NOT_FOUND = "STREET_NAME not found";
 

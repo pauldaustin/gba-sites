@@ -16,16 +16,16 @@ import org.jeometry.common.data.identifier.Identifier;
 import org.jeometry.common.data.type.DataTypes;
 import org.jeometry.common.logging.Logs;
 
-import ca.bc.gov.gba.controller.GbaController;
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.core.model.Gba;
+import ca.bc.gov.gba.core.model.codetable.BoundaryCache;
 import ca.bc.gov.gba.itn.model.GbaItnTables;
 import ca.bc.gov.gba.itn.model.GbaType;
 import ca.bc.gov.gba.itn.model.TransportLine;
-import ca.bc.gov.gba.model.BoundaryCache;
-import ca.bc.gov.gba.model.Gba;
-import ca.bc.gov.gba.model.type.code.Localities;
-import ca.bc.gov.gba.model.type.code.PartnerOrganization;
-import ca.bc.gov.gba.model.type.code.StructuredNames;
-import ca.bc.gov.gba.ui.BatchUpdateDialog;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
+import ca.bc.gov.gba.itn.model.code.Localities;
+import ca.bc.gov.gba.itn.model.code.PartnerOrganization;
+import ca.bc.gov.gba.itn.model.code.StructuredNames;
 import ca.bc.gov.gba.ui.StatisticsDialog;
 import ca.bc.gov.gbasites.controller.GbaSiteDatabase;
 import ca.bc.gov.gbasites.load.ImportSites;
@@ -63,7 +63,7 @@ import com.revolsys.util.Strings;
 
 public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Cancellable {
 
-  private static final BoundaryCache LOCALITIES = GbaController.getLocalities();
+  private static final BoundaryCache LOCALITIES = GbaItnCodeTables.getLocalities();
 
   private static final Comparator<SitePointProviderRecord> SUFFIX_UNIT_COMPARATOR = (a, b) -> {
     final String suffix1 = a.getString(CIVIC_NUMBER_SUFFIX, "");
@@ -82,7 +82,7 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
     return compare;
   };
 
-  public static final StructuredNames STRUCTURED_NAMES = GbaController.getStructuredNames();
+  public static final StructuredNames STRUCTURED_NAMES = GbaItnCodeTables.getStructuredNames();
 
   public static String getCleanStringIntern(final Record record, final String fieldName) {
     String value = record.getString(fieldName);
@@ -171,8 +171,8 @@ public class GeocoderCaSiteConverter extends AbstractSiteConverter implements Ca
 
   @Override
   public void addError(final Record record, final String message) {
-    this.counts.addCount(this.localityName, BatchUpdateDialog.ERROR);
-    this.importSites.addLabelCount(BatchUpdateDialog.ERROR, message, BatchUpdateDialog.ERROR);
+    this.counts.addCount(this.localityName, CountNames.ERROR);
+    this.importSites.addLabelCount(CountNames.ERROR, message, CountNames.ERROR);
     final Point point = record.getGeometry();
 
     this.allErrorLog.error(this.localityName, message, record, point);

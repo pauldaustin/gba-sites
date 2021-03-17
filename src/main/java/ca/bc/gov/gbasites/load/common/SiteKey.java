@@ -8,7 +8,8 @@ import org.jeometry.common.compare.CompareUtil;
 import org.jeometry.common.data.identifier.Identifier;
 
 import ca.bc.gov.gba.controller.GbaController;
-import ca.bc.gov.gba.itn.model.NameDirection;
+import ca.bc.gov.gba.itn.model.code.GbaItnCodeTables;
+import ca.bc.gov.gba.itn.model.code.NameDirection;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.collection.map.Maps;
@@ -50,7 +51,7 @@ public class SiteKey implements Comparable<SiteKey> {
     if (!Property.hasValue(structuredNameId)) {
       throw new NullPointerException("structuredNameId cannot be null");
     }
-    this.localityName = GbaController.getLocalities().getValue(localityId);
+    this.localityName = GbaItnCodeTables.getLocalities().getValue(localityId);
     this.unitDesriptor = unitDesriptor;
     this.civicNumber = civicNumber;
     this.civicNumberSuffix = civicNumberSuffix;

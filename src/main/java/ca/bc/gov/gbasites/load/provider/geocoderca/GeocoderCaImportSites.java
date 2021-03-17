@@ -2,13 +2,15 @@ package ca.bc.gov.gbasites.load.provider.geocoderca;
 
 import java.nio.file.Path;
 
-import ca.bc.gov.gba.itn.model.StructuredName;
+import ca.bc.gov.gba.core.model.CountNames;
+import ca.bc.gov.gba.itn.model.code.StructuredName;
 import ca.bc.gov.gba.ui.BatchUpdateDialog;
 import ca.bc.gov.gbasites.model.type.SitePoint;
 
 import com.revolsys.transaction.Transaction;
 
-public class GeocoderCaImportSites extends BatchUpdateDialog implements SitePoint, StructuredName {
+public class GeocoderCaImportSites extends BatchUpdateDialog
+  implements SitePoint, StructuredName, CountNames {
 
   private static final long serialVersionUID = 1L;
 
